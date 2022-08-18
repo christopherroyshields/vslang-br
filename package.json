@@ -1,0 +1,25 @@
+{
+  "name": "vslang-br",
+  "displayName": "vslang-br",
+  "description": "Language support for Business Rules!",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "br",
+      "aliases": ["Business Rules!", "br"],
+      "extensions": [".brs",".wbs"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "br",
+      "scopeName": "source.br",
+      "path": "./syntaxes/br.tmLanguage.json"
+    }]
+  }
+}
