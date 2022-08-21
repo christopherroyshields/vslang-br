@@ -19,4 +19,4 @@ TBD
 
 ### 1.0.0
 
-Initial release of ...
+Initial release of extension
