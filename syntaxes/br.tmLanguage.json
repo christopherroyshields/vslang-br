@@ -1,32 +1,157 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"name": "Business Rules!",
+	"scopeName": "source.br",
 	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#strings"
+		},
 		{
 			"include": "#keywords"
 		},
 		{
-			"include": "#strings"
+			"include": "#references"
 		}
 	],
 	"repository": {
-		"keywords": {
+		"comments": {
 			"patterns": [{
-				"name": "keyword.control.br",
-				"match": "\\b(if|while|for|return)\\b"
+				"name": "comment.line",
+				"begin": "!(?!:)",
+				"end": "(!:|\n|$)",
+				"endCaptures": {
+					"0": {
+						"name": "keyword.operator"
+					}
+				}
+			},{
+				"name": "comment.block",
+				"begin": "/\\*",
+				"end": "\\*/"
+			},{
+				"contentName": "comment.line.br",
+				"begin": "^\\s*\\d{0,5}\\s*(\\brem\\b)",
+				"end": "(\n|$)",
+				"beginCaptures": {
+					"1":{
+						"name": "comment.line.br"
+					}
+				}
 			}]
 		},
+		"commands": {
+			"name": "keyword.other.br-command",
+			"match": "\\b(?i:ALERT|AUTO|BREAK|ChDIR|CLEAR|CONFIG|COPY|DATE|DEBUG CONNECT|DELETE|DIR|DISPLAY|DROP|EDIT|FREE|GO|GO END|INDEX|LIST|LOAD|MERGE|MKDIR|PROC|PROCERR RETURN|PROCERR STOP|PROTECT|RENAME|RENUM|REPLACE|RMDIR|RUN|SAVE|SKIP|SORT|STATUS|SUBPROC|SYSTEM|TIME|TYPE|VERIFY)\\b"
+		},
 		"strings": {
-			"name": "string.quoted.double.br",
-			"begin": "\"",
-			"end": "\"",
+			"patterns": [{
+				"name": "string.quoted.double",
+				"begin": "\"",
+				"end": "(\"\"|[^\"])*(\"|\\n)",
+				"endCaptures": {
+					"0": {
+						"patterns": [{
+							"include": "#commands"
+						}]
+					}
+				}
+				},{
+				"name": "string.quoted.single",
+				"begin": "'",
+				"end": "(''|[^'])*'",
+				"endCaptures": {
+					"0": {
+						"patterns": [{
+							"include": "#commands"
+						}]
+					}
+				}
+			},{
+				"name": "string.interpolated",
+				"begin": "`",
+				"end": "`",
+				"patterns": [
+					{ "include": "#commands" },
+					{
+						"begin": "{{",
+						"end": "}}",
+						"captures": {
+							"0": {
+								"name": "constant.character.escape"
+							}
+						},
+						"patterns": [
+							{
+								"include": "$self"
+							}
+						]
+					}
+				]
+			}]
+		},
+		"keywords": {
 			"patterns": [
 				{
-					"name": "constant.character.escape.br",
-					"match": "\\\\."
+					"name": "keyword.operator.line_continuation",
+					"match": "!:"
+				},
+				{
+					"name": "keyword.control.lexi.br",
+					"match": "(?i)#(include|define|select|case else|end select|case|autonumber)#"
+				},
+				{
+					"match": "(:=|\\+=|\\-=|\\*=|\\/=|=)",
+					"name": "keyword.operator.assignment.br"
+				},
+				{
+					"match": "(?i)\\b(And|Not|Or)\\b",
+					"name": "keyword.operator.logical.br"
+				},
+				{
+					"match": "~",
+					"name": "keyword.operator.logical.br"
+				},
+				{
+					"match": "(<|>|<>|<=|>=|~=|==)",
+					"name": "keyword.operator.comparison.br"
+				},
+				{
+					"match": "(\\+|\\-|\\*|\\/|\\&)",
+					"name": "keyword.operator.mathematical.br"
+				},
+				{
+					"match": "\\b(?i:mat\\s+(\\w[\\w\\d]*)\\$)",
+					"name": "variable.array.string.br"
+				},
+				{
+					"match": "(\\b(\\w[\\w\\d]*)\\$)",
+					"name": "variable.string.br"
+				},
+				{
+					"match": "^\\s*?(\\d{0,5})(?:\\s*)?([\\w\\d]+:)",
+					"captures": {
+						"1": {
+							"name":"linenumber.br"
+						},
+						"2": {
+							"name":"line-label.br"
+						}
+					}
+				},
+				{
+					"match": "^\\s*(\\d{1,5})",
+					"name": "linenumber.br"
 				}
 			]
+		},
+		"references": {
+			"patterns": [{
+				"match": "(?i)\\bfn\\w[\\w\\d]*\\$?",
+				"name": "entity.name.function.br"
+			}]
 		}
-	},
-	"scopeName": "source.br"
+	}
 }
