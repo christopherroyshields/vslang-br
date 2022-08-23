@@ -10,6 +10,20 @@
     "Programming Languages"
   ],
   "contributes": {
+    "snippets": [
+      {
+        "language": "br",
+        "path": "snippets/fileio.json"
+      },
+      {
+        "language": "br",
+        "path": "snippets/lexi.json"
+      },
+      {
+        "language": "br",
+        "path": "snippets/loops.json"
+      }
+    ],
     "languages": [{
       "id": "br",
       "aliases": ["Business Rules!", "br"],
