@@ -1,0 +1,80 @@
+{
+  "fnReadLayoutArrays(LayoutName$*255,&Prefix$;mat SSubs$,mat NSubs$)": {
+    "prefix": "fnReadLayoutArrays",
+    "body": "dim S_${1:StringSubs}Subs$(1), N_${1:NumericSubs}Subs$(1), ${1:File}Prefix$\nfnReadLayoutArrays(\"${1:layout}\",${1:&prefix}Prefix$,mat S_${1:StringSubs}Subs$,mat N_${1:NumericSubs}Subs$)\n$0",
+    "description": "Reads the file layout and returns the Record Detail information in a bunch of arrays. Returns the field count.\n\nfnReadLayoutArrays(filelay$,&prefix$;mat SSubs$, mat NSubs$, mat SSpec$, mat NSpec$,mat SDescription$, mat NDescription$,Mat Spos,Mat Npos)\n\n  filelay$ - the name of the layout to read\n  prefix$ - the return value for the prefix for the file\n  mat SSubs$ - the return value for all the string subscripts in the layout\n  mat NSubs$ - the return value for the numeric subscripts in the lay\n\nCode Snippet:\n  dim S_FileNameSubs$, N_FileNameSubs$, FileNamePrefix$\n  fnReadLayoutArrays(\"FileName\",FileNamePrefix$,mat S_FileNameSubs$,mat N_FileNameSubs$)\n\nSee the online documentation for a full description of all parameters.",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnReadLayoutArrays",
+    "leftLabel": "Code Snippet"
+  },
+  "fnReadLayoutArrays(LayoutName$*255,&Prefix$;mat SSubs$,mat NSubs$,mat SSpec$, ...)": {
+    "prefix": "fnReadLayoutArraysFull",
+    "body": "dim ${1:StringSubs}_S_Subs$(1), ${1:NumericSubs}_N_Subs$(1), ${1:File}_Prefix$\ndim ${1:StringSpec}_S_Spec$(1), ${1:NumericSpec}_N_Spec$(1)\ndim ${1:StringDescription}_S_Description$(1), ${1:NumericDescription}_N_Description$(1)\ndim ${1:StringPos}_S_Pos(1), mat ${1:NumericPos}_N_Pos(1)\n\nfnReadLayoutArrays(\"${1:layout}\",${1:&prefix}_Prefix$,mat ${1:StringSpec}_S_Spec$, mat ${1:NumericSpec}_N_Spec$,mat ${1:StringDescription}_S_Description$, mat ${1:NumericDescription}_N_Description$,mat ${1:StringPos}_S_Pos(1), mat ${1:NumericPos}_N_Pos\n$0",
+    "description": "Reads the file layout and returns the Record Detail information in a bunch of arrays. Returns the field count.\n\n  fnReadLayoutArrays(filelay$,&prefix$;mat SSubs$, mat NSubs$, mat SSpec$, mat NSpec$,mat SDescription$, mat NDescription$,Mat Spos,Mat Npos)\n\n  filelay$ - the name of the layout to read\n  prefix$ - the return value for the prefix for the file\n  mat SSubs$ - the return value for all the string subscripts in the layout\n  mat NSubs$ - the return value for the numeric subscripts in the layout\n\nCode Snippet:\n  let dim FileName_S_Subs$(1), FileName_N_Subs$(1), FileName_Prefix$\n  dim FileName_S_Spec$(1), FileName_N_Spec$(1)\n  dim FileName_S_Description$(1), FileName_N_Description$(1)\n  dim FileName_S_Pos(1), mat FileName_N_Pos(1)\n\n  fnReadLayoutArrays(\"FileName\",FileName_Prefix$,mat FileName_S_Spec$, mat FileName_N_Spec$,mat FileName_S_Description$, mat FileName_N_Description$,mat FileName_S_Pos(1), mat FileName_N_Pos\n\nSee the online documentation for a full description of all parameters.",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnReadLayoutArrays",
+    "leftLabel": "Code Snippet"
+  },
+  "fnMakeSubProc(FileName$*255;mat Subs$,mat F$,mat F)": {
+    "prefix": "fnMakeSubProc",
+    "body": "dim Subscripts$(1)*1023\n\nfnMakeSubProc(\"${1:layout}\",mat Subscripts$,mat ${1:layout}$,mat ${1:layout})\nfor ${2:Index}=1 to udim(mat Subscripts$)\n   execute Subscripts$(${2:Index})\nnext ${2:Index}\n$0",
+    "description": "Sets the subscripts for a data file.\n\nfnMakeSubProc(filelay$;mat Subscripts$)\n\n  FileLay$ - The name of the file layout from which to read the subscripts.\n  mat Subscripts$ - If you give this optional array, fnMakeSubProc passes the subscripts back in this array rather then in the subs.$$$ file.\n\nCode Snippet:\n  fnMakeSubProc(\"DataFile\",mat Subscripts$,mat DataFile$,mat DataFile)\n  for Index=1 to udim(mat Subscripts$)\n     execute Subscripts$(Index)\n  next Index",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnMakeSubProc",
+    "leftLabel": "Code Snippet"
+  },
+  "fnReadLayouts(mat LayoutList$) with Dims": {
+    "prefix": "fnReadLayouts",
+    "body": "dim ${1:LayoutList}$(1)\nfnReadLayouts(mat ${1:LayoutList}$)\n$0",
+    "description": "Reads the list of file layouts into the provided array.\n\nFnReadLayouts(mat Dirlist$)\n\n  Mat Dirlist$ - After running the function, mat Dirlist$ will contain a list of all the file layouts that FileIO can find.\n\nCode Snippet:\n  dim LayoutList$(1)\n  fnReadLayouts(mat LayoutList$)",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnReadLayouts",
+    "leftLabel": "Code Snippet"
+  },
+  "open #(FileHandle:=fnGetFileNumber)": {
+    "prefix": "openNumber",
+    "body": "open #(${1:filehandle}:=fnGetFileNumber): $0",
+    "description": "Snippet to open a non-FileIO file using fnGetFileNumber to find a free file number.\n\nOpen #(FileHandle:=fnGetFileNumber(;Start,Count)): \"Open String\", Open Type\n\n  FileHandle - this will be assigned the File Handle of the newly opened file.\n  Start – Which Number to start looking from. Defaults to 1.\n  Count - How many file numbers to find in a row. fnGetFileNumber will search for a gap of at least this many unused numbers in a row.\n  Open String - the BR Open text for the file or window you're trying to open.\n  Open Type - flags such as Input/Output, Relative, Keyed, Display, etc that indicate what kind of file it is.",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Open_(disambiguation)",
+    "leftLabel": "Code Snippet"
+  },
+  "fnOpen(LayoutName$, Mat F$, Mat F, Mat Form$; Input, KeyNum) with Dims": {
+    "prefix": "fnOpenDims",
+    "body": "dim ${1:layout}, ${1:layout}$(1)*${2:1024}, ${1:layout}(1)\nlet ${1:layout}=fnOpen(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout},mat form$)",
+    "description": "Opens file using Fileio, returning the file handle, and Dimming the necessary Variables.\n\nfnOpen(Filename$*255, Mat F$, Mat F, Mat Form$; Inputonly, Keynum, DontSortSubs, Path$*255, Mat Descr$, Mat FieldWidths, SupressPrompt, IgnoreErrors, SuppressLog)\n\n  FileName$ - The filename of the file layout for the file you’re reading.\n  MAT F$ - The array that will be used to hold the string data for the file.\n  MAT F – The array that will hold the numeric data for the file.\n  MAT Form$ - An array of form statements.\n  InputOnly – 1 means open for input only.\n\n  See the online documentation for a complete description of all optional parameters.\n\nCode Snippet:\n  dim layout, layout$(1)*longest,layout(1)\n  let layout=fnOpen(\"layout\",mat layout$,mat layout,mat form$)",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnOpen",
+    "leftLabel": "Code Snippet"
+  },
+  "fnOpen() ... Read Loop": {
+    "prefix": "fnOpenReadLoop",
+    "body": "dim ${1:layout}, ${1:layout}$(1)*${2:1024},${1:layout}(1)\n\nlet ${1:layout}=fnopen(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout},mat form$,1)\nrestore #${1:layout}: error IGNORE\ndo until File(${1:layout})\n   read #${1:layout}, using Form$(${1:layout}) : Mat ${1:layout}$,Mat ${1:layout} eof IGNORE\n   if File(${1:layout})=0 then\n      ${3:}\n   end if\nloop\nclose #${1:layout}:",
+    "description": "  Opens file using Fileio and reads all records of the file in a loop.\n\n  Layout$ - the name of the layout you're trying to read. The snippet does the rest.\n\nCode Snippet:\n  dim layout, layout$(1)*1024,layout(1)\n\n  let layout=fnopen(\"layout\",mat layout$,mat layout,mat form$,1)\n  restore #layout: error IGNORE\n  do until File(layout)\n     read #layout, using Form$(layout) : Mat layout$,Mat layout eof IGNORE\n     if File(layout)=0 then\n\n     end if\n  loop\n  close #layout:",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library",
+    "leftLabel": "Code Snippet"
+  },
+  "fnOpen() ... Read By Key": {
+    "prefix": "fnOpenReadLoopKey",
+    "body": "dim ${1:layout}, ${1:layout}$(1)*${2:1024},${1:layout}(1)\nlet ${1:layout}=fnopen(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout},mat form$)\nrestore #${1:layout}>=${1:layout}key$: error IGNORE\ndo until File(${1:layout})\n   read #${1:layout}, using Form$(${1:layout}) : Mat ${1:layout}$,Mat ${1:layout} eof IGNORE\n   let ${1:layout}rec_key$ = fnBuildKey$(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout})\n   if File(${1:layout})=0 and ${1:layout}rec_key$ == ${1:layout}key$ then\n      ${3:}\n   end if\nloop\nclose #${1:layout}:",
+    "description": "  Opens file using Fileio and reads all records of the file in a loop.\n\n  Layout$ - the name of the layout you're trying to read. The snippet does the rest.\n\nCode Snippet:\n  dim layout, layout$(1)*1024,layout(1)\n\n  let layout=fnopen(\"layout\",mat layout$,mat layout,mat form$,1)\n  restore #layout: error IGNORE\n  do until File(layout)\n     read #layout, using Form$(layout) : Mat layout$,Mat layout eof IGNORE\n     if File(layout)=0 then\n\n     end if\n  loop\n  close #layout:",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library",
+    "leftLabel": "Code Snippet"
+  },
+  "fnOpen() ... Read One": {
+    "prefix": "fnOpenReadOne",
+    "body": "dim ${1:layout}, ${1:layout}$(1)*${2:1024},${1:layout}(1)\nlet ${1:layout}=fnopen(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout},mat form$,1)\nread #${1:layout}, using Form$(${1:layout}), key=${1:layout}key$ : Mat ${1:layout}$,Mat ${1:layout}\nclose #${1:layout}:",
+    "description": "  Opens file and reads the given record by Key\n\n  Layout$ - the name of the layout you're trying to read. The snippet does the rest.\n\nCode Snippet:\n  dim layout, layout$(1)*1024,layout(1)\n  let layout=fnopen(\"layout\",mat layout$,mat layout,mat form$,1)\n  read #layout, using Form$(layout), key=layoutkey$ : Mat layout$,Mat layout\n  close #layout:",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library",
+    "leftLabel": "Code Snippet"
+  },
+  "FileIO Open Function": {
+    "prefix": "openfn",
+    "body": "dim LinkageEstablished\ndef fnEstablishLinkage\n   if ~LinkageEstablished then\n      library \"fileio\" : fnOpenFile,Fnclosefile,Fngetfilenumber,Fnkey$,FnBuildKey$,Fnreadlayoutarrays,Fndoeslayoutexist,Fnreadallkeys,fnReadRelativeDescription$,fnReadRelUnopenedDescription$,fnReadRelUnopenedNumber,fnUpdateFile,fnLog,fnLogArray,fnErrLog,fnReadLayouts,Fnmakeuniquekey$,FnDisplayLength,FnLength,FnReadDescription$,FnReadUnopenedDescription$,fnReadRecordWhere$,fnUniqueKey,fnReadNumber,fnReadUnopenedNumber,fnReadRelativeNumber,fnNotInFile,fnDataCrawler,fnDataEdit\n      library \"fileio\" : fnMakeSubProc,fnReadMatchingKeys,fnReadAllNewKeys,fnReadFilterKeys,fnReadEntireLayout,fnReadLayoutHeader,fnReadSubs,fnReadLayoutPath$,fnReadKeyFiles, fnAskCombo$,fnRunProcFile,fnBuildProcFile,fnDataShow\n      library \"screenio\" : fnCallScreen$,fnFindSubscript,fnFm$,fnfm,fnDisplayScreen,fnGetUniqueName$,fnIsInputSpec,fnIsOutputSpec,fnDays,fnBR42\n      let linkageEstablished=1\n   end if\nfnend\n!\n! #Autonumber# 99000,10\nOPEN: ! ***** Function To Call Library Openfile And Proc Subs\n     def Fnopen(Filename$*255, Mat F$, Mat F, Mat Form$; Inputonly, Keynum, Dont_Sort_Subs, Path$*255, Mat Descr$, Mat Field_Widths,Supress_Prompt,Ignore_Errors,___,Index)\n        dim _FileIOSubs$(1)*800, _Loadedsubs$(1)*80\n        let Fnopen=Fnopenfile(Filename$, Mat F$, Mat F, Mat Form$, Inputonly, Keynum, Dont_Sort_Subs, Path$, Mat Descr$, Mat Field_Widths, Mat _FileIOSubs$, Supress_Prompt,Ignore_Errors,Program$)\n        if Srch(_Loadedsubs$,Uprc$(Filename$))<=0 then : mat _Loadedsubs$(Udim(_Loadedsubs$)+1) : let _Loadedsubs$(Udim(_Loadedsubs$))=Uprc$(Filename$) : for Index=1 to Udim(Mat _Fileiosubs$) : execute (_Fileiosubs$(Index)) : next Index\n     fnend\n\nIgnore: Continue",
+    "description": "The standard fnOpenFile function that needs to be included in all your programs when using FileIO.\n\nThis function needs to be pasted at the bottom of any of your standard programs or libraries that use FileIO functions. It does not need to be included in ScreenIO functions, as ScreenIO does that for you.",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnOpen_Function",
+    "leftLabel": "Code Snippet"
+  },
+  "fnOpen() ... Write": {
+    "displayText": "fnOpen() ... Write",
+    "prefix": "fnOpenWrite",
+    "body": "! FileIO Dimensions\ndim Form$(1)*255\ndim ${1:layout}, ${1:layout}$(1)*256,${1:layout}(1)\n\n! Open the file\nlet ${1:layout}=Fnopen(\"${1:layout}\",Mat ${1:layout}$,Mat ${1:layout},Mat Form$)\n\n! Set Values\nlet ${1:layout}$(${2:subscript})=${3:}\n\n! Save The Record\nwrite #${1:layout}, using Form$(${1:layout}) : Mat ${1:layout}$,Mat ${1:layout}\n\n! Close DataFile\nlet fnCloseFile(${1:layout},\"${1:layout}\")",
+    "description": "  Opens a file and updates a record, then closes it.\n\n  Layout$ - the name of the layout you're trying to read.\n  Prefix_ - The Prefix for the given layout for the field you're trying to set.\n  Subscript - the Subscript for the field you're trying to set\n\n  The snippet does the rest.\n\nCode Snippet:\n  ! FileIO Dimensions\n  dim Form$(1)*255\n  dim layout, layout$(1)*256,layout(1)\n\n  ! Open the file\n  let layout=Fnopen(\"layout\",Mat layout$,Mat layout,Mat Form$)\n\n  ! Set Values\n  let layout$(prefix_subscript)=\n  let layout$(prefix_subscript)=\n\n  ! Save The Record\n  write #layout, using Form$(layout) : Mat layout$,Mat layout\n\n  ! Close DataFile\n  let fnCloseFile(layout,\"layout\")",
+    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library",
+    "leftLabel": "Code Snippet"
+  }
+}

@@ -106,3 +106,4 @@ mat a$(1)=mat b$
 print mat a$
 print fields "2,2,grid 10/80,headers": (Mat Headings$,Mat Widths,Mat Forms$)
 
+! #AutoNumber#$ 100, 10 
