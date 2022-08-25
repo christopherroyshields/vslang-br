@@ -1,0 +1,57 @@
+object TToolsComponent
+  Tools = <
+    item
+      ToolTitle = 'Compile BR Program'
+      ToolAppPath = 
+        '"C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\ConvStoO.' +
+        'cmd"'
+      ToolWorkingPath = 'C:\Program Files (x86)\Mills Enterprise\MyEditBR'
+      ToolParameters = '"%%name"'
+    end
+    item
+      ToolTitle = 'Debug BR Program'
+      ToolAppPath = 
+        '"C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\DebugBR.c' +
+        'md"'
+      ToolWorkingPath = 'C:\Program Files (x86)\Mills Enterprise\MyEditBR'
+      ToolParameters = '"%%name"'
+    end
+    item
+      ToolTitle = 'Run BR Program'
+      ToolAppPath = 
+        '"C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\RunBR.cmd' +
+        '"'
+      ToolWorkingPath = 'C:\Program Files (x86)\Mills Enterprise\MyEditBR'
+      ToolParameters = '"%%name"'
+    end
+    item
+      ToolTitle = 'Add Line Numbers'
+      ToolAppPath = 
+        '"C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\AddLN.cmd' +
+        '"'
+      ToolWorkingPath = 'C:\Program Files (x86)\Mills Enterprise\MyEditBR'
+      ToolParameters = '"%%name"'
+    end
+    item
+      ToolTitle = 'Strip Line Numbers'
+      ToolAppPath = 
+        '"C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\StripLN.c' +
+        'md"'
+      ToolWorkingPath = 'C:\Program Files (x86)\Mills Enterprise\MyEditBR'
+      ToolParameters = '"%%name"'
+    end
+    item
+      ToolTitle = 'Set BR 4.3'
+      ToolAppPath = 
+        '"C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\set43.cmd' +
+        '"'
+      ToolWorkingPath = 'C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\'
+    end
+    item
+      ToolTitle = 'Set BR 4.2'
+      ToolAppPath = 
+        '"C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\set42.cmd' +
+        '"'
+      ToolWorkingPath = 'C:\Program Files (x86)\Mills Enterprise\MyEditBR\Lexi\'
+    end>
+end
