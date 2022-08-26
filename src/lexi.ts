@@ -47,6 +47,47 @@ export function activateLexi(context: vscode.ExtensionContext) {
 		}
 	}, context.subscriptions)
 
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('vslang-br.run', (editor) => {
+    if (editor.document.languageId === "br"){
+      exec(`${LexiPath}\\RunBR.cmd ${editor.document.fileName}`, {
+        cwd: `${LexiPath}`
+      });
+    }
+  }))
+  
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('vslang-br.addLineNumbers', (editor) => {
+    if (editor.document.languageId === "br"){
+      exec(`${LexiPath}\\AddLN.cmd ${editor.document.fileName}`, {
+        cwd: `${LexiPath}`
+      });
+    }
+  }))
+
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('vslang-br.stripLineNumbers', (editor) => {
+    if (editor.document.languageId === "br"){
+      exec(`${LexiPath}\\StripLN.cmd ${editor.document.fileName}`, {
+        cwd: `${LexiPath}`
+      });
+    }
+  }))
+
+  context.subscriptions.push(vscode.commands.registerCommand('vslang-br.setBr41', () => {
+    exec(`${LexiPath}\\set41.cmd`, {
+      cwd: `${LexiPath}`
+    });
+  }))
+
+  context.subscriptions.push(vscode.commands.registerCommand('vslang-br.setBr42', () => {
+    exec(`${LexiPath}\\set42.cmd`, {
+      cwd: `${LexiPath}`
+    });
+  }))
+
+  context.subscriptions.push(vscode.commands.registerCommand('vslang-br.setBr43', () => {
+    exec(`${LexiPath}\\set43.cmd`, {
+      cwd: `${LexiPath}`
+    });
+  }))
 }
 
 function compileBrProgram(activeFilename: string) {
