@@ -17,31 +17,31 @@
     "commands": [
       {
         "command": "vslang-br.compile",
-        "title": "Compile BR Program"
+        "title": "Lexi: Compile BR Program"
       },
       {
         "command": "vslang-br.run",
-        "title": "Run BR Program"
+        "title": "Lexi: Run BR Program"
       },
       {
         "command": "vslang-br.addLineNumbers",
-        "title": "Add Line Numbers to BR Source"
+        "title": "Lexi: Add Line Numbers to BR Source"
       },
       {
         "command": "vslang-br.stripLineNumbers",
-        "title": "Strip Line Numbers from BR Source"
+        "title": "Lexi: Strip Line Numbers from BR Source"
       },
       {
         "command": "vslang-br.setBr41",
-        "title": "Set BR Version 4.1"
+        "title": "Lexi: Set BR Version 4.1"
       },
       {
         "command": "vslang-br.setBr42",
-        "title": "Set BR Version 4.2"
+        "title": "Lexi: Set BR Version 4.2"
       },
       {
         "command": "vslang-br.setBr43",
-        "title": "Set BR Version 4.3"
+        "title": "Lexi: Set BR Version 4.3"
       }
     ],
     "snippets": [
