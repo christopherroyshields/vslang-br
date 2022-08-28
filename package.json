@@ -9,7 +9,41 @@
   "categories": [
     "Programming Languages"
   ],
+  "activationEvents": [
+    "onLanguage:br"
+  ],
+  "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "vslang-br.compile",
+        "title": "Compile BR Program"
+      },
+      {
+        "command": "vslang-br.run",
+        "title": "Run BR Program"
+      },
+      {
+        "command": "vslang-br.addLineNumbers",
+        "title": "Add Line Numbers to BR Source"
+      },
+      {
+        "command": "vslang-br.stripLineNumbers",
+        "title": "Strip Line Numbers from BR Source"
+      },
+      {
+        "command": "vslang-br.setBr41",
+        "title": "Set BR Version 4.1"
+      },
+      {
+        "command": "vslang-br.setBr42",
+        "title": "Set BR Version 4.2"
+      },
+      {
+        "command": "vslang-br.setBr43",
+        "title": "Set BR Version 4.3"
+      }
+    ],
     "snippets": [
       {
         "language": "br",
@@ -24,16 +58,47 @@
         "path": "snippets/loops.json"
       }
     ],
-    "languages": [{
-      "id": "br",
-      "aliases": ["Business Rules!", "br"],
-      "extensions": [".brs",".wbs"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "br",
-      "scopeName": "source.br",
-      "path": "./syntaxes/br.tmLanguage.json"
-    }]
+    "languages": [
+      {
+        "id": "br",
+        "aliases": [
+          "Business Rules!",
+          "br"
+        ],
+        "extensions": [
+          ".brs",
+          ".wbs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "br",
+        "scopeName": "source.br",
+        "path": "./syntaxes/br.tmLanguage.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.70.0",
+    "@types/glob": "^7.2.0",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.31.0",
+    "@typescript-eslint/parser": "^5.31.0",
+    "eslint": "^8.20.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.0.0",
+    "typescript": "^4.7.4",
+    "@vscode/test-electron": "^2.1.5"
   }
 }

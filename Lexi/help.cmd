@@ -1,0 +1,1 @@
+start http://brwiki.brulescorp.com/index.php?search=%1

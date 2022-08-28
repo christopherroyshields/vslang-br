@@ -1,0 +1,10 @@
+drive c:,.,\,\
+wbserver c:\
+workstack 47500
+maxrecall 50
+flowstack 1250
+printscreen newpage
+break 8 1600
+rpnstack 3750
+gui off
+option 60
