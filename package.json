@@ -14,6 +14,36 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "keybindings": [
+      {
+        "command": "vslang-br.compile",
+        "key": "ctrl-alt-1"
+      },
+      {
+        "command": "vslang-br.run",
+        "key": "ctrl-alt-2"
+      },
+      {
+        "command": "vslang-br.addLineNumbers",
+        "key": "ctrl-alt-3"
+      },
+      {
+        "command": "vslang-br.stripLineNumbers",
+        "key": "ctrl-alt-3"
+      },
+      {
+        "command": "vslang-br.setBr41",
+        "key": "ctrl-alt-4"
+      },
+      {
+        "command": "vslang-br.setBr42",
+        "key": "ctrl-alt-5"
+      },
+      {
+        "command": "vslang-br.setBr43",
+        "key": "ctrl-alt-6"
+      }
+    ],
     "commands": [
       {
         "command": "vslang-br.compile",
