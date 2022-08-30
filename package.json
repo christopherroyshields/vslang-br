@@ -10,7 +10,7 @@
     "Programming Languages"
   ],
   "activationEvents": [
-    "onLanguage:br"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -42,9 +42,25 @@
       {
         "command": "vslang-br.setBr43",
         "key": "ctrl-alt-6"
+      },
+      {
+        "command": "vslang-br.nextOccurrence",
+        "key": "ctrl-shift-down"
+      },
+      {
+        "command": "vslang-br.prevOccurrence",
+        "key": "ctrl-shift-up"
       }
     ],
     "commands": [
+      {
+        "command": "vslang-br.nextOccurrence",
+        "title": "Next Occurrence"
+      },
+      {
+        "command": "vslang-br.prevOccurrence",
+        "title": "Previous Occurrence"
+      },
       {
         "command": "vslang-br.compile",
         "title": "Lexi: Compile BR Program"
