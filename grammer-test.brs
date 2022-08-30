@@ -1,3 +1,4 @@
+let
 ! GRAMMER TEST CODE
 
 ! multiline comment
