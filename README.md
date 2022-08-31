@@ -4,12 +4,12 @@ This extension provides language support for the Business Rules! programming lan
 
 ## Features
 
-Syntax Coloring
+- Syntax Coloring
+- prev/next occurence
 
 TODO:
-prev/next occurence
-snippets
-autocomplete
+- snippets
+- autocomplete
 
 ## Extension Settings
 
