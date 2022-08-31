@@ -10,38 +10,84 @@
     "Programming Languages"
   ],
   "activationEvents": [
-    "onLanguage:br"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "commands": [
+    "keybindings": [
       {
         "command": "vslang-br.compile",
-        "title": "Compile BR Program"
+        "key": "ctrl-alt-1"
       },
       {
         "command": "vslang-br.run",
-        "title": "Run BR Program"
+        "key": "ctrl-alt-2"
       },
       {
         "command": "vslang-br.addLineNumbers",
-        "title": "Add Line Numbers to BR Source"
+        "key": "ctrl-alt-3"
       },
       {
         "command": "vslang-br.stripLineNumbers",
-        "title": "Strip Line Numbers from BR Source"
+        "key": "ctrl-alt-3"
       },
       {
         "command": "vslang-br.setBr41",
-        "title": "Set BR Version 4.1"
+        "key": "ctrl-alt-4"
       },
       {
         "command": "vslang-br.setBr42",
-        "title": "Set BR Version 4.2"
+        "key": "ctrl-alt-5"
       },
       {
         "command": "vslang-br.setBr43",
-        "title": "Set BR Version 4.3"
+        "key": "ctrl-alt-6"
+      },
+      {
+        "command": "vslang-br.nextOccurrence",
+        "key": "ctrl-shift-down"
+      },
+      {
+        "command": "vslang-br.prevOccurrence",
+        "key": "ctrl-shift-up"
+      }
+    ],
+    "commands": [
+      {
+        "command": "vslang-br.nextOccurrence",
+        "title": "Next Occurrence"
+      },
+      {
+        "command": "vslang-br.prevOccurrence",
+        "title": "Previous Occurrence"
+      },
+      {
+        "command": "vslang-br.compile",
+        "title": "Lexi: Compile BR Program"
+      },
+      {
+        "command": "vslang-br.run",
+        "title": "Lexi: Run BR Program"
+      },
+      {
+        "command": "vslang-br.addLineNumbers",
+        "title": "Lexi: Add Line Numbers to BR Source"
+      },
+      {
+        "command": "vslang-br.stripLineNumbers",
+        "title": "Lexi: Strip Line Numbers from BR Source"
+      },
+      {
+        "command": "vslang-br.setBr41",
+        "title": "Lexi: Set BR Version 4.1"
+      },
+      {
+        "command": "vslang-br.setBr42",
+        "title": "Lexi: Set BR Version 4.2"
+      },
+      {
+        "command": "vslang-br.setBr43",
+        "title": "Lexi: Set BR Version 4.3"
       }
     ],
     "snippets": [
@@ -100,5 +146,6 @@
     "mocha": "^10.0.0",
     "typescript": "^4.7.4",
     "@vscode/test-electron": "^2.1.5"
-  }
+  },
+  "dependencies": {}
 }
