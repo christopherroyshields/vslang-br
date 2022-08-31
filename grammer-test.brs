@@ -26,7 +26,7 @@ execute 'COPY "foo.bat" "bar.bat"'
 execute 'lorem ipsum ''foo.dat'' dolar'
 
 ! interpolated string
-execute `copy {{if test$ == test}} {{filename$(5)}}.bak`
+execute `copy {{if test$ == test$}} {{filename$(5)}}.bak`
 
 ! multiline
 print `Consectetur ad occaecat ipsum incididunt 
@@ -37,8 +37,8 @@ sunt eu aute veniam amet do.`
 
 let a = b !: let b = c !: 
 let b = 1 ! test !:
-let c = 2 ! test !: 
-! test
+let c = 2 ! test !:
+print b$
 
 ! lexi test
 ! #Autonumber# 16000,10
@@ -107,4 +107,5 @@ mat a$(1)=mat b$
 print mat a$
 print fields "2,2,grid 10/80,headers": (Mat Headings$,Mat Widths,Mat Forms$)
 
-! #AutoNumber#$ 100, 10 
+! #AutoNumber#$ 100, 10
+let test$ = TEST$
