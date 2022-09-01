@@ -15,7 +15,10 @@ import {
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult,
-	InsertTextFormat
+	InsertTextFormat,
+	CompletionList,
+	InsertTextMode,
+	CompletionItemLabelDetails
 } from 'vscode-languageserver/node';
 
 import {
@@ -70,7 +73,7 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.onInitialized(() => {
-	if (hasConfigurationCapability) {
+	 if (hasConfigurationCapability) {
 		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
 	}
@@ -196,21 +199,26 @@ connection.onDidChangeWatchedFiles(_change => {
 	connection.console.log('We received an file change event');
 });
 
+
+import { stringFunctions } from './completions/string-functions';
+
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
 	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
 		// The pass parameter contains the position of the text document in
 		// which code complete got requested. For the example we ignore this
 		// info and always provide the same completion items.
-		return [
-			{
-				label: 'STR$',
-				insertText: 'STR$(${1:number})',
-				insertTextFormat: InsertTextFormat.Snippet,
-				kind: CompletionItemKind.Snippet,
-				data: 1
-			}
-		];
+
+		return stringFunctions
+		// return [
+		// 	{
+		// 		label: 'STR$',
+		// 		insertText: 'STR$(${1:number})',
+		// 		insertTextFormat: InsertTextFormat.Snippet,
+		// 		kind: CompletionItemKind.Function,
+		// 		data: 1
+		// 	}
+		// ];
 	}
 );
 
@@ -218,12 +226,13 @@ connection.onCompletion(
 // the completion list.
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'str$ details';
-			item.documentation = 'str$ documentation';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
+		for (let itemIndex = 0; itemIndex < stringFunctions.length; itemIndex++) {
+			const stringFunctionItem = stringFunctions[itemIndex];
+			if (item.label == stringFunctionItem.label){
+				item.labelDetails = stringFunctionItem.labelDetails
+				item.documentation = stringFunctionItem.documentation
+				break
+			}
 		}
 		return item;
 	}

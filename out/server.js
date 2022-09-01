@@ -145,31 +145,33 @@ connection.onDidChangeWatchedFiles(_change => {
     // Monitored files have change in VSCode
     connection.console.log('We received an file change event');
 });
+const string_functions_1 = require("./completions/string-functions");
 // This handler provides the initial list of the completion items.
 connection.onCompletion((_textDocumentPosition) => {
     // The pass parameter contains the position of the text document in
     // which code complete got requested. For the example we ignore this
     // info and always provide the same completion items.
-    return [
-        {
-            label: 'STR$',
-            insertText: 'STR$(${1:number})',
-            insertTextFormat: node_1.InsertTextFormat.Snippet,
-            kind: node_1.CompletionItemKind.Snippet,
-            data: 1
-        }
-    ];
+    return string_functions_1.stringFunctions;
+    // return [
+    // 	{
+    // 		label: 'STR$',
+    // 		insertText: 'STR$(${1:number})',
+    // 		insertTextFormat: InsertTextFormat.Snippet,
+    // 		kind: CompletionItemKind.Function,
+    // 		data: 1
+    // 	}
+    // ];
 });
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve((item) => {
-    if (item.data === 1) {
-        item.detail = 'str$ details';
-        item.documentation = 'str$ documentation';
-    }
-    else if (item.data === 2) {
-        item.detail = 'JavaScript details';
-        item.documentation = 'JavaScript documentation';
+    for (let itemIndex = 0; itemIndex < string_functions_1.stringFunctions.length; itemIndex++) {
+        const stringFunctionItem = string_functions_1.stringFunctions[itemIndex];
+        if (item.label == stringFunctionItem.label) {
+            item.labelDetails = stringFunctionItem.labelDetails;
+            item.documentation = stringFunctionItem.documentation;
+            break;
+        }
     }
     return item;
 });
