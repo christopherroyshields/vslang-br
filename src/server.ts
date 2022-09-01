@@ -18,12 +18,16 @@ import {
 	InsertTextFormat,
 	CompletionList,
 	InsertTextMode,
-	CompletionItemLabelDetails
+	CompletionItemLabelDetails,
+	SignatureHelp,
+	CompletionParams
 } from 'vscode-languageserver/node';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
+
+import * as br from './completions/string-functions';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -56,12 +60,16 @@ connection.onInitialize((params: InitializeParams) => {
 	const result: InitializeResult = {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
-			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true
+			},
+			signatureHelpProvider: {
+				triggerCharacters: ['('],
+				retriggerCharacters: [',']
 			}
 		}
 	};
+
 	if (hasWorkspaceFolderCapability) {
 		result.capabilities.workspace = {
 			workspaceFolders: {
@@ -200,25 +208,15 @@ connection.onDidChangeWatchedFiles(_change => {
 });
 
 
-import { stringFunctions } from './completions/string-functions';
-
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+	(_textDocumentPosition: CompletionParams): CompletionItem[] => {
 		// The pass parameter contains the position of the text document in
 		// which code complete got requested. For the example we ignore this
 		// info and always provide the same completion items.
-
-		return stringFunctions
-		// return [
-		// 	{
-		// 		label: 'STR$',
-		// 		insertText: 'STR$(${1:number})',
-		// 		insertTextFormat: InsertTextFormat.Snippet,
-		// 		kind: CompletionItemKind.Function,
-		// 		data: 1
-		// 	}
-		// ];
+		
+		let internalFunctionCompletions: CompletionItem[] = getFunctionCompletions()
+		return internalFunctionCompletions
 	}
 );
 
@@ -226,10 +224,12 @@ connection.onCompletion(
 // the completion list.
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-		for (let itemIndex = 0; itemIndex < stringFunctions.length; itemIndex++) {
-			const stringFunctionItem = stringFunctions[itemIndex];
-			if (item.label == stringFunctionItem.label){
-				item.labelDetails = stringFunctionItem.labelDetails
+		for (let itemIndex = 0; itemIndex < br.stringFunctions.length; itemIndex++) {
+			const stringFunctionItem = br.stringFunctions[itemIndex];
+			if (item.label == stringFunctionItem.name){
+				item.labelDetails = {
+					description: stringFunctionItem.description
+				},
 				item.documentation = stringFunctionItem.documentation
 				break
 			}
@@ -238,9 +238,62 @@ connection.onCompletionResolve(
 	}
 );
 
+connection.onSignatureHelp(
+	(params): SignatureHelp => {
+		
+		console.log(params)
+		var sigHelp: SignatureHelp = {
+			signatures: [
+				{
+					label: 'siglabel(param1)',
+					documentation: 'sigdoc',
+					parameters: [
+						{
+							label: 'param1',
+							documentation: 'paramdoc'
+						}
+					],
+					activeParameter: 0
+				}
+			]
+		}
+		return sigHelp
+
+	}
+)
+
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection);
 
 // Listen on the connection
 connection.listen();
+
+var completionExample: CompletionItem = {
+  label: 'STR$',
+  labelDetails: {
+    detail: "(<number>)",
+    description: "internal function"
+  },
+  detail: "STR$(<numeric expression>)",
+  documentation: 'The Str$ internal function returns the string form of a numeric value X.',
+  insertTextFormat: InsertTextFormat.Snippet,
+  insertText: 'STR$',
+  kind: CompletionItemKind.Method
+}
+
+function getFunctionCompletions(): CompletionItem[] {
+	let functionCompletions: CompletionItem[] = []
+	br.stringFunctions.forEach(internalFunction => {
+		let completion: CompletionItem = {
+			label: internalFunction.name,
+			labelDetails: {
+				description: 'internal function'
+			}
+		}
+
+		functionCompletions.push(completion)		
+	})
+	return functionCompletions
+}
+

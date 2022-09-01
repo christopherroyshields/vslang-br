@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * ------------------------------------------------------------------------------------------ */
 const node_1 = require("vscode-languageserver/node");
 const vscode_languageserver_textdocument_1 = require("vscode-languageserver-textdocument");
+const br = require("./completions/string-functions");
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = (0, node_1.createConnection)(node_1.ProposedFeatures.all);
@@ -26,9 +27,12 @@ connection.onInitialize((params) => {
     const result = {
         capabilities: {
             textDocumentSync: node_1.TextDocumentSyncKind.Incremental,
-            // Tell the client that this server supports code completion.
             completionProvider: {
                 resolveProvider: true
+            },
+            signatureHelpProvider: {
+                triggerCharacters: ['('],
+                retriggerCharacters: [',']
             }
         }
     };
@@ -145,39 +149,76 @@ connection.onDidChangeWatchedFiles(_change => {
     // Monitored files have change in VSCode
     connection.console.log('We received an file change event');
 });
-const string_functions_1 = require("./completions/string-functions");
 // This handler provides the initial list of the completion items.
 connection.onCompletion((_textDocumentPosition) => {
     // The pass parameter contains the position of the text document in
     // which code complete got requested. For the example we ignore this
     // info and always provide the same completion items.
-    return string_functions_1.stringFunctions;
-    // return [
-    // 	{
-    // 		label: 'STR$',
-    // 		insertText: 'STR$(${1:number})',
-    // 		insertTextFormat: InsertTextFormat.Snippet,
-    // 		kind: CompletionItemKind.Function,
-    // 		data: 1
-    // 	}
-    // ];
+    let internalFunctionCompletions = getFunctionCompletions();
+    return internalFunctionCompletions;
 });
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve((item) => {
-    for (let itemIndex = 0; itemIndex < string_functions_1.stringFunctions.length; itemIndex++) {
-        const stringFunctionItem = string_functions_1.stringFunctions[itemIndex];
-        if (item.label == stringFunctionItem.label) {
-            item.labelDetails = stringFunctionItem.labelDetails;
-            item.documentation = stringFunctionItem.documentation;
+    for (let itemIndex = 0; itemIndex < br.stringFunctions.length; itemIndex++) {
+        const stringFunctionItem = br.stringFunctions[itemIndex];
+        if (item.label == stringFunctionItem.name) {
+            item.labelDetails = {
+                description: stringFunctionItem.description
+            },
+                item.documentation = stringFunctionItem.documentation;
             break;
         }
     }
     return item;
+});
+connection.onSignatureHelp((params) => {
+    console.log(params);
+    var sigHelp = {
+        signatures: [
+            {
+                label: 'siglabel(param1)',
+                documentation: 'sigdoc',
+                parameters: [
+                    {
+                        label: 'param1',
+                        documentation: 'paramdoc'
+                    }
+                ],
+                activeParameter: 0
+            }
+        ]
+    };
+    return sigHelp;
 });
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection);
 // Listen on the connection
 connection.listen();
+var completionExample = {
+    label: 'STR$',
+    labelDetails: {
+        detail: "(<number>)",
+        description: "internal function"
+    },
+    detail: "STR$(<numeric expression>)",
+    documentation: 'The Str$ internal function returns the string form of a numeric value X.',
+    insertTextFormat: node_1.InsertTextFormat.Snippet,
+    insertText: 'STR$',
+    kind: node_1.CompletionItemKind.Method
+};
+function getFunctionCompletions() {
+    let functionCompletions = [];
+    br.stringFunctions.forEach(internalFunction => {
+        let completion = {
+            label: internalFunction.name,
+            labelDetails: {
+                description: 'internal function'
+            }
+        };
+        functionCompletions.push(completion);
+    });
+    return functionCompletions;
+}
 //# sourceMappingURL=server.js.map

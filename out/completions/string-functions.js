@@ -1,20 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stringFunctions = void 0;
-const vscode_languageserver_1 = require("vscode-languageserver");
 exports.stringFunctions = [
     {
-        label: 'STR$',
-        labelDetails: {
-            detail: "(<number>)",
-            description: "internal function"
-        },
-        detail: "STR$(<numeric expression>)",
+        name: 'STR$',
+        description: 'internal function',
         documentation: 'The Str$ internal function returns the string form of a numeric value X.',
-        insertTextFormat: vscode_languageserver_1.InsertTextFormat.Snippet,
-        insertText: 'STR$(${1:number})',
-        kind: vscode_languageserver_1.CompletionItemKind.Method,
-        data: 1
+        params: [{
+                name: 'numeric expression',
+                documentation: 'A number or expression to be converted to a string.'
+            }]
     }
 ];
 // export const stringFunction: BrFunctionCompletionItem[] = [

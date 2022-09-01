@@ -1,19 +1,27 @@
 import { CompletionItem, CompletionItemKind, InsertTextFormat } from "vscode-languageserver"
 
-export const stringFunctions: CompletionItem[] =
+export interface FunctionParameter {
+  name: string,
+  documentation: string
+}
+
+export interface InternalFunction {
+  name: string,
+  description: string,
+  documentation: string,
+  params: FunctionParameter[]
+}
+
+export const stringFunctions: InternalFunction[] =
 [
   {
-    label: 'STR$',
-    labelDetails: {
-      detail: "(<number>)",
-      description: "internal function"
-    },
-    detail: "STR$(<numeric expression>)",
+    name: 'STR$',
+    description: 'internal function',
     documentation: 'The Str$ internal function returns the string form of a numeric value X.',
-    insertTextFormat: InsertTextFormat.Snippet,
-    insertText: 'STR$(${1:number})',
-    kind: CompletionItemKind.Method,
-    data: 1
+    params: [{
+      name: 'numeric expression',
+      documentation: 'A number or expression to be converted to a string.'
+    }]
   }
 ]
 
