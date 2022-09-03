@@ -1,6 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stringFunctions = exports.getFunctionByName = exports.generateFunctionSignature = void 0;
+exports.stringFunctions = exports.getFunctionsByName = exports.getFunctionByName = exports.generateFunctionSignature = exports.UserFunction = void 0;
+class UserFunction {
+    /**
+     *
+     */
+    constructor(name) {
+        this.uri = '';
+        this.name = name;
+    }
+}
+exports.UserFunction = UserFunction;
 function generateFunctionSignature(fn) {
     let sig = '';
     if (fn.params?.length) {
@@ -26,6 +36,17 @@ function getFunctionByName(name) {
     }
 }
 exports.getFunctionByName = getFunctionByName;
+function getFunctionsByName(name) {
+    const fnMatches = [];
+    for (let fnIndex = 0; fnIndex < exports.stringFunctions.length; fnIndex++) {
+        const fn = exports.stringFunctions[fnIndex];
+        if (fn.name.toLowerCase() === name.toLowerCase()) {
+            fnMatches.push(fn);
+        }
+    }
+    return fnMatches.length ? fnMatches : undefined;
+}
+exports.getFunctionsByName = getFunctionsByName;
 exports.stringFunctions = [
     {
         name: "BR_FileName$",

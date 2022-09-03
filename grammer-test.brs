@@ -110,5 +110,6 @@ print fields "2,2,grid 10/80,headers": (Mat Headings$,Mat Widths,Mat Forms$)
 let test$ = TEST$
 
 ! function test
-let str$(WSID$)
-let Sleep()
+let str$(1)
+def fntest(test, test2)=1
+def fntest$(test2)="1"

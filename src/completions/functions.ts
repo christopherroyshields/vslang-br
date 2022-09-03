@@ -12,6 +12,20 @@ export interface InternalFunction {
   params?: FunctionParameter[]
 }
 
+export class UserFunction implements InternalFunction {
+  name: string
+  description?: string | undefined
+  documentation?: string | undefined
+  params?: FunctionParameter[] | undefined
+  uri: string = ''
+  /**
+   *
+   */
+  constructor(name: string) {
+    this.name = name
+  }
+}
+
 export function generateFunctionSignature(fn: InternalFunction): string {
   let sig: string = ''
   if (fn.params?.length) {
@@ -28,13 +42,27 @@ export function generateFunctionSignature(fn: InternalFunction): string {
   return sig
 }
 
-export function getFunctionByName(name: string): InternalFunction |undefined {
+export function getFunctionByName(name: string): InternalFunction | undefined {
   for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
     const fn = stringFunctions[fnIndex];
     if (fn.name.toLowerCase() === name.toLowerCase()) {
       return fn
     }
   }
+}
+
+export function getFunctionsByName(name: string): InternalFunction[] | undefined {
+
+  const fnMatches: InternalFunction[] = []
+
+  for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
+    const fn = stringFunctions[fnIndex];
+    if (fn.name.toLowerCase() === name.toLowerCase()) {
+      fnMatches.push(fn)
+    }
+  }
+
+  return fnMatches.length ? fnMatches : undefined
 }
 
 export const stringFunctions: InternalFunction[] = [

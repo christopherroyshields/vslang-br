@@ -31,6 +31,7 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 import * as br from './completions/functions';
+import { match } from 'assert';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -152,11 +153,14 @@ documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
 });
 
+const userFunctions: br.UserFunction[] = []
+
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
 	// validateTextDocument(change.document);
 });
+
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
@@ -213,33 +217,100 @@ connection.onDidChangeWatchedFiles(_change => {
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-	(_textDocumentPosition: CompletionParams): CompletionItem[] => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
-		
-		let internalFunctionCompletions: CompletionItem[] = getFunctionCompletions()
-		return internalFunctionCompletions
+	(_textDocumentPosition: CompletionParams): Promise<CompletionItem[]> => {
+		let completions = getCompletions(_textDocumentPosition);
+		return completions
 	}
 );
+
+async function getCompletions(params: CompletionParams): Promise<CompletionItem[]> {
+	let completions: CompletionItem[] = []
+	let doc = documents.get(params.textDocument.uri)
+	
+	if (doc){
+		completions = completions.concat(getLocalUserFunctionCompletions(doc));
+		completions = completions.concat(getFunctionCompletions())
+	}
+
+	return Promise.resolve(completions)
+}
+
+function getLocalUserFunctionCompletions(doc: TextDocument): CompletionItem[] {
+	let completionList: CompletionItem[] = []
+	let userFunctions: br.UserFunction[]
+	userFunctions = getUserFunctionsFromDocument(doc)
+	for (let fnIndex = 0; fnIndex < userFunctions.length; fnIndex++) {
+		const fn = userFunctions[fnIndex];
+		completionList.push({
+			label: fn.name,
+			kind: CompletionItemKind.Function,
+			data: fn
+		})		
+	}
+	return completionList
+}
+
+function getUserFunctionsFromDocument(doc: TextDocument): br.UserFunction[] {
+	let docText: string = doc.getText()
+	docText = docText.replace(STRING_LITERALS, "");
+	const FNSEARCH = /def.*?(?:\)|=)/ig
+	const FNPARSE = /def\s*(?<name>fn\w*\$?)\s*(?:\*(?<length>\d+)\s*)?(?:\((?<params>[a-z0-9 *$,&;_]*?)\))?/i
+	let fnFound: RegExpExecArray | null
+	let fnList: br.UserFunction[] = []
+
+	while ((fnFound = FNSEARCH.exec(docText)) !== null) {
+		let fnParts: RegExpExecArray | null = FNPARSE.exec(fnFound[0])
+		if (fnParts && fnParts.groups && fnParts.groups.name){
+			let fn: br.UserFunction = {
+				name: fnParts.groups.name,
+				uri: doc.uri,
+				description: 'User Function',
+				params: []
+			}
+
+			if (fnParts.groups.params){
+				const PARAM_SEARCH = /&?[\w$]+\s*[\w]*\$?\*?\d*/g
+				let paramMatch: RegExpExecArray | null
+				while ((paramMatch = PARAM_SEARCH.exec(fnParts.groups.params)) !== null) {
+					fn.params?.push({
+						name: paramMatch[0]
+					})
+				}
+			}
+
+			fnList.push(fn)
+		}
+	}
+	return fnList
+}
 
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-		for (let itemIndex = 0; itemIndex < br.stringFunctions.length; itemIndex++) {
-			const stringFunctionItem = br.stringFunctions[itemIndex];
-			let sig = br.generateFunctionSignature(stringFunctionItem);
-			if (item.label == stringFunctionItem.name){
-				item.labelDetails = {
-					detail: sig,
-					description: stringFunctionItem.description
-				},
-				item.detail = stringFunctionItem.name + br.generateFunctionSignature(stringFunctionItem)
-				item.documentation = stringFunctionItem.documentation
-				break
+		let sig = br.generateFunctionSignature(item.data)
+		if (item.kind === CompletionItemKind.Function){
+			item.labelDetails = {
+				detail: sig,
+				description: item.data.description
 			}
+			item.detail = item.data.name + br.generateFunctionSignature(item.data)
+			item.documentation = item.data.documentation
 		}
+
+		// for (let itemIndex = 0; itemIndex < br.stringFunctions.length; itemIndex++) {
+		// 	const stringFunctionItem: br.InternalFunction = br.stringFunctions[itemIndex];
+		// 	let sig = br.generateFunctionSignature(stringFunctionItem);
+		// 	if (item.label == stringFunctionItem.name){
+		// 		item.labelDetails = {
+		// 			detail: sig,
+		// 			description: stringFunctionItem.description
+		// 		},
+		// 		item.detail = stringFunctionItem.name + br.generateFunctionSignature(stringFunctionItem)
+		// 		item.documentation = stringFunctionItem.documentation
+		// 		break
+		// 	}
+		// }
 		return item;
 	}
 );
@@ -257,7 +328,7 @@ function stripBalancedFunctions(line: string){
 const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
 const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
 
-function getFunctionDetails(preText: string): SignatureHelp | undefined {
+function getFunctionDetails(preText: string, doc: TextDocument): SignatureHelp | undefined {
 
 	// strip functions with params
 	if (preText){
@@ -267,13 +338,21 @@ function getFunctionDetails(preText: string): SignatureHelp | undefined {
 		let context: RegExpExecArray | null = FUNCTION_CALL_CONTEXT.exec(preText)
 		if (context && context.groups && !context.groups.isDef){
 
-			let internalFunction = br.getFunctionByName(context.groups.name)
-			if (internalFunction){
+			let brFunctions = br.getFunctionsByName(context.groups.name) || getUserFunctionsByName(doc, context.groups.name)
+			const sigHelp: SignatureHelp = {
+				signatures: [],
+				activeSignature: 0
+			}
+
+			for (let brFnIndex = 0; brFnIndex < brFunctions.length; brFnIndex++) {
+
+	
+				let brFunction = brFunctions[brFnIndex];
 
 				let params: ParameterInformation[] = []
-				if (internalFunction && internalFunction.params){
-					for (let paramIndex = 0; paramIndex < internalFunction.params.length; paramIndex++) {
-						let el = internalFunction.params[paramIndex];
+				if (brFunction && brFunction.params){
+					for (let paramIndex = 0; paramIndex < brFunction.params.length; paramIndex++) {
+						let el = brFunction.params[paramIndex];
 						params.push({
 							label: el.name,
 							documentation: el.documentation
@@ -281,38 +360,32 @@ function getFunctionDetails(preText: string): SignatureHelp | undefined {
 					}
 				}
 	
-				const sig: SignatureInformation = {
-					label: internalFunction.name + br.generateFunctionSignature(internalFunction),
+				sigHelp.signatures.push({
+					label: brFunction.name + br.generateFunctionSignature(brFunction),
 					parameters: [...params],
 					activeParameter: context.groups.params?.split(',').length - 1
-				}
-	
-				const sigHelp: SignatureHelp = {
-					signatures: [sig],
-					activeSignature: 0
-				}
+				})
 	
 				return sigHelp;
 			}
+			
 		} else {
 			// not in function call with parameters
 			return
 		}
 	}
+}
 
-	// if (name.substring(0,2).toLowerCase() === "fn"){
-	// 	findFunctionByName(name, editor.getText(), call)
-	// } else {
-	// 	let functions = []
-	// 	functions = internalFunctions
-	// 	for (var i = 0; i < functions.length; i++) {
-	// 		if (functions[i].text.toLowerCase() === name.toLowerCase() && functions[i].params && functions[i].params.length > 0){
-	// 			call.name = functions[i].text
-	// 			call.params = functions[i].params
-	// 			break
-	// 		}
-	// 	}
-	// }
+function getUserFunctionsByName(doc: TextDocument, name: string): br.UserFunction[] {
+	let docUserFunctions = getUserFunctionsFromDocument(doc)
+	let matchingFunctions: br.UserFunction[] = []
+	for (let fnIndex = 0; fnIndex < docUserFunctions.length; fnIndex++) {
+		const userFn = docUserFunctions[fnIndex];
+		if (userFn.name === name){
+			matchingFunctions.push(userFn)
+		}
+	}
+	return matchingFunctions
 }
 
 
@@ -332,7 +405,7 @@ connection.onSignatureHelp(
 			})
 
 			// console.log(doctext);
-			sigHelp = getFunctionDetails(doctext)
+			sigHelp = getFunctionDetails(doctext, doc)
 			return sigHelp
 		}
 
@@ -365,6 +438,7 @@ function getFunctionCompletions(): CompletionItem[] {
 	br.stringFunctions.forEach(internalFunction => {
 		let completion: CompletionItem = {
 			label: internalFunction.name,
+			kind: CompletionItemKind.Function,
 			data: internalFunction
 		}
 
