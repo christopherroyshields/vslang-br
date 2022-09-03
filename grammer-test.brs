@@ -111,3 +111,4 @@ let test$ = TEST$
 
 ! function test
 let str$(WSID$)
+let Sleep()
