@@ -1,4 +1,3 @@
-let
 ! GRAMMER TEST CODE
 
 ! multiline comment
@@ -109,3 +108,6 @@ print fields "2,2,grid 10/80,headers": (Mat Headings$,Mat Widths,Mat Forms$)
 
 ! #AutoNumber#$ 100, 10
 let test$ = TEST$
+
+! function test
+let str$(WSID$)

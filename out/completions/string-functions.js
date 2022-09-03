@@ -1,6 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stringFunctions = void 0;
+exports.getFunctionByName = exports.stringFunctions = exports.generateFunctionSignature = void 0;
+function generateFunctionSignature(fn) {
+    let sig = '(';
+    for (let paramindex = 0; paramindex < fn.params.length; paramindex++) {
+        const element = fn.params[paramindex];
+        sig += element.name;
+        if (paramindex > 0) {
+            sig += ',';
+        }
+    }
+    sig += ')';
+    return sig;
+}
+exports.generateFunctionSignature = generateFunctionSignature;
 exports.stringFunctions = [
     {
         name: 'STR$',
@@ -12,6 +25,15 @@ exports.stringFunctions = [
             }]
     }
 ];
+function getFunctionByName(name) {
+    for (let fnIndex = 0; fnIndex < exports.stringFunctions.length; fnIndex++) {
+        const fn = exports.stringFunctions[fnIndex];
+        if (fn.name === name) {
+            return fn;
+        }
+    }
+}
+exports.getFunctionByName = getFunctionByName;
 // export const stringFunction: BrFunctionCompletionItem[] = [
 //   {
 //     "text": "BR_FileName$",

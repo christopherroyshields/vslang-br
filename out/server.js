@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * ------------------------------------------------------------------------------------------ */
 const node_1 = require("vscode-languageserver/node");
 const vscode_languageserver_textdocument_1 = require("vscode-languageserver-textdocument");
-const br = require("./completions/string-functions");
+const br = require("./completions/functions");
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = (0, node_1.createConnection)(node_1.ProposedFeatures.all);
@@ -162,33 +162,95 @@ connection.onCompletion((_textDocumentPosition) => {
 connection.onCompletionResolve((item) => {
     for (let itemIndex = 0; itemIndex < br.stringFunctions.length; itemIndex++) {
         const stringFunctionItem = br.stringFunctions[itemIndex];
+        let sig = br.generateFunctionSignature(stringFunctionItem);
         if (item.label == stringFunctionItem.name) {
             item.labelDetails = {
+                detail: sig,
                 description: stringFunctionItem.description
             },
-                item.documentation = stringFunctionItem.documentation;
+                item.detail = stringFunctionItem.name + br.generateFunctionSignature(stringFunctionItem);
+            item.documentation = stringFunctionItem.documentation;
             break;
         }
     }
     return item;
 });
-connection.onSignatureHelp((params) => {
-    console.log(params);
-    var sigHelp = {
-        signatures: [
-            {
-                label: 'siglabel(param1)',
-                documentation: 'sigdoc',
-                parameters: [
-                    {
-                        label: 'param1',
-                        documentation: 'paramdoc'
+const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g;
+function stripBalancedFunctions(line) {
+    if (CONTAINS_BALANCED_FN.test(line)) {
+        line = line.replace(CONTAINS_BALANCED_FN, "");
+        line = stripBalancedFunctions(line);
+    }
+    return line;
+}
+const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
+const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i;
+function getFunctionDetails(preText) {
+    // strip functions with params
+    if (preText) {
+        // remove literals first
+        preText = preText.replace(STRING_LITERALS, "");
+        preText = stripBalancedFunctions(preText);
+        let context = FUNCTION_CALL_CONTEXT.exec(preText);
+        if (context && context.groups && !context.groups.isDef) {
+            let internalFunction = br.getFunctionByName(context.groups.name);
+            if (internalFunction) {
+                let params = [];
+                if (internalFunction && internalFunction.params) {
+                    for (let paramIndex = 0; paramIndex < internalFunction.params.length; paramIndex++) {
+                        let el = internalFunction.params[paramIndex];
+                        params.push({
+                            label: el.name,
+                            documentation: el.documentation
+                        });
                     }
-                ],
-                activeParameter: 0
+                }
+                const sig = {
+                    label: internalFunction.name + br.generateFunctionSignature(internalFunction),
+                    parameters: [...params],
+                    activeParameter: context.groups.params?.split(',').length - 1
+                };
+                const sigHelp = {
+                    signatures: [sig],
+                    activeSignature: 0
+                };
+                return sigHelp;
             }
-        ]
-    };
+        }
+        else {
+            // not in function call with parameters
+            return;
+        }
+    }
+    // if (name.substring(0,2).toLowerCase() === "fn"){
+    // 	findFunctionByName(name, editor.getText(), call)
+    // } else {
+    // 	let functions = []
+    // 	functions = internalFunctions
+    // 	for (var i = 0; i < functions.length; i++) {
+    // 		if (functions[i].text.toLowerCase() === name.toLowerCase() && functions[i].params && functions[i].params.length > 0){
+    // 			call.name = functions[i].text
+    // 			call.params = functions[i].params
+    // 			break
+    // 		}
+    // 	}
+    // }
+}
+connection.onSignatureHelp((params) => {
+    let doc = documents.get(params.textDocument.uri);
+    let sigHelp;
+    if (doc) {
+        let doctext = doc.getText({
+            start: {
+                line: 0,
+                character: 0
+            },
+            end: params.position
+        });
+        // console.log(doctext);
+        sigHelp = getFunctionDetails(doctext);
+        return sigHelp;
+    }
     return sigHelp;
 });
 // Make the text document manager listen on the connection
@@ -213,9 +275,7 @@ function getFunctionCompletions() {
     br.stringFunctions.forEach(internalFunction => {
         let completion = {
             label: internalFunction.name,
-            labelDetails: {
-                description: 'internal function'
-            }
+            data: internalFunction
         };
         functionCompletions.push(completion);
     });

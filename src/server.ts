@@ -20,14 +20,17 @@ import {
 	InsertTextMode,
 	CompletionItemLabelDetails,
 	SignatureHelp,
-	CompletionParams
+	CompletionParams,
+	SignatureHelpParams,
+	SignatureInformation,
+	ParameterInformation
 } from 'vscode-languageserver/node';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 
-import * as br from './completions/string-functions';
+import * as br from './completions/functions';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -226,10 +229,13 @@ connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
 		for (let itemIndex = 0; itemIndex < br.stringFunctions.length; itemIndex++) {
 			const stringFunctionItem = br.stringFunctions[itemIndex];
+			let sig = br.generateFunctionSignature(stringFunctionItem);
 			if (item.label == stringFunctionItem.name){
 				item.labelDetails = {
+					detail: sig,
 					description: stringFunctionItem.description
 				},
+				item.detail = stringFunctionItem.name + br.generateFunctionSignature(stringFunctionItem)
 				item.documentation = stringFunctionItem.documentation
 				break
 			}
@@ -238,27 +244,99 @@ connection.onCompletionResolve(
 	}
 );
 
-connection.onSignatureHelp(
-	(params): SignatureHelp => {
-		
-		console.log(params)
-		var sigHelp: SignatureHelp = {
-			signatures: [
-				{
-					label: 'siglabel(param1)',
-					documentation: 'sigdoc',
-					parameters: [
-						{
-							label: 'param1',
-							documentation: 'paramdoc'
-						}
-					],
-					activeParameter: 0
-				}
-			]
-		}
-		return sigHelp
+const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g
 
+function stripBalancedFunctions(line: string){
+	if (CONTAINS_BALANCED_FN.test(line)){
+		line = line.replace(CONTAINS_BALANCED_FN, "")
+		line = stripBalancedFunctions(line)
+	}
+	return line
+}
+
+const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
+const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
+
+function getFunctionDetails(preText: string): SignatureHelp | undefined {
+
+	// strip functions with params
+	if (preText){
+		// remove literals first
+		preText = preText.replace(STRING_LITERALS, "")
+		preText = stripBalancedFunctions(preText)
+		let context: RegExpExecArray | null = FUNCTION_CALL_CONTEXT.exec(preText)
+		if (context && context.groups && !context.groups.isDef){
+
+			let internalFunction = br.getFunctionByName(context.groups.name)
+			if (internalFunction){
+
+				let params: ParameterInformation[] = []
+				if (internalFunction && internalFunction.params){
+					for (let paramIndex = 0; paramIndex < internalFunction.params.length; paramIndex++) {
+						let el = internalFunction.params[paramIndex];
+						params.push({
+							label: el.name,
+							documentation: el.documentation
+						})
+					}
+				}
+	
+				const sig: SignatureInformation = {
+					label: internalFunction.name + br.generateFunctionSignature(internalFunction),
+					parameters: [...params],
+					activeParameter: context.groups.params?.split(',').length - 1
+				}
+	
+				const sigHelp: SignatureHelp = {
+					signatures: [sig],
+					activeSignature: 0
+				}
+	
+				return sigHelp;
+			}
+		} else {
+			// not in function call with parameters
+			return
+		}
+	}
+
+	// if (name.substring(0,2).toLowerCase() === "fn"){
+	// 	findFunctionByName(name, editor.getText(), call)
+	// } else {
+	// 	let functions = []
+	// 	functions = internalFunctions
+	// 	for (var i = 0; i < functions.length; i++) {
+	// 		if (functions[i].text.toLowerCase() === name.toLowerCase() && functions[i].params && functions[i].params.length > 0){
+	// 			call.name = functions[i].text
+	// 			call.params = functions[i].params
+	// 			break
+	// 		}
+	// 	}
+	// }
+}
+
+
+connection.onSignatureHelp(
+	(params: SignatureHelpParams): SignatureHelp | undefined => {
+
+		let doc: TextDocument | undefined = documents.get(params.textDocument.uri);
+		let sigHelp: SignatureHelp | undefined
+
+		if (doc){
+			let doctext = doc.getText({ 
+				start: {
+					line: 0,
+					character: 0
+				},
+				end: params.position
+			})
+
+			// console.log(doctext);
+			sigHelp = getFunctionDetails(doctext)
+			return sigHelp
+		}
+
+		return sigHelp
 	}
 )
 
@@ -287,13 +365,10 @@ function getFunctionCompletions(): CompletionItem[] {
 	br.stringFunctions.forEach(internalFunction => {
 		let completion: CompletionItem = {
 			label: internalFunction.name,
-			labelDetails: {
-				description: 'internal function'
-			}
+			data: internalFunction
 		}
 
 		functionCompletions.push(completion)		
 	})
 	return functionCompletions
 }
-
