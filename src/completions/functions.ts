@@ -12,6 +12,9 @@ export interface InternalFunction {
   params?: FunctionParameter[]
 }
 
+/**
+ * User Defined BR Function found in source
+ */
 export class UserFunction implements InternalFunction {
   name: string
   description?: string | undefined
@@ -19,13 +22,17 @@ export class UserFunction implements InternalFunction {
   params?: FunctionParameter[] | undefined
   uri: string = ''
   /**
-   *
+   * @param name - function name
    */
   constructor(name: string) {
     this.name = name
   }
 }
 
+/**
+ * Function to generate example function call for display purposes
+ * @param fn - Function to generate full function call
+ */
 export function generateFunctionSignature(fn: InternalFunction): string {
   let sig: string = ''
   if (fn.params?.length) {

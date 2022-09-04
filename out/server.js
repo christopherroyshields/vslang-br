@@ -178,35 +178,89 @@ function getLocalUserFunctionCompletions(doc) {
     }
     return completionList;
 }
+const FNSEARCH = /def.*?(?:\)|=)/ig;
+const FNPARSE = /def\s*(?<name>fn\w*\$?)\s*(?:\*(?<length>\d+)\s*)?(?:\((?<params>[a-z0-9 *$,&;_]*?)\))?/i;
+const PARAM_SEARCH = /&?[\w$]+\s*[\w]*\$?\*?\d*/g;
 function getUserFunctionsFromDocument(doc) {
     let docText = doc.getText();
     docText = docText.replace(STRING_LITERALS, "");
-    const FNSEARCH = /def.*?(?:\)|=)/ig;
-    const FNPARSE = /def\s*(?<name>fn\w*\$?)\s*(?:\*(?<length>\d+)\s*)?(?:\((?<params>[a-z0-9 *$,&;_]*?)\))?/i;
     let fnFound;
     let fnList = [];
     while ((fnFound = FNSEARCH.exec(docText)) !== null) {
         let fnParts = FNPARSE.exec(fnFound[0]);
         if (fnParts && fnParts.groups && fnParts.groups.name) {
-            let fn = {
+            let comDocs = getCommentDoc(fnParts.groups.name, docText);
+            const fn = {
                 name: fnParts.groups.name,
                 uri: doc.uri,
+                documentation: comDocs?.text,
                 description: 'User Function',
                 params: []
             };
             if (fnParts.groups.params) {
-                const PARAM_SEARCH = /&?[\w$]+\s*[\w]*\$?\*?\d*/g;
                 let paramMatch;
                 while ((paramMatch = PARAM_SEARCH.exec(fnParts.groups.params)) !== null) {
-                    fn.params?.push({
+                    let fnParam = {
                         name: paramMatch[0]
-                    });
+                    };
+                    if (comDocs && comDocs.params) {
+                        for (let paramDocIndex = 0; paramDocIndex < comDocs.params.length; paramDocIndex++) {
+                            const paramDoc = comDocs.params[paramDocIndex];
+                            if (paramDoc.name === fnParam.name.replace(/\*\d+/, "")) {
+                                fnParam.documentation = paramDoc.desc;
+                            }
+                        }
+                    }
+                    fn.params?.push(fnParam);
                 }
             }
             fnList.push(fn);
         }
     }
     return fnList;
+}
+class DocComment extends Object {
+    /**
+     * @param commentText Full text of comment
+     */
+    constructor(commentText) {
+        super();
+        this.params = [];
+        this.parse(commentText);
+        this.text = this.cleanComments(commentText);
+    }
+    cleanComments(comments) {
+        comments = comments.replace(DocComment.paramSearch, "");
+        return comments.replace(/^\s*\*/gm, "").trim();
+    }
+    /**
+     * Parse tags from text
+     * @param commentText full text
+     */
+    parse(commentText) {
+        let tagMatch;
+        while ((tagMatch = DocComment.paramSearch.exec(commentText)) !== null) {
+            if (tagMatch.groups) {
+                this.params.push({
+                    tag: tagMatch.groups.tag,
+                    name: tagMatch.groups.name,
+                    desc: tagMatch.groups.desc
+                });
+            }
+        }
+    }
+}
+DocComment.paramSearch = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi;
+const BRDOC_COMMENTS = /\/\*(?<comments>([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*)\*+\/\r?\n(\n|\s)*def\s+(library\s+)?(?<name>\w+\$?)/gi;
+function getCommentDoc(fnName, docText) {
+    let blockMatch;
+    while ((blockMatch = BRDOC_COMMENTS.exec(docText)) !== null) {
+        if (blockMatch.groups?.name === fnName) {
+            let docComment = new DocComment(blockMatch.groups.comments);
+            return docComment;
+        }
+    }
+    return;
 }
 // This handler resolves additional information for the item selected in
 // the completion list.
@@ -220,19 +274,6 @@ connection.onCompletionResolve((item) => {
         item.detail = item.data.name + br.generateFunctionSignature(item.data);
         item.documentation = item.data.documentation;
     }
-    // for (let itemIndex = 0; itemIndex < br.stringFunctions.length; itemIndex++) {
-    // 	const stringFunctionItem: br.InternalFunction = br.stringFunctions[itemIndex];
-    // 	let sig = br.generateFunctionSignature(stringFunctionItem);
-    // 	if (item.label == stringFunctionItem.name){
-    // 		item.labelDetails = {
-    // 			detail: sig,
-    // 			description: stringFunctionItem.description
-    // 		},
-    // 		item.detail = stringFunctionItem.name + br.generateFunctionSignature(stringFunctionItem)
-    // 		item.documentation = stringFunctionItem.documentation
-    // 		break
-    // 	}
-    // }
     return item;
 });
 const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g;

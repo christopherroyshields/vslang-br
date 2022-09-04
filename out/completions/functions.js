@@ -1,9 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stringFunctions = exports.getFunctionsByName = exports.getFunctionByName = exports.generateFunctionSignature = exports.UserFunction = void 0;
+/**
+ * User Defined BR Function found in source
+ */
 class UserFunction {
     /**
-     *
+     * @param name - function name
      */
     constructor(name) {
         this.uri = '';
@@ -11,6 +14,10 @@ class UserFunction {
     }
 }
 exports.UserFunction = UserFunction;
+/**
+ * Function to generate example function call for display purposes
+ * @param fn - Function to generate full function call
+ */
 function generateFunctionSignature(fn) {
     let sig = '';
     if (fn.params?.length) {
