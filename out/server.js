@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const node_1 = require("vscode-languageserver/node");
 const vscode_languageserver_textdocument_1 = require("vscode-languageserver-textdocument");
 const br = require("./completions/functions");
+const document_1 = require("./util/document");
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = (0, node_1.createConnection)(node_1.ProposedFeatures.all);
@@ -27,6 +28,7 @@ connection.onInitialize((params) => {
     const result = {
         capabilities: {
             textDocumentSync: node_1.TextDocumentSyncKind.Incremental,
+            hoverProvider: true,
             completionProvider: {
                 resolveProvider: true
             },
@@ -353,23 +355,28 @@ connection.onSignatureHelp((params) => {
     }
     return sigHelp;
 });
-// Make the text document manager listen on the connection
-// for open, change and close text document events
-documents.listen(connection);
-// Listen on the connection
-connection.listen();
-var completionExample = {
-    label: 'STR$',
-    labelDetails: {
-        detail: "(<number>)",
-        description: "internal function"
-    },
-    detail: "STR$(<numeric expression>)",
-    documentation: 'The Str$ internal function returns the string form of a numeric value X.',
-    insertTextFormat: node_1.InsertTextFormat.Snippet,
-    insertText: 'STR$',
-    kind: node_1.CompletionItemKind.Method
-};
+connection.onHover((params) => {
+    let doc = documents.get(params.textDocument.uri);
+    let hover;
+    if (doc) {
+        let doctext = doc.getText();
+        if (isComment(params.position, doctext, doc)) {
+            return;
+        }
+        else {
+            var wordRange = (0, document_1.getWordRangeAtPosition)(doctext.split("\n"), params.position);
+            if (wordRange) {
+                let fn = br.getFunctionByName(doc.getText(wordRange));
+                if (fn) {
+                    let hover = createHoverFromFunction(fn);
+                    hover.range = wordRange;
+                    return hover;
+                }
+            }
+        }
+    }
+    return hover;
+});
 function getFunctionCompletions() {
     let functionCompletions = [];
     br.stringFunctions.forEach(internalFunction => {
@@ -381,5 +388,49 @@ function getFunctionCompletions() {
         functionCompletions.push(completion);
     });
     return functionCompletions;
+}
+// Make the text document manager listen on the connection
+// for open, change and close text document events
+documents.listen(connection);
+// Listen on the connection
+connection.listen();
+function isComment(cursorPosition, doctext, doc) {
+    let commentMatch;
+    const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
+    while ((commentMatch = STRING_OR_COMMENT.exec(doctext)) !== null) {
+        let commentRange = {
+            start: doc.positionAt(commentMatch.index),
+            end: doc.positionAt(commentMatch.index + commentMatch.length)
+        };
+        let startOffset = commentMatch.index;
+        let endOffset = commentMatch.index + commentMatch[0].length;
+        if (doc.offsetAt(cursorPosition) < startOffset) {
+            break;
+        }
+        if (doc.offsetAt(cursorPosition) >= startOffset) {
+            if (doc.offsetAt(cursorPosition) <= endOffset) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+function createHoverFromFunction(fn) {
+    let markDownString = '```br\n' + fn.name + br.generateFunctionSignature(fn) + '\n```\n---';
+    if (markDownString) {
+        markDownString += '\n' + fn.documentation;
+    }
+    fn.params?.forEach((param) => {
+        if (param.documentation) {
+            markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`;
+        }
+    });
+    let markup = {
+        kind: node_1.MarkupKind.Markdown,
+        value: markDownString
+    };
+    return {
+        contents: markup
+    };
 }
 //# sourceMappingURL=server.js.map

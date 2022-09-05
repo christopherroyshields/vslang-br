@@ -116,24 +116,24 @@ def fntest$(test2)="1"
 
 /**
  * function documentation example
- * @param test$ test params doc
- * @param test1 second params doc
+ * @param foo$ first params doc
+ * @param bar second params doc
  */
-def fndoctest*100(test$*100, test1, test2)
+def fndoctest*100(foo$*100, bar)
 
 fnend
 
 /**
- * more test docs
- * @param zzz1 param documentation
+ * The quick brown function
+ * @param zzz1 documentation
  */
 def fndoctests*100(xxx$, zzz1, test2)
 fnend
 
-fndoctests(a$)
+fndoctest(Cnt,)
 let fndoctest
 let Fnopen
-let fnPreformInput
+let fnPre
 
 dim LinkageEstablished
 def fnEstablishLinkage

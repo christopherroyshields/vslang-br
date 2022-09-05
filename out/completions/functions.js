@@ -16,7 +16,7 @@ class UserFunction {
 exports.UserFunction = UserFunction;
 /**
  * Function to generate example function call for display purposes
- * @param fn - Function to generate full function call
+ * @param fn Function to generate full function call
  */
 function generateFunctionSignature(fn) {
     let sig = '';
@@ -310,7 +310,8 @@ exports.stringFunctions = [
         documentation: "Converts the given number to string.",
         params: [
             {
-                name: "<number>"
+                name: "<number>",
+                documentation: 'The number to convert to string representation.'
             }
         ]
     }, {

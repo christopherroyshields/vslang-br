@@ -31,7 +31,7 @@ export class UserFunction implements InternalFunction {
 
 /**
  * Function to generate example function call for display purposes
- * @param fn - Function to generate full function call
+ * @param fn Function to generate full function call
  */
 export function generateFunctionSignature(fn: InternalFunction): string {
   let sig: string = ''
@@ -329,7 +329,8 @@ export const stringFunctions: InternalFunction[] = [
     documentation: "Converts the given number to string.",
     params: [
       {
-        name: "<number>"
+        name: "<number>",
+        documentation: 'The number to convert to string representation.'
       }
     ]
   }, {
