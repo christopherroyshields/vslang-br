@@ -22,5 +22,9 @@
         ["\"", "\""],
         ["'", "'"],
         ["`", "`"]
-    ]
+    ],
+    "indentationRules": {
+        "increaseIndentPattern": "(do|def\\s+fn\\w+\\$?\\*?\\d*\\([a-z0-9 ,*&]*?\\)|then)\\s*$",
+        "decreaseIndentPattern": "^(loop|end if|fnend)$"
+    }
 }
