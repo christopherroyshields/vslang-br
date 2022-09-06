@@ -78,7 +78,7 @@ export const stringFunctions: InternalFunction[] = [
     documentation: "Returns the BR Filename version of the specified OS filename (reversing out your Drive statements).",
     params: [
       {
-        name: "<os_filename>$"
+        name: "<os_filename$>"
       }
     ]
   },
