@@ -8,10 +8,13 @@ This extension provides language support for the Business Rules! programming lan
 - prev/next occurence
 - snippets
 - function completions
+- function hover information
 - JSDoc style function documentation
 
 TODO:
-- autocomplete
+- symbol highlight
+- debugging
+- statement and variable completions
 
 ## Extension Settings
 
