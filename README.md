@@ -6,9 +6,11 @@ This extension provides language support for the Business Rules! programming lan
 
 - Syntax Coloring
 - prev/next occurence
+- snippets
+- function completions
+- JSDoc style function documentation
 
 TODO:
-- snippets
 - autocomplete
 
 ## Extension Settings
