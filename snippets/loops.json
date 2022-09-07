@@ -1,36 +1,39 @@
 {
-  ".source.br": {
-    "For ... Next": {
-      "prefix": "For ... Next",
-      "rightLabelHTML": "",
-      "body": "for ${2:i}=1 to udim(${1:array})\n  $3\nnext ${2:i}",
-      "description": "For Index = Start to Maximum ; step Increment\n  ...\nNext Index\n\n  Index - the counter variable\n  Start - the start for the count\n  Maximum - the stop for the count\n  Increment - the step to increment by",
-      "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=For",
-      "leftLabel": "Integer"
-    },
-    "Do ... Loop": {
-      "prefix": "Do ... Loop",
-      "rightLabelHTML": "",
-      "body": "do\n  $1\nloop",
-      "description": "Do [While | Until ] Condition\n  ...\nloop [While | Until] Condition\n\nExecutes the code over and over until one of the conditions at either end of the loop pushes you out.",
-      "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Do",
-      "leftLabel": "Integer"
-    },
-    "Do While ... Loop": {
-      "prefix": "Do While ... Loop",
-      "rightLabelHTML": "",
-      "body": "do while ${1:expression}\n  $2\nloop",
-      "description": "Do [While | Until ] Condition\n  ...\nloop [While | Until] Condition\n\nExecutes the code over and over until one of the conditions at either end of the loop pushes you out.",
-      "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Do",
-      "leftLabel": "Integer"
-    },
-    "Do Until ... Loop": {
-      "prefix": "Do Until ... Loop",
-      "rightLabelHTML": "",
-      "body": "do until ${1:expression}\n  $2\nloop",
-      "description": "Do [While | Until ] Condition\n  ...\nloop [While | Until] Condition\n\nExecutes the code over and over until one of the conditions at either end of the loop pushes you out.",
-      "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Do",
-      "leftLabel": "Integer"
-    }
+  "For ... Next": {
+    "prefix": "for",
+    "body": [
+      "for ${2:i}=1 to udim(${1:array})",
+      "\t$0",
+      "next ${2:i}"
+    ],
+    "description": "For/Next Statement"
+  },
+  "Do ... Loop": {
+    "prefix": "do",
+    "body": [
+      "do",
+      "\t$0",
+      "\texit do",
+      "loop"
+    ],
+    "description": "Do Statement"
+  },
+  "Do While ... Loop": {
+    "prefix": "do while",
+    "body": [
+      "do while ${1:expression}",
+      "\t$0",
+      "loop"
+    ],
+    "description": "Do While Statement"
+  },
+  "Do Until ... Loop": {
+    "prefix": "do until",
+    "body": [
+      "do until ${1:expression}",
+      "\t$0",
+      "loop"
+    ],
+    "description": "Do Until Statement"
   }
 }

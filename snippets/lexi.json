@@ -1,28 +1,30 @@
 {
-  ".source.br": {
-    "#AutoNumber# NewLine, NewLineCount": {
-      "prefix": "AutoNumber",
-      "rightLabelHTML": "",
-      "body": "! #AutoNumber#$ ${1:NewLine}, ${2:NewLineCount} $0",
-      "description": "Directs Lexi to set the current line and line count to the ones expressed here.\n\n#AutoNumber# Newline, NewLineCount\n\n  NewLine - the line number to start counting with\n  NewLineCount - the increment to use for the rest of the line numbers\n\nUse this reserve certain line numbers for various sections of your code, if desired.",
-      "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Lexi#AutoNumber",
-      "leftLabel": "Lexi"
-    },
-    "#Define# [[Constant]] = \"Value\"": {
-      "prefix": "Define",
-      "rightLabelHTML": "",
-      "body": "! #Define# [[${1:Constant}]] = \"${2:Value}\"$0",
-      "description": "Directs Lexi to replace any occurrance of [[Constant]] with Value.\n\n#Define# [[Constant]] = \"A Bunch of Code\"\n\nConstant - a Reserved word that you will use to substitute in the specified code.\nCode - Program code, for example, a list of arrays that make up some objects.\n\nAnywhere after the Constant is defined, you can use it as a shortcut in the rest of your program for the specified code.",
-      "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Lexi#DEFINE",
-      "leftLabel": "Lexi"
-    },
-    "#Select# Variable$ #Case# \"Case\"": {
-      "prefix": "Select Case",
-      "rightLabelHTML": "",
-      "body": "#Select# ${1:Variable}$ #Case# \"${2:Case}\"\n   $0\n#Case# \"${3:Case}\"\n\n#Case Else#\n\n#End Select#",
-      "description": "Select Case Statement. (Lexi translates it to ElseIfs for Compatibility with BR.)\n\n#Select# Variable #Case# Case1\n  Code Block 1\n#Case# Case2\n  Code Block 2\n#Case Else#\n  Code Block Other\n#End Select#\n\nThis translates into a series of If statements where Variable is tested against the various Cases and the appropriate code block is executed.",
-      "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Lexi#SELECT_CASE",
-      "leftLabel": "Lexi"
-    }
+  "! #AutoNumber# NewLine, NewLineCount": {
+    "prefix": "autonumber",
+    "body": "! #AutoNumber#$ ${1:NewLine}, ${2:NewLineCount} $0",
+    "description": [
+      "Directs Lexi to set the current line and line count to the ones expressed here."
+    ]
+  },
+  "! #Define# [[Constant]] = \"Value\"": {
+    "prefix": "define",
+    "body": "! #Define# [[${1:Constant}]] = \"${2:Value}\"",
+    "description": [ "Directs Lexi to replace any occurrance of [[Constant]] with Value.", null, "#Define# [[Constant]] = \"A Bunch of Code\"\n\nConstant - a Reserved word that you will use to substitute in the specified code.\nCode - Program code, for example, a list of arrays that make up some objects.\n\nAnywhere after the Constant is defined, you can use it as a shortcut in the rest of your program for the specified code."]
+  },
+  "! #Select# Variable$ #Case# \"Case\"": {
+    "prefix": "Select Case",
+    "body": [
+      "#Select# ${1:Variable}$ #Case# \"${2:Case}\"",
+      "\t$0",
+      "#Case# \"${3:Case}\"",
+      "",
+      "#Case Else#",
+      "",
+      "#End Select#"
+    ],
+    "description": [
+      "Select Case Statement. (Lexi translates it to ElseIfs for Compatibility with BR.)",
+      "This translates into a series of If statements where Variable is tested against the various Cases and the appropriate code block is executed."
+    ]
   }
 }
