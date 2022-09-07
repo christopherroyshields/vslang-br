@@ -30,7 +30,11 @@
 			},{
 				"name": "comment.block",
 				"begin": "/\\*",
-				"end": "\\*/"
+				"end": "\\*/",
+				"patterns": [{
+					"match": "\\@param",
+					"name": "comment.block.documentation"
+				}]
 			},{
 				"contentName": "comment.line.br",
 				"begin": "^\\s*\\d{0,5}\\s*(\\brem\\b)",
