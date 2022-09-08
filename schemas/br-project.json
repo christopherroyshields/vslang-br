@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "https://example.com/product.schema.json",
+  "title": "Product",
+  "description": "Configuration for a BR project in VS Code",
+  "type": "object",
+  "properties": {
+    "layoutFolder": {
+      "description": "The folder where Fileio layouts are stored.",
+      "type": "string"
+    },
+    "globalIncludes": {
+      "description": "List of files to look for additional completions.",
+      "type": "array",
+      "items": {
+        "description": "Library Files",
+        "type": "string"
+      }
+    }
+  }
+}
