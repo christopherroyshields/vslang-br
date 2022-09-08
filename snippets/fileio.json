@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/wraith13/vscode-schemas/master/en/latest/schemas/snippets.json",
   "fnReadLayoutArrays(LayoutName$*255,&Prefix$;mat SSubs$,mat NSubs$)": {
     "prefix": "fnReadLayoutArrays",
     "body": [
@@ -14,7 +15,7 @@
       "dim ${1:StringSpec}_S_Spec$(1), ${1:NumericSpec}_N_Spec$(1)",
       "dim ${1:StringDescription}_S_Description$(1), ${1:NumericDescription}_N_Description$(1)",
       "dim ${1:StringPos}_S_Pos(1), mat ${1:NumericPos}_N_Pos(1)",
-      null,
+      "",
       "fnReadLayoutArrays(\"${1:layout}\",${1:&prefix}_Prefix$,mat ${1:StringSpec}_S_Spec$, mat ${1:NumericSpec}_N_Spec$,mat ${1:StringDescription}_S_Description$, mat ${1:NumericDescription}_N_Description$,mat ${1:StringPos}_S_Pos(1), mat ${1:NumericPos}_N_Pos"
     ],
     "description": "Reads the file layout and returns the Record Detail information in a bunch of arrays. Returns the field count."
@@ -23,15 +24,13 @@
     "prefix": "fnMakeSubProc",
     "body": [
       "dim Subscripts$(1)*1023",
-      null,
+      "",
       "fnMakeSubProc(\"${1:layout}\",mat Subscripts$,mat ${1:layout}$,mat ${1:layout})",
       "for ${2:Index}=1 to udim(mat Subscripts$)",
       "\texecute Subscripts$(${2:Index})",
       "next ${2:Index}"
     ],
-    "description": "Sets the subscripts for a data file.",
-    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnMakeSubProc",
-    "leftLabel": "Code Snippet"
+    "description": "Sets the subscripts for a data file."
   },
   "fnReadLayouts(mat LayoutList$) with Dims": {
     "prefix": "fnReadLayouts",
@@ -46,9 +45,7 @@
     "body": [
       "open #(${1:filehandle}:=fnGetFileNumber): $0"
     ],
-    "description": "Snippet to open a non-FileIO file using fnGetFileNumber to find a free file number.",
-    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=Open_(disambiguation)",
-    "leftLabel": "Code Snippet"
+    "description": "Snippet to open a non-FileIO file using fnGetFileNumber to find a free file number."
   },
   "fnOpen(LayoutName$, Mat F$, Mat F, Mat Form$; Input, KeyNum) with Dims": {
     "prefix": "fnOpenDims",
@@ -56,15 +53,13 @@
       "dim ${1:layout}, ${1:layout}$(1)*${2:1024}, ${1:layout}(1)",
       "let ${1:layout}=fnOpen(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout},mat form$)"
     ],
-    "description": "Opens file using Fileio, returning the file handle, and Dimming the necessary Variables.",
-    "descriptionMoreURL": "http://brwiki2.brulescorp.com/index.php?title=FileIO_Library#fnOpen",
-    "leftLabel": "Code Snippet"
+    "description": "Opens file using Fileio, returning the file handle, and Dimming the necessary Variables."
   },
   "fnOpen() ... Read Loop": {
     "prefix": "fnOpenReadLoop",
     "body": [
       "dim ${1:layout}, ${1:layout}$(1)*${2:1024},${1:layout}(1)",
-      null,
+      "",
       "let ${1:layout}=fnopen(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout},mat form$,1)",
       "restore #${1:layout}: error IGNORE",
       "do until File(${1:layout})",
@@ -81,7 +76,7 @@
     "prefix": "fnOpenReadLoopKey",
     "body": [
       "dim ${1:layout}, ${1:layout}$(1)*${2:1024},${1:layout}(1)",
-      null,
+      "",
       "let ${1:layout}=fnopen(\"${1:layout}\",mat ${1:layout}$,mat ${1:layout},mat form$)",
       "restore #${1:layout}>=${1:layout}key$: error IGNORE",
       "do until File(${1:layout})",
@@ -109,7 +104,7 @@
     "prefix": "openfn",
     "body": [
       "dim LinkageEstablished",
-      null,
+      "",
       "def fnEstablishLinkage",
       "\tif ~LinkageEstablished then",
       "\t\tlibrary \"fileio\" : fnOpenFile,Fnclosefile,Fngetfilenumber,Fnkey$,FnBuildKey$,Fnreadlayoutarrays,Fndoeslayoutexist,Fnreadallkeys,fnReadRelativeDescription$,fnReadRelUnopenedDescription$,fnReadRelUnopenedNumber,fnUpdateFile,fnLog,fnLogArray,fnErrLog,fnReadLayouts,Fnmakeuniquekey$,FnDisplayLength,FnLength,FnReadDescription$,FnReadUnopenedDescription$,fnReadRecordWhere$,fnUniqueKey,fnReadNumber,fnReadUnopenedNumber,fnReadRelativeNumber,fnNotInFile,fnDataCrawler,fnDataEdit",
@@ -126,24 +121,23 @@
       "\tlet Fnopen=Fnopenfile(Filename$, Mat F$, Mat F, Mat Form$, Inputonly, Keynum, Dont_Sort_Subs, Path$, Mat Descr$, Mat Field_Widths, Mat _FileIOSubs$, Supress_Prompt,Ignore_Errors,Program$)",
       "\tif Srch(_Loadedsubs$,Uprc$(Filename$))<=0 then : mat _Loadedsubs$(Udim(_Loadedsubs$)+1) : let _Loadedsubs$(Udim(_Loadedsubs$))=Uprc$(Filename$) : for Index=1 to Udim(Mat _Fileiosubs$) : execute (_Fileiosubs$(Index)) : next Index",
       "fnend",
-      null,
+      "",
       "Ignore: Continue"
     ],
     "description": "The standard fnOpenFile function that needs to be included in all your programs when using FileIO."
   },
   "fnOpen() ... Write": {
-    "displayText": "fnOpen() ... Write",
     "prefix": "fnOpenWrite",
     "body": [
       "dim Form$(1)*255",
       "dim ${1:layout}, ${1:layout}$(1)*256,${1:layout}(1)",
-      null,
+      "",
       "let ${1:layout}=Fnopen(\"${1:layout}\",Mat ${1:layout}$,Mat ${1:layout},Mat Form$)",
-      null,
+      "",
       "let ${1:layout}$(${2:subscript})=${3:}",
-      null,
+      "",
       "write #${1:layout}, using Form$(${1:layout}) : Mat ${1:layout}$,Mat ${1:layout}",
-      null,
+      "",
       "let fnCloseFile(${1:layout},\"${1:layout}\")"
     ],
     "description": "Opens a file and updates a record, then closes it."

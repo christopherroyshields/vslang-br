@@ -131,6 +131,10 @@
       {
         "language": "br",
         "path": "snippets/loops.json"
+      },
+      {
+        "language": "br",
+        "path": "snippets/statements.json"
       }
     ],
     "languages": [
