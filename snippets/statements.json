@@ -1,0 +1,121 @@
+{
+  "$schema": "https://raw.githubusercontent.com/wraith13/vscode-schemas/master/en/latest/schemas/snippets.json",
+  "Def Statement": {
+    "prefix": "def",
+    "description": "(snippet) Def Statement",
+    "body": [
+      "def fn${1:name}(${2:params})",
+      "\t$0",
+      "fnend"
+    ]
+  },
+  "Def Libary Statement": {
+    "prefix": "def library",
+    "description": "Def Library Fn ... fnend",
+    "body": [
+      "def library fn${1:name}(${2:params})",
+      "\t$0",
+      "fnend"
+    ]
+  },
+  "Close": {
+    "prefix": "Close",
+    "description": "Close {#<file/window number>} [,Free|Drop] [, ...] :",
+    "body": "Close ${1:FileNumber}:$0"
+  },
+  "Display": {
+    "prefix": "Display",
+    "description": "Display [Menu|Buttons] ...",
+    "body": "display MENU: mat ${1:menu_text}, mat ${2:data}, mat status$"
+  },
+  "Execute System Call": {
+    "prefix": "Execute System",
+    "description": "Execute \"System [-c -M] <External Program>\"",
+    "body": "execute \"system ${1:program.exe}\""
+  },
+  "Execute Browser": {
+    "prefix": "Execute Browser",
+    "description": "Execute \"System [-c -M] start <URL>\"",
+    "body": "Execute \"System -c -M start ${1:URL}\""
+  },
+  "Exit <error condition> <line ref>[,...]": {
+    "prefix": "Exit",
+    "description": "Exit Statement",
+    "body": "Exit ${1:error_condition} ${1:lineReference}"
+  },
+  "Print Border": {
+    "prefix": "Print",
+    "description": "Print #0 Border : <Application Title>",
+    "body": "Print #0, Border: \"${1:Application Title}\"$0"
+  },
+  "Print": {
+    "prefix": "Print",
+    "description": "Print Fields",
+    "body": "print fields ${1:fieldspecs}: ${2:data}\n$0"
+  },
+  "Input Fields": {
+    "prefix": "Input Fields",
+    "description": "Input Fields",
+    "body": "input fields ${1:fieldspecs}: ${2:data}\n$0"
+  },
+  "Rinput Fields": {
+    "prefix": "Rinput",
+    "description": "Rinput Fields",
+    "body": "rinput fields ${1:fieldspecs}: ${2:data}"
+  },
+  "Input Select": {
+    "prefix": "Input Select",
+    "description": "Input Select",
+    "body": "input select ${1:fieldspecs}: ${2:data}"
+  },
+  "Rinput Select": {
+    "prefix": "Rinput Select",
+    "description": "Rinput Select",
+    "body": "rinput select ${1:fieldspecs}: ${2:data}"
+  },
+  "Library": {
+    "prefix": "Library",
+    "description": "Library \"<Library>\" : <fnFunction1> [, fnFunction2] [, ...]",
+    "body": "library \"${1:Library}\" : ${2:fnFunction1} $0"
+  },
+  "On Error": {
+    "prefix": "On Error",
+    "description": "On <Error Condition> <action>",
+    "body": "On  ${1:ErrorCondition} ${2:Action}"
+  },
+  "On Fkey": {
+    "prefix": "On Fkey",
+    "description": "On Fkey <integer> <action>",
+    "body": "On Fkey ${1:FkeyValue} ${2:Action}"
+  },
+  "On Gosub": {
+    "prefix": "On",
+    "description": "On <variable> Gosub <LineLabel>[,LineLabel]...",
+    "body": "On ${1:variable} Gosub ${2:LineLabel}"
+  },
+  "Open": {
+    "prefix": "Open",
+    "description": "Open #<FileNumber> \"Name=...\"",
+    "body": "Open #${1:FileNumber} : \"name=${2:FileName}\"${3:FileReadTypes}"
+  },
+  "Read Internal": {
+    "prefix": "Read Internal",
+    "description": "Read #<file>, using form$(<file>) : <mat f$>, <mat f> eof Ignore",
+    "body": "Read #${1:FileNumber}, using form$(${2:FileNumber}) : mat ${3:F}$, mat ${3:F} error Ignore"
+  },
+  "Reread Internal": {
+    "prefix": "Reread",
+    "description": "Reread  #<file number> [, USING {<formStatement>}] : <Variables> ",
+    "body": "Reread #${1:FileNumber}, using ${2:FormSpec} : ${3:Variables}"
+  },
+  "Write": {
+    "prefix": "Write",
+    "description": "Write  #<file number> [, USING {<formStatement>}] : <Variables> ",
+    "body": "write #${1:layout}, using Form$(${1:layout}) : Mat ${1:layout}$,Mat ${1:layout}"
+  },
+  "Rewrite": {
+    "prefix": "Rewrite",
+    "description": "Rewrite  #<file number> [, USING {<formStatement>}] : <Variables> ",
+    "body": "Rewrite #${1:FileNumber}, using ${2:FormSpec} : ${3:Variables}"
+  }
+}
