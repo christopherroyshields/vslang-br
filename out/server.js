@@ -194,7 +194,6 @@ function getUserFunctionsFromDocument(doc) {
             let comDocs = getCommentDoc(fnParts.groups.name, docText);
             const fn = {
                 name: fnParts.groups.name,
-                uri: doc.uri,
                 documentation: comDocs?.text,
                 description: 'User Function',
                 params: []

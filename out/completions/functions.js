@@ -9,7 +9,6 @@ class UserFunction {
      * @param name - function name
      */
     constructor(name) {
-        this.uri = '';
         this.name = name;
     }
 }

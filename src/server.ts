@@ -274,7 +274,6 @@ function getUserFunctionsFromDocument(doc: TextDocument): br.UserFunction[] {
 			let comDocs = getCommentDoc(fnParts.groups.name, docText)
 			const fn: br.UserFunction = {
 				name: fnParts.groups.name,
-				uri: doc.uri,
 				documentation: comDocs?.text,
 				description: 'User Function',
 				params: []
@@ -543,7 +542,7 @@ function isComment(cursorPosition: Position, doctext: string, doc: TextDocument)
 	return false
 }
 
-function createHoverFromFunction(fn: br.InternalFunction): Hover {
+function createHoverFromFunction(fn: br.BrFunction): Hover {
 
 	let markDownString = '```br\n' + fn.name + br.generateFunctionSignature(fn) + '\n```\n---'
 

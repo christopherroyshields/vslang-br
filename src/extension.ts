@@ -3,11 +3,11 @@ import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
 import { Statements } from './statements';
-import { CompletionItemLabelDetails } from 'vscode-languageclient';
+import { CompletionItemKind, CompletionItemLabelDetails } from 'vscode-languageclient';
 import { CompletionItemLabel } from 'vscode';
 import * as fs from 'fs';
 import path = require('path');
-import { InternalFunction } from './completions/functions';
+import { BrFunction, generateFunctionSignature, UserFunction } from './completions/functions';
 import G = require('glob');
 
 interface ProjectConfig {
@@ -16,16 +16,11 @@ interface ProjectConfig {
 
 interface LibraryFile {
 	uri: vscode.Uri,
-	functions: InternalFunction[]
+	functions: BrFunction[]
 }
 
 const ProjectConfigs = new Map<vscode.WorkspaceFolder, ProjectConfig>()
-const GlobalLibraries = new Map<vscode.Uri, LibraryFile>()
-
-interface ParseFunctionOptions {
-	text: string,
-	librariesOnly: boolean
-}
+const GlobalLibraries = new Map<vscode.Uri, BrFunction[]>()
 
 export function activate(context: vscode.ExtensionContext) {
 	
@@ -49,13 +44,10 @@ export function activate(context: vscode.ExtensionContext) {
 							try {
 								let libText = await vscode.workspace.fs.readFile(uri)
 								if (libText){
-									GlobalLibraries.set(uri, {
-										uri: uri,
-										functions: parseFunctionsFromSource({
-											text: libText.toString(),
-											librariesOnly: true
-										})
-									})
+									GlobalLibraries.set(uri, parseFunctionsFromSource({
+										text: libText.toString(),
+										librariesOnly: true
+									}))
 								}
 							} catch {
 								console.log('global library not found');
@@ -73,10 +65,22 @@ export function activate(context: vscode.ExtensionContext) {
 		language: "br",
 		scheme: "file"
 	}, {
-		provideCompletionItems: (doc: vscode.TextDocument, position: vscode.Position): Promise<vscode.CompletionItem[]> => {
-
-			let completionItems: vscode.CompletionItem[] = []
-			return Promise.resolve(completionItems)
+		provideCompletionItems: (doc: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] => {
+			const completionItems: vscode.CompletionItem[] = []
+			for (const [uri, lib] of GlobalLibraries) {
+				for (const fn of lib){
+					completionItems.push({
+						kind: CompletionItemKind.Function,
+						label: {
+							label: fn.name,
+							description: path.basename(uri.fsPath)
+						},
+						detail: `(function) ${fn.name}${generateFunctionSignature(fn)}`,
+						documentation: 'documentation'
+					})
+				}
+			}
+			return completionItems
 		}
 	})
 
@@ -121,14 +125,19 @@ const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>!.*|}}.*?({{|$)|`.*
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?:mat\s+)?[\w$]+(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
 
-function parseFunctionsFromSource(opt: ParseFunctionOptions): InternalFunction[] {
-	let functions: InternalFunction[] = []
+interface ParseFunctionOptions {
+	text: string,
+	librariesOnly: boolean
+}
+
+function parseFunctionsFromSource(opt: ParseFunctionOptions): UserFunction[] {
+	let functions: UserFunction[] = []
 	let matches = opt.text.matchAll(FIND_COMMENTS_AND_FUNCTIONS)
 	let match = matches.next();
 	while (!match.done) {
 		if (match.value.groups?.name && match.value.groups?.isLibrary){
 			
-			const lib: InternalFunction = {
+			const lib: UserFunction = {
 				name: match.value.groups.name
 			}
 			
@@ -142,14 +151,14 @@ function parseFunctionsFromSource(opt: ParseFunctionOptions): InternalFunction[]
 				let isOptional = false
 				for (const paramMatch of it) {
 					if (paramMatch.groups && paramMatch.groups.name){
+						if (paramMatch.groups.name.trim() == "___"){
+							break
+						}
 						lib.params.push({
 							name: paramMatch.groups.name
 						})
 						if (paramMatch.groups.delimiter && paramMatch.groups.delimiter == ';'){
 							isOptional = true
-						}
-						if (paramMatch.groups.name.trim() == "___"){
-							break
 						}
 					}
 				}

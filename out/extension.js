@@ -6,7 +6,9 @@ const lexi_1 = require("./lexi");
 const next_prev_1 = require("./next-prev");
 const client_1 = require("./client");
 const statements_1 = require("./statements");
+const vscode_languageclient_1 = require("vscode-languageclient");
 const path = require("path");
+const functions_1 = require("./completions/functions");
 const ProjectConfigs = new Map();
 const GlobalLibraries = new Map();
 function activate(context) {
@@ -27,13 +29,10 @@ function activate(context) {
                             try {
                                 let libText = await vscode.workspace.fs.readFile(uri);
                                 if (libText) {
-                                    GlobalLibraries.set(uri, {
-                                        uri: uri,
-                                        functions: parseFunctionsFromSource({
-                                            text: libText.toString(),
-                                            librariesOnly: true
-                                        })
-                                    });
+                                    GlobalLibraries.set(uri, parseFunctionsFromSource({
+                                        text: libText.toString(),
+                                        librariesOnly: true
+                                    }));
                                 }
                             }
                             catch {
@@ -53,8 +52,21 @@ function activate(context) {
         scheme: "file"
     }, {
         provideCompletionItems: (doc, position) => {
-            let completionItems = [];
-            return Promise.resolve(completionItems);
+            const completionItems = [];
+            for (const [uri, lib] of GlobalLibraries) {
+                for (const fn of lib) {
+                    completionItems.push({
+                        kind: vscode_languageclient_1.CompletionItemKind.Function,
+                        label: {
+                            label: fn.name,
+                            description: path.basename(uri.fsPath)
+                        },
+                        detail: `(function) ${fn.name}${(0, functions_1.generateFunctionSignature)(fn)}`,
+                        documentation: 'documentation'
+                    });
+                }
+            }
+            return completionItems;
         }
     });
     vscode.languages.registerCompletionItemProvider({
@@ -112,14 +124,14 @@ function parseFunctionsFromSource(opt) {
                 let isOptional = false;
                 for (const paramMatch of it) {
                     if (paramMatch.groups && paramMatch.groups.name) {
+                        if (paramMatch.groups.name.trim() == "___") {
+                            break;
+                        }
                         lib.params.push({
                             name: paramMatch.groups.name
                         });
                         if (paramMatch.groups.delimiter && paramMatch.groups.delimiter == ';') {
                             isOptional = true;
-                        }
-                        if (paramMatch.groups.name.trim() == "___") {
-                            break;
                         }
                     }
                 }

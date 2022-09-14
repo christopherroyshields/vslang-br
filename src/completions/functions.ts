@@ -5,7 +5,7 @@ export interface FunctionParameter {
   documentation?: string
 }
 
-export interface InternalFunction {
+export interface BrFunction {
   name: string,
   description?: string,
   documentation?: string,
@@ -15,12 +15,11 @@ export interface InternalFunction {
 /**
  * User Defined BR Function found in source
  */
-export class UserFunction implements InternalFunction {
+export class UserFunction implements BrFunction {
   name: string
   description?: string | undefined
   documentation?: string | undefined
   params?: FunctionParameter[] | undefined
-  uri: string = ''
   /**
    * @param name - function name
    */
@@ -33,7 +32,7 @@ export class UserFunction implements InternalFunction {
  * Function to generate example function call for display purposes
  * @param fn Function to generate full function call
  */
-export function generateFunctionSignature(fn: InternalFunction): string {
+export function generateFunctionSignature(fn: BrFunction): string {
   let sig: string = ''
   if (fn.params?.length) {
     sig += '('
@@ -49,7 +48,7 @@ export function generateFunctionSignature(fn: InternalFunction): string {
   return sig
 }
 
-export function getFunctionByName(name: string): InternalFunction | undefined {
+export function getFunctionByName(name: string): BrFunction | undefined {
   for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
     const fn = stringFunctions[fnIndex];
     if (fn.name.toLowerCase() === name.toLowerCase()) {
@@ -58,9 +57,9 @@ export function getFunctionByName(name: string): InternalFunction | undefined {
   }
 }
 
-export function getFunctionsByName(name: string): InternalFunction[] | undefined {
+export function getFunctionsByName(name: string): BrFunction[] | undefined {
 
-  const fnMatches: InternalFunction[] = []
+  const fnMatches: BrFunction[] = []
 
   for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
     const fn = stringFunctions[fnIndex];
@@ -72,7 +71,7 @@ export function getFunctionsByName(name: string): InternalFunction[] | undefined
   return fnMatches.length ? fnMatches : undefined
 }
 
-export const stringFunctions: InternalFunction[] = [
+export const stringFunctions: BrFunction[] = [
   {
     name: "BR_FileName$",
     documentation: "Returns the BR Filename version of the specified OS filename (reversing out your Drive statements).",
