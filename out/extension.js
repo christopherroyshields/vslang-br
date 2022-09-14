@@ -104,7 +104,39 @@ function deactivate() {
     (0, client_1.deactivateClient)();
 }
 exports.deactivate = deactivate;
-const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?<comments>\/\*[\s\S]*?\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))|(?<multiline_comment>\/\*.*\*\/)/gi;
+class DocComment extends Object {
+    constructor() {
+        super();
+        this.params = new Map();
+    }
+    /**
+     * Function removes leading asterisk from comment lines
+     * @param comments
+     * @returns comments without asterisk
+     */
+    static cleanComments(comments) {
+        return comments.replace(/^\s*\*\s/gm, "").trim();
+    }
+    static parse(commentText) {
+        const docComment = new DocComment();
+        // freeform text at beginning
+        const textMatch = DocComment.textSearch.exec(commentText);
+        if (textMatch != null) {
+            docComment.text = DocComment.cleanComments(textMatch[0]);
+        }
+        // params
+        const tagMatches = commentText.matchAll(DocComment.paramSearch);
+        for (const tagMatch of tagMatches) {
+            if (tagMatch.groups) {
+                docComment.params.set(tagMatch.groups.name, tagMatch.groups.desc);
+            }
+        }
+        return docComment;
+    }
+}
+DocComment.textSearch = /^[\s\S]*?(?=@|$)/;
+DocComment.paramSearch = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi;
+const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))|(?<multiline_comment>\/\*.*\*\/)/gi;
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?:mat\s+)?[\w$]+(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi;
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g;
 function parseFunctionsFromSource(opt) {
@@ -116,6 +148,10 @@ function parseFunctionsFromSource(opt) {
             const lib = {
                 name: match.value.groups.name
             };
+            let fnDoc;
+            if (match.value.groups.comments) {
+                fnDoc = DocComment.parse(match.value.groups.comments);
+            }
             if (match.value.groups.params) {
                 lib.params = [];
                 // remove line continuations
