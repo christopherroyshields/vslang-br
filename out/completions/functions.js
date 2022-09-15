@@ -1,6 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stringFunctions = exports.getFunctionsByName = exports.getFunctionByName = exports.generateFunctionSignature = exports.UserFunction = void 0;
+exports.stringFunctions = exports.getFunctionsByName = exports.getFunctionByName = exports.generateFunctionSignature = exports.UserFunction = exports.UserFunctionParameter = void 0;
+class UserFunctionParameter {
+    constructor() {
+        this.name = "";
+        this.isReference = false;
+        this.isOptional = false;
+    }
+}
+exports.UserFunctionParameter = UserFunctionParameter;
+class InternalFunction {
+    constructor() {
+        this.name = '';
+    }
+}
 /**
  * User Defined BR Function found in source
  */
@@ -10,6 +23,23 @@ class UserFunction {
      */
     constructor(name) {
         this.name = name;
+    }
+    /**
+     *
+     * @returns A composite of all comment documentation for function
+     */
+    getAllDocs() {
+        let docs;
+        if (this.documentation) {
+            docs = this.documentation;
+        }
+        if (this.params) {
+            for (let paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
+                const param = this.params[paramIndex];
+                this.documentation = (this.documentation ? "\n" : "") + `@param ${param.name} - ${param.documentation}`;
+            }
+        }
+        return docs;
     }
 }
 exports.UserFunction = UserFunction;

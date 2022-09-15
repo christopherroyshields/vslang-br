@@ -4,11 +4,9 @@ import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
 import { Statements } from './statements';
 import { CompletionItemKind, CompletionItemLabelDetails } from 'vscode-languageclient';
-import { CompletionItemLabel } from 'vscode';
-import * as fs from 'fs';
 import path = require('path');
-import { BrFunction, generateFunctionSignature, UserFunction } from './completions/functions';
-import G = require('glob');
+import { BrFunction, generateFunctionSignature, UserFunction, UserFunctionParameter } from './completions/functions';
+import { BrParamType } from './types/BrParamType';
 
 interface ProjectConfig {
 	globalIncludes: string[]
@@ -20,7 +18,7 @@ interface LibraryFile {
 }
 
 const ProjectConfigs = new Map<vscode.WorkspaceFolder, ProjectConfig>()
-const GlobalLibraries = new Map<vscode.Uri, BrFunction[]>()
+const GlobalLibraries = new Map<vscode.Uri, UserFunction[]>()
 
 export function activate(context: vscode.ExtensionContext) {
 	
@@ -44,13 +42,13 @@ export function activate(context: vscode.ExtensionContext) {
 							try {
 								let libText = await vscode.workspace.fs.readFile(uri)
 								if (libText){
-									GlobalLibraries.set(uri, parseFunctionsFromSource({
-										text: libText.toString(),
-										librariesOnly: true
-									}))
+									GlobalLibraries.set(
+										uri, 
+										parseFunctionsFromSource(
+											libText.toString()))
 								}
 							} catch {
-								console.log('global library not found');
+								vscode.window.showWarningMessage(`Global library not found ${uri.fsPath}`)
 							}
 						})
 					}					
@@ -76,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
 							description: path.basename(uri.fsPath)
 						},
 						detail: `(function) ${fn.name}${generateFunctionSignature(fn)}`,
-						documentation: 'documentation'
+						documentation: fn.getAllDocs()
 					})
 				}
 			}
@@ -166,9 +164,8 @@ class DocComment extends Object {
 	}
 }
 
-
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))|(?<multiline_comment>\/\*.*\*\/)/gi
-const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?:mat\s+)?[\w$]+(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi
+const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
 
 interface ParseFunctionOptions {
@@ -176,20 +173,19 @@ interface ParseFunctionOptions {
 	librariesOnly: boolean
 }
 
-function parseFunctionsFromSource(opt: ParseFunctionOptions): UserFunction[] {
+function parseFunctionsFromSource(sourceText: string, librariesOnly: boolean = true): UserFunction[] {
 	let functions: UserFunction[] = []
-	let matches = opt.text.matchAll(FIND_COMMENTS_AND_FUNCTIONS)
+	let matches = sourceText.matchAll(FIND_COMMENTS_AND_FUNCTIONS)
 	let match = matches.next();
 	while (!match.done) {
-		if (match.value.groups?.name && match.value.groups?.isLibrary){
+		if (match.value.groups?.name && (!librariesOnly || match.value.groups?.isLibrary)){
 			
-			const lib: UserFunction = {
-				name: match.value.groups.name
-			}
+			const lib: UserFunction = new UserFunction(match.value.groups.name)
 
 			let fnDoc: DocComment | undefined
 			if (match.value.groups.comments) {
 				fnDoc = DocComment.parse(match.value.groups.comments)
+				lib.documentation = fnDoc.text
 			}
 			
 			if (match.value.groups.params){
@@ -202,13 +198,37 @@ function parseFunctionsFromSource(opt: ParseFunctionOptions): UserFunction[] {
 				let isOptional = false
 				for (const paramMatch of it) {
 					if (paramMatch.groups && paramMatch.groups.name){
+						
 						if (paramMatch.groups.name.trim() == "___"){
 							break
 						}
-						lib.params.push({
-							name: paramMatch.groups.name
-						})
-						if (paramMatch.groups.delimiter && paramMatch.groups.delimiter == ';'){
+
+						const libParam: UserFunctionParameter = new UserFunctionParameter()
+						libParam.name = paramMatch.groups.name
+						libParam.isReference = paramMatch.groups.isReference ? true : false
+						libParam.isOptional = isOptional
+
+						if (paramMatch.groups.isString){
+							if (paramMatch.groups.isArray){
+								libParam.type = BrParamType.stringarray
+							} else {
+								libParam.type = BrParamType.string
+							}
+						} else {
+							if (paramMatch.groups.isArray){
+								libParam.type = BrParamType.numberarray
+							} else {
+								libParam.type = BrParamType.number
+							}
+						}
+						
+						if (fnDoc?.params){
+							libParam.documentation = fnDoc.params.get(paramMatch.groups.name)
+						}
+
+						lib.params.push(libParam)
+						
+						if (!isOptional && paramMatch.groups.delimiter && paramMatch.groups.delimiter == ';'){
 							isOptional = true
 						}
 					}

@@ -1,8 +1,18 @@
 import {CompletionItem, CompletionItemKind, InsertTextFormat} from "vscode-languageserver"
+import { BrParamType } from "../types/BrParamType"
 
 export interface FunctionParameter {
   name: string,
   documentation?: string
+}
+
+export class UserFunctionParameter implements FunctionParameter {
+  name: string = ""
+  length?: number | undefined
+  documentation?: string | undefined
+  isReference: boolean = false
+  isOptional: boolean = false
+  type?: BrParamType
 }
 
 export interface BrFunction {
@@ -12,19 +22,43 @@ export interface BrFunction {
   params?: FunctionParameter[]
 }
 
+class InternalFunction implements BrFunction {
+  name: string = ''
+  description?: string
+  documentation?: string
+  params?: FunctionParameter[]
+}
+
 /**
  * User Defined BR Function found in source
  */
 export class UserFunction implements BrFunction {
   name: string
-  description?: string | undefined
-  documentation?: string | undefined
-  params?: FunctionParameter[] | undefined
+  description?: string
+  documentation?: string
+  params?: UserFunctionParameter[]
   /**
    * @param name - function name
    */
   constructor(name: string) {
     this.name = name
+  }
+  /**
+   * 
+   * @returns A composite of all comment documentation for function
+   */
+	getAllDocs(): string | undefined {
+    let docs: string | undefined
+    if (this.documentation){
+      docs = this.documentation
+    }
+    if (this.params){
+      for (let paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
+        const param = this.params[paramIndex];
+        this.documentation = (this.documentation ? "\n" : "") + `@param ${param.name} - ${param.documentation}`
+      }
+    }
+    return docs
   }
 }
 
@@ -71,7 +105,7 @@ export function getFunctionsByName(name: string): BrFunction[] | undefined {
   return fnMatches.length ? fnMatches : undefined
 }
 
-export const stringFunctions: BrFunction[] = [
+export const stringFunctions: InternalFunction[] = [
   {
     name: "BR_FileName$",
     documentation: "Returns the BR Filename version of the specified OS filename (reversing out your Drive statements).",

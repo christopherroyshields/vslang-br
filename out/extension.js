@@ -9,6 +9,7 @@ const statements_1 = require("./statements");
 const vscode_languageclient_1 = require("vscode-languageclient");
 const path = require("path");
 const functions_1 = require("./completions/functions");
+const BrParamType_1 = require("./types/BrParamType");
 const ProjectConfigs = new Map();
 const GlobalLibraries = new Map();
 function activate(context) {
@@ -29,14 +30,11 @@ function activate(context) {
                             try {
                                 let libText = await vscode.workspace.fs.readFile(uri);
                                 if (libText) {
-                                    GlobalLibraries.set(uri, parseFunctionsFromSource({
-                                        text: libText.toString(),
-                                        librariesOnly: true
-                                    }));
+                                    GlobalLibraries.set(uri, parseFunctionsFromSource(libText.toString()));
                                 }
                             }
                             catch {
-                                console.log('global library not found');
+                                vscode.window.showWarningMessage(`Global library not found ${uri.fsPath}`);
                             }
                         });
                     }
@@ -62,7 +60,7 @@ function activate(context) {
                             description: path.basename(uri.fsPath)
                         },
                         detail: `(function) ${fn.name}${(0, functions_1.generateFunctionSignature)(fn)}`,
-                        documentation: 'documentation'
+                        documentation: fn.getAllDocs()
                     });
                 }
             }
@@ -137,20 +135,19 @@ class DocComment extends Object {
 DocComment.textSearch = /^[\s\S]*?(?=@|$)/;
 DocComment.paramSearch = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi;
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))|(?<multiline_comment>\/\*.*\*\/)/gi;
-const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?:mat\s+)?[\w$]+(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi;
+const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi;
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g;
-function parseFunctionsFromSource(opt) {
+function parseFunctionsFromSource(sourceText, librariesOnly = true) {
     let functions = [];
-    let matches = opt.text.matchAll(FIND_COMMENTS_AND_FUNCTIONS);
+    let matches = sourceText.matchAll(FIND_COMMENTS_AND_FUNCTIONS);
     let match = matches.next();
     while (!match.done) {
-        if (match.value.groups?.name && match.value.groups?.isLibrary) {
-            const lib = {
-                name: match.value.groups.name
-            };
+        if (match.value.groups?.name && (!librariesOnly || match.value.groups?.isLibrary)) {
+            const lib = new functions_1.UserFunction(match.value.groups.name);
             let fnDoc;
             if (match.value.groups.comments) {
                 fnDoc = DocComment.parse(match.value.groups.comments);
+                lib.documentation = fnDoc.text;
             }
             if (match.value.groups.params) {
                 lib.params = [];
@@ -163,10 +160,31 @@ function parseFunctionsFromSource(opt) {
                         if (paramMatch.groups.name.trim() == "___") {
                             break;
                         }
-                        lib.params.push({
-                            name: paramMatch.groups.name
-                        });
-                        if (paramMatch.groups.delimiter && paramMatch.groups.delimiter == ';') {
+                        const libParam = new functions_1.UserFunctionParameter();
+                        libParam.name = paramMatch.groups.name;
+                        libParam.isReference = paramMatch.groups.isReference ? true : false;
+                        libParam.isOptional = isOptional;
+                        if (paramMatch.groups.isString) {
+                            if (paramMatch.groups.isArray) {
+                                libParam.type = BrParamType_1.BrParamType.stringarray;
+                            }
+                            else {
+                                libParam.type = BrParamType_1.BrParamType.string;
+                            }
+                        }
+                        else {
+                            if (paramMatch.groups.isArray) {
+                                libParam.type = BrParamType_1.BrParamType.numberarray;
+                            }
+                            else {
+                                libParam.type = BrParamType_1.BrParamType.number;
+                            }
+                        }
+                        if (fnDoc?.params) {
+                            libParam.documentation = fnDoc.params.get(paramMatch.groups.name);
+                        }
+                        lib.params.push(libParam);
+                        if (!isOptional && paramMatch.groups.delimiter && paramMatch.groups.delimiter == ';') {
                             isOptional = true;
                         }
                     }
