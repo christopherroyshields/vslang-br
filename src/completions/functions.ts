@@ -24,6 +24,9 @@ export interface BrFunction {
 }
 
 class InternalFunction implements BrFunction {
+  generateSignature(): string {
+    throw new Error("Method not implemented.")
+  }
   name: string = ''
   description?: string
   documentation?: string
@@ -52,19 +55,48 @@ export class UserFunction implements BrFunction {
 	getAllDocs(): string | undefined {
     let docs: string | undefined
     if (this.documentation){
-      docs = this.documentation
+      docs = this.documentation + "\\"+EOL
     }
     if (this.params){
       for (let paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
         const param = this.params[paramIndex];
-        if (paramIndex || docs){
-          docs += EOL
+        if (param.documentation){
+          if (paramIndex || docs){
+            docs += "\\"+EOL
+          }
+          docs += `*@param* \`${param.name}\` ${param.documentation}`
         }
-        docs += `- *@param* \`${param.name}\` ${param.documentation}`
       }
     }
     return docs
   }
+  generateSignature() : string {
+    let sig: string = ''
+    if (this.params ?. length) {
+      sig += '('
+      for (let paramindex = 0; paramindex < this.params.length; paramindex++) {
+        if (paramindex > 0) {
+          sig += ','
+        }
+        const element = this.params[paramindex];
+        let name = ''
+        if (element.isReference) {
+          name += '&'
+        }
+        name += element.name;
+        if (element.length) {
+          name += '*' + element.length.toString()
+        }
+        if (element.isOptional) {
+          name = '[' + name + ']'
+        }
+        sig += name;
+      }
+      sig += ')'
+    }
+    return sig
+  }
+
 }
 
 /**
@@ -110,7 +142,7 @@ export function getFunctionsByName(name: string): BrFunction[] | undefined {
   return fnMatches.length ? fnMatches : undefined
 }
 
-export const stringFunctions: InternalFunction[] = [
+export const stringFunctions: BrFunction[] = [
   {
     name: "BR_FileName$",
     documentation: "Returns the BR Filename version of the specified OS filename (reversing out your Drive statements).",

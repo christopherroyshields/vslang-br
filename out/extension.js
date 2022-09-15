@@ -57,13 +57,27 @@ function activate(context) {
                         kind: vscode_languageclient_1.CompletionItemKind.Function,
                         label: {
                             label: fn.name,
-                            detail: 'user function',
+                            detail: ' (library function)',
                             description: path.basename(uri.fsPath)
                         },
-                        detail: `(function) ${fn.name}${(0, functions_1.generateFunctionSignature)(fn)}`,
+                        detail: `(library function) ${fn.name}${fn.generateSignature()}`,
                         documentation: new vscode.MarkdownString(fn.getAllDocs())
                     });
                 }
+            }
+            let userFunctions;
+            userFunctions = parseFunctionsFromSource(doc.getText(), false);
+            for (let fnIndex = 0; fnIndex < userFunctions.length; fnIndex++) {
+                const fn = userFunctions[fnIndex];
+                completionItems.push({
+                    kind: vscode_languageclient_1.CompletionItemKind.Function,
+                    label: {
+                        label: fn.name,
+                        detail: ' (local function)'
+                    },
+                    detail: `(library function) ${fn.name}${fn.generateSignature()}`,
+                    documentation: new vscode.MarkdownString(fn.getAllDocs())
+                });
             }
             return completionItems;
         }
@@ -135,8 +149,8 @@ class DocComment extends Object {
 }
 DocComment.textSearch = /^[\s\S]*?(?=@|$)/;
 DocComment.paramSearch = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi;
-const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))|(?<multiline_comment>\/\*.*\*\/)/gi;
-const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi;
+const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>\/\*[^*][^/]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))/gi;
+const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi;
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g;
 function parseFunctionsFromSource(sourceText, librariesOnly = true) {
     let functions = [];
@@ -171,6 +185,9 @@ function parseFunctionsFromSource(sourceText, librariesOnly = true) {
                             }
                             else {
                                 libParam.type = BrParamType_1.BrParamType.string;
+                                if (paramMatch.groups.length) {
+                                    libParam.length = parseInt(paramMatch.groups.length);
+                                }
                             }
                         }
                         else {

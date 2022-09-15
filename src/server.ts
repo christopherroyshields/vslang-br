@@ -236,7 +236,7 @@ async function getCompletions(params: CompletionParams): Promise<CompletionItem[
 	let doc = documents.get(params.textDocument.uri)
 	
 	if (doc){
-		completions = completions.concat(getLocalUserFunctionCompletions(doc));
+		// completions = completions.concat(getLocalUserFunctionCompletions(doc));
 		completions = completions.concat(getFunctionCompletions())
 	}
 
