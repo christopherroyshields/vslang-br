@@ -71,10 +71,11 @@ export function activate(context: vscode.ExtensionContext) {
 						kind: CompletionItemKind.Function,
 						label: {
 							label: fn.name,
+							detail: 'user function',
 							description: path.basename(uri.fsPath)
 						},
 						detail: `(function) ${fn.name}${generateFunctionSignature(fn)}`,
-						documentation: fn.getAllDocs()
+						documentation: new vscode.MarkdownString(fn.getAllDocs())
 					})
 				}
 			}
@@ -167,11 +168,6 @@ class DocComment extends Object {
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))|(?<multiline_comment>\/\*.*\*\/)/gi
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?(?:\s*)(?:\*\s*(?<length>\d+))?)\s*(?<delimiter>;|,)?/gi
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
-
-interface ParseFunctionOptions {
-	text: string,
-	librariesOnly: boolean
-}
 
 function parseFunctionsFromSource(sourceText: string, librariesOnly: boolean = true): UserFunction[] {
 	let functions: UserFunction[] = []

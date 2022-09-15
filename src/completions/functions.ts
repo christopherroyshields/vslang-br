@@ -1,3 +1,4 @@
+import { EOL } from "os"
 import {CompletionItem, CompletionItemKind, InsertTextFormat} from "vscode-languageserver"
 import { BrParamType } from "../types/BrParamType"
 
@@ -43,9 +44,10 @@ export class UserFunction implements BrFunction {
   constructor(name: string) {
     this.name = name
   }
+
   /**
    * 
-   * @returns A composite of all comment documentation for function
+   * @returns A composite of all comment documentation for display purposes for hover and completion
    */
 	getAllDocs(): string | undefined {
     let docs: string | undefined
@@ -55,7 +57,10 @@ export class UserFunction implements BrFunction {
     if (this.params){
       for (let paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
         const param = this.params[paramIndex];
-        this.documentation = (this.documentation ? "\n" : "") + `@param ${param.name} - ${param.documentation}`
+        if (paramIndex || docs){
+          docs += EOL
+        }
+        docs += `- *@param* \`${param.name}\` ${param.documentation}`
       }
     }
     return docs

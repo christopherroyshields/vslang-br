@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stringFunctions = exports.getFunctionsByName = exports.getFunctionByName = exports.generateFunctionSignature = exports.UserFunction = exports.UserFunctionParameter = void 0;
+const os_1 = require("os");
 class UserFunctionParameter {
     constructor() {
         this.name = "";
@@ -26,7 +27,7 @@ class UserFunction {
     }
     /**
      *
-     * @returns A composite of all comment documentation for function
+     * @returns A composite of all comment documentation for display purposes for hover and completion
      */
     getAllDocs() {
         let docs;
@@ -36,7 +37,10 @@ class UserFunction {
         if (this.params) {
             for (let paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
                 const param = this.params[paramIndex];
-                this.documentation = (this.documentation ? "\n" : "") + `@param ${param.name} - ${param.documentation}`;
+                if (paramIndex || docs) {
+                    docs += os_1.EOL;
+                }
+                docs += `- *@param* \`${param.name}\` ${param.documentation}`;
             }
         }
         return docs;

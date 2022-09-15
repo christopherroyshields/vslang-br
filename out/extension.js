@@ -57,10 +57,11 @@ function activate(context) {
                         kind: vscode_languageclient_1.CompletionItemKind.Function,
                         label: {
                             label: fn.name,
+                            detail: 'user function',
                             description: path.basename(uri.fsPath)
                         },
                         detail: `(function) ${fn.name}${(0, functions_1.generateFunctionSignature)(fn)}`,
-                        documentation: fn.getAllDocs()
+                        documentation: new vscode.MarkdownString(fn.getAllDocs())
                     });
                 }
             }
