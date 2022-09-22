@@ -36,7 +36,7 @@ function activate(context) {
                                     description: path.basename(uri.fsPath)
                                 },
                                 detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-                                documentation: fn.getAllDocs()
+                                documentation: new vscode.MarkdownString(fn.getAllDocs())
                             });
                         }
                     }
@@ -53,7 +53,7 @@ function activate(context) {
                         detail: ' (local function)'
                     },
                     detail: `(local function) ${fn.name}${fn.generateSignature()}`,
-                    documentation: fn.getAllDocs()
+                    documentation: new vscode.MarkdownString(fn.getAllDocs())
                 });
             }
             return completionItems;

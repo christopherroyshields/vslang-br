@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 									description: path.basename(uri.fsPath)
 								},
 								detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-								documentation: fn.getAllDocs()
+								documentation: new vscode.MarkdownString(fn.getAllDocs())
 							})
 						}
 					}
@@ -58,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 						detail: ' (local function)'
 					},
 					detail: `(local function) ${fn.name}${fn.generateSignature()}`,
-					documentation: fn.getAllDocs()
+					documentation: new vscode.MarkdownString(fn.getAllDocs())
 				})
 			}
 

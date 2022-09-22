@@ -130,10 +130,7 @@ fnend
 def fndoctests*100(xxx$, zzz1, test2)
 fnend
 
-fndoctest(Cnt,)
-let fndoctest
-let Fnopen
-let fnPre
+str$(val(str$("1")))
 
 dim LinkageEstablished
 def fnEstablishLinkage
