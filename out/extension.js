@@ -10,59 +10,36 @@ const vscode_languageclient_1 = require("vscode-languageclient");
 const path = require("path");
 const functions_1 = require("./completions/functions");
 const BrParamType_1 = require("./types/BrParamType");
-const ProjectConfigs = new Map();
-const GlobalLibraries = new Map();
+const DocComment_1 = require("./types/DocComment");
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
     (0, client_1.activateClient)(context);
-    if (vscode.workspace.workspaceFolders?.length) {
-        vscode.workspace.workspaceFolders.forEach(async (workspaceFolder) => {
-            let projectFileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "br-project.json"));
-            try {
-                let projectConfigText = await vscode.workspace.fs.readFile(projectFileUri);
-                if (projectConfigText) {
-                    let config = JSON.parse(projectConfigText.toString());
-                    ProjectConfigs.set(workspaceFolder, config);
-                    if (config.globalIncludes?.length) {
-                        config.globalIncludes.forEach(async (filePath) => {
-                            let uri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
-                            try {
-                                let libText = await vscode.workspace.fs.readFile(uri);
-                                if (libText) {
-                                    GlobalLibraries.set(uri, parseFunctionsFromSource(libText.toString()));
-                                }
-                            }
-                            catch {
-                                vscode.window.showWarningMessage(`Global library not found ${uri.fsPath}`);
-                            }
-                        });
-                    }
-                }
-            }
-            catch (error) {
-                console.log('no project file in workspace');
-            }
-        });
-    }
+    activateWorkspaceFolders(context);
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
     }, {
         provideCompletionItems: (doc, position) => {
             const completionItems = [];
-            for (const [uri, lib] of GlobalLibraries) {
-                for (const fn of lib) {
-                    completionItems.push({
-                        kind: vscode_languageclient_1.CompletionItemKind.Function,
-                        label: {
-                            label: fn.name,
-                            detail: ' (library function)',
-                            description: path.basename(uri.fsPath)
-                        },
-                        detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-                        documentation: new vscode.MarkdownString(fn.getAllDocs())
-                    });
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
+            if (workspaceFolder) {
+                const config = ProjectConfigs.get(workspaceFolder);
+                if (config?.libraries) {
+                    for (const [uri, lib] of config.libraries) {
+                        for (const fn of lib) {
+                            completionItems.push({
+                                kind: vscode_languageclient_1.CompletionItemKind.Function,
+                                label: {
+                                    label: fn.name,
+                                    detail: ' (library function)',
+                                    description: path.basename(uri.fsPath)
+                                },
+                                detail: `(library function) ${fn.name}${fn.generateSignature()}`,
+                                documentation: fn.getAllDocs()
+                            });
+                        }
+                    }
                 }
             }
             let userFunctions;
@@ -75,8 +52,8 @@ function activate(context) {
                         label: fn.name,
                         detail: ' (local function)'
                     },
-                    detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-                    documentation: new vscode.MarkdownString(fn.getAllDocs())
+                    detail: `(local function) ${fn.name}${fn.generateSignature()}`,
+                    documentation: fn.getAllDocs()
                 });
             }
             return completionItems;
@@ -117,38 +94,6 @@ function deactivate() {
     (0, client_1.deactivateClient)();
 }
 exports.deactivate = deactivate;
-class DocComment extends Object {
-    constructor() {
-        super();
-        this.params = new Map();
-    }
-    /**
-     * Function removes leading asterisk from comment lines
-     * @param comments
-     * @returns comments without asterisk
-     */
-    static cleanComments(comments) {
-        return comments.replace(/^\s*\*\s/gm, "").trim();
-    }
-    static parse(commentText) {
-        const docComment = new DocComment();
-        // freeform text at beginning
-        const textMatch = DocComment.textSearch.exec(commentText);
-        if (textMatch != null) {
-            docComment.text = DocComment.cleanComments(textMatch[0]);
-        }
-        // params
-        const tagMatches = commentText.matchAll(DocComment.paramSearch);
-        for (const tagMatch of tagMatches) {
-            if (tagMatch.groups) {
-                docComment.params.set(tagMatch.groups.name, tagMatch.groups.desc);
-            }
-        }
-        return docComment;
-    }
-}
-DocComment.textSearch = /^[\s\S]*?(?=@|$)/;
-DocComment.paramSearch = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi;
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>\/\*[^*][^/]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))/gi;
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi;
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g;
@@ -161,7 +106,7 @@ function parseFunctionsFromSource(sourceText, librariesOnly = true) {
             const lib = new functions_1.UserFunction(match.value.groups.name);
             let fnDoc;
             if (match.value.groups.comments) {
-                fnDoc = DocComment.parse(match.value.groups.comments);
+                fnDoc = DocComment_1.DocComment.parse(match.value.groups.comments);
                 lib.documentation = fnDoc.text;
             }
             if (match.value.groups.params) {
@@ -213,5 +158,59 @@ function parseFunctionsFromSource(sourceText, librariesOnly = true) {
         match = matches.next();
     }
     return functions;
+}
+const ProjectConfigs = new Map();
+const GlobalLibraries = new Map();
+/**
+ * Sets up monitoring of project configuration
+ * @param context extension context
+ */
+function activateWorkspaceFolders(context) {
+    if (vscode.workspace.workspaceFolders) {
+        vscode.workspace.workspaceFolders.forEach(async (workspaceFolder) => {
+            let projectWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(workspaceFolder, 'br-project.json'));
+            updateGlobalLibraries(workspaceFolder);
+            projectWatcher.onDidChange((uri) => {
+                updateGlobalLibraries(workspaceFolder);
+            }, undefined, context.subscriptions);
+            projectWatcher.onDidCreate((uri) => {
+                updateGlobalLibraries(workspaceFolder);
+            }, undefined, context.subscriptions);
+            projectWatcher.onDidDelete((uri) => {
+                ProjectConfigs.delete(workspaceFolder);
+            }, undefined, context.subscriptions);
+        });
+    }
+}
+async function updateGlobalLibraries(workspaceFolder) {
+    let projectFileUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "br-project.json"));
+    ProjectConfigs.delete(workspaceFolder);
+    try {
+        let projectConfigText = await vscode.workspace.fs.readFile(projectFileUri);
+        if (projectConfigText) {
+            let config = JSON.parse(projectConfigText.toString());
+            const projectConfig = {};
+            ProjectConfigs.set(workspaceFolder, projectConfig);
+            if (config.globalIncludes?.length) {
+                config.globalIncludes.forEach(async (filePath) => {
+                    let uri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, filePath));
+                    try {
+                        let libText = await vscode.workspace.fs.readFile(uri);
+                        if (libText) {
+                            if (!projectConfig.libraries)
+                                projectConfig.libraries = new Map();
+                            projectConfig.libraries.set(uri, parseFunctionsFromSource(libText.toString()));
+                        }
+                    }
+                    catch {
+                        vscode.window.showWarningMessage(`Global library not found ${uri.fsPath}`);
+                    }
+                });
+            }
+        }
+    }
+    catch (error) {
+        console.log('no project file in workspace');
+    }
 }
 //# sourceMappingURL=extension.js.map

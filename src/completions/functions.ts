@@ -1,4 +1,5 @@
 import { EOL } from "os"
+import { MarkdownString } from "vscode"
 import {CompletionItem, CompletionItemKind, InsertTextFormat} from "vscode-languageserver"
 import { BrParamType } from "../types/BrParamType"
 
@@ -52,7 +53,7 @@ export class UserFunction implements BrFunction {
    * 
    * @returns A composite of all comment documentation for display purposes for hover and completion
    */
-	getAllDocs(): string | undefined {
+	getAllDocs(): MarkdownString | undefined {
     let docs: string | undefined
     if (this.documentation){
       docs = this.documentation + "\\"+EOL
@@ -68,7 +69,7 @@ export class UserFunction implements BrFunction {
         }
       }
     }
-    return docs
+    return new MarkdownString(docs)
   }
   generateSignature() : string {
     let sig: string = ''

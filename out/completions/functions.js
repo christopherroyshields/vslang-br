@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stringFunctions = exports.getFunctionsByName = exports.getFunctionByName = exports.generateFunctionSignature = exports.UserFunction = exports.UserFunctionParameter = void 0;
 const os_1 = require("os");
+const vscode_1 = require("vscode");
 class UserFunctionParameter {
     constructor() {
         this.name = "";
@@ -48,7 +49,7 @@ class UserFunction {
                 }
             }
         }
-        return docs;
+        return new vscode_1.MarkdownString(docs);
     }
     generateSignature() {
         let sig = '';
