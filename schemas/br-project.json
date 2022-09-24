@@ -9,6 +9,10 @@
       "description": "The folder where Fileio layouts are stored.",
       "type": "string"
     },
+    "searchFolder": {
+      "description": "A subfolder to add to the base path when searching libraries. Defaults to '.' or project file location.",
+      "type": "string"
+    },
     "globalIncludes": {
       "description": "List of files to look for additional completions.",
       "type": "array",
