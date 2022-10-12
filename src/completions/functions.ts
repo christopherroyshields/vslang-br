@@ -1,39 +1,109 @@
-import {CompletionItem, CompletionItemKind, InsertTextFormat} from "vscode-languageserver"
+import { EOL } from "os"
+import { CompletionItem, CompletionItemKind, InsertTextFormat } from "vscode-languageserver"
+import { BrParamType } from "../types/BrParamType"
 
 export interface FunctionParameter {
   name: string,
   documentation?: string
 }
 
-export interface InternalFunction {
+export class UserFunctionParameter implements FunctionParameter {
+  name: string = ""
+  length?: number | undefined
+  documentation?: string | undefined
+  isReference: boolean = false
+  isOptional: boolean = false
+  type?: BrParamType
+}
+
+export interface BrFunction {
   name: string,
   description?: string,
   documentation?: string,
   params?: FunctionParameter[]
 }
 
+class InternalFunction implements BrFunction {
+  generateSignature(): string {
+    throw new Error("Method not implemented.")
+  }
+  name: string = ''
+  description?: string
+  documentation?: string
+  params?: FunctionParameter[]
+}
+
 /**
  * User Defined BR Function found in source
  */
-export class UserFunction implements InternalFunction {
+export class UserFunction implements BrFunction {
   name: string
-  description?: string | undefined
-  documentation?: string | undefined
-  params?: FunctionParameter[] | undefined
-  uri: string = ''
+  description?: string
+  documentation?: string
+  params?: UserFunctionParameter[]
   /**
    * @param name - function name
    */
   constructor(name: string) {
     this.name = name
   }
+
+  /**
+   * 
+   * @returns A composite of all comment documentation for display purposes for hover and completion
+   */
+	getAllDocs(): string | undefined {
+    let docs: string | undefined
+    if (this.documentation){
+      docs = this.documentation + "\\"+EOL
+    }
+    if (this.params){
+      for (let paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
+        const param = this.params[paramIndex];
+        if (param.documentation){
+          if (paramIndex || docs){
+            docs += "\\"+EOL
+          }
+          docs += `*@param* \`${param.name}\` ${param.documentation}`
+        }
+      }
+    }
+    return docs
+  }
+  generateSignature() : string {
+    let sig: string = ''
+    if (this.params ?. length) {
+      sig += '('
+      for (let paramindex = 0; paramindex < this.params.length; paramindex++) {
+        if (paramindex > 0) {
+          sig += ','
+        }
+        const element = this.params[paramindex];
+        let name = ''
+        if (element.isReference) {
+          name += '&'
+        }
+        name += element.name;
+        if (element.length) {
+          name += '*' + element.length.toString()
+        }
+        if (element.isOptional) {
+          name = '[' + name + ']'
+        }
+        sig += name;
+      }
+      sig += ')'
+    }
+    return sig
+  }
+
 }
 
 /**
  * Function to generate example function call for display purposes
  * @param fn Function to generate full function call
  */
-export function generateFunctionSignature(fn: InternalFunction): string {
+export function generateFunctionSignature(fn: BrFunction): string {
   let sig: string = ''
   if (fn.params?.length) {
     sig += '('
@@ -49,7 +119,7 @@ export function generateFunctionSignature(fn: InternalFunction): string {
   return sig
 }
 
-export function getFunctionByName(name: string): InternalFunction | undefined {
+export function getFunctionByName(name: string): BrFunction | undefined {
   for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
     const fn = stringFunctions[fnIndex];
     if (fn.name.toLowerCase() === name.toLowerCase()) {
@@ -58,9 +128,9 @@ export function getFunctionByName(name: string): InternalFunction | undefined {
   }
 }
 
-export function getFunctionsByName(name: string): InternalFunction[] | undefined {
+export function getFunctionsByName(name: string): BrFunction[] | undefined {
 
-  const fnMatches: InternalFunction[] = []
+  const fnMatches: BrFunction[] = []
 
   for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
     const fn = stringFunctions[fnIndex];
@@ -72,7 +142,7 @@ export function getFunctionsByName(name: string): InternalFunction[] | undefined
   return fnMatches.length ? fnMatches : undefined
 }
 
-export const stringFunctions: InternalFunction[] = [
+export const stringFunctions: BrFunction[] = [
   {
     name: "BR_FileName$",
     documentation: "Returns the BR Filename version of the specified OS filename (reversing out your Drive statements).",

@@ -236,7 +236,7 @@ async function getCompletions(params: CompletionParams): Promise<CompletionItem[
 	let doc = documents.get(params.textDocument.uri)
 	
 	if (doc){
-		completions = completions.concat(getLocalUserFunctionCompletions(doc));
+		// completions = completions.concat(getLocalUserFunctionCompletions(doc));
 		completions = completions.concat(getFunctionCompletions())
 	}
 
@@ -272,20 +272,17 @@ function getUserFunctionsFromDocument(doc: TextDocument): br.UserFunction[] {
 		let fnParts: RegExpExecArray | null = FNPARSE.exec(fnFound[0])
 		if (fnParts && fnParts.groups && fnParts.groups.name){
 			let comDocs = getCommentDoc(fnParts.groups.name, docText)
-			const fn: br.UserFunction = {
-				name: fnParts.groups.name,
-				uri: doc.uri,
-				documentation: comDocs?.text,
-				description: 'User Function',
-				params: []
-			}
+			const fn: br.UserFunction = new br.UserFunction(fnParts.groups.name)
+			fn.name = fnParts.groups.name
+			fn.documentation=comDocs?.text
+			fn.description='User Function'
+			fn.params=[]
 
 			if (fnParts.groups.params){
 				let paramMatch: RegExpExecArray | null
 				while ((paramMatch = PARAM_SEARCH.exec(fnParts.groups.params)) !== null) {
-					let fnParam: br.FunctionParameter = {
-						name: paramMatch[0]
-					}
+					let fnParam: br.UserFunctionParameter = new br.UserFunctionParameter()
+					fnParam.name = paramMatch[0]
 					if (comDocs && comDocs.params){
 						for (let paramDocIndex = 0; paramDocIndex < comDocs.params.length; paramDocIndex++) {
 							const paramDoc = comDocs.params[paramDocIndex];
@@ -543,7 +540,7 @@ function isComment(cursorPosition: Position, doctext: string, doc: TextDocument)
 	return false
 }
 
-function createHoverFromFunction(fn: br.InternalFunction): Hover {
+function createHoverFromFunction(fn: br.BrFunction): Hover {
 
 	let markDownString = '```br\n' + fn.name + br.generateFunctionSignature(fn) + '\n```\n---'
 
