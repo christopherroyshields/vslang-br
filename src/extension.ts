@@ -32,7 +32,8 @@ export function activate(context: vscode.ExtensionContext) {
 				const config = ProjectConfigs.get(workspaceFolder)
 				if (config?.globalIncludes){
 					for (const globalInclude of config.globalIncludes) {
-						const globalUri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, globalInclude))
+						const searchPath = getSearchPath(workspaceFolder)
+						const globalUri = vscode.Uri.file(path.join(searchPath, globalInclude))
 						for (const [uri, lib] of GlobalLibraries) {
 							if (uri.toString() !== doc.uri.toString() && globalUri.toString() ===  uri.toString()){
 								for (const fn of lib){
@@ -49,16 +50,6 @@ export function activate(context: vscode.ExtensionContext) {
 								}
 							}
 						}
-	
-					// const globalLib = GlobalLibraries.get(uri)
-					// if (globalLib){
-					// 	if (!projectConfig.libraries) projectConfig.libraries = new Map()
-					// 	const globalLib = GlobalLibraries.get(uri)
-					// 	projectConfig.libraries.set(uri, globalLib ?? [])
-					// }
-					// if (projectConfig?.libraries) await updateLibraryFunctions(uri)
-
-						
 					}
 				}
 			}
@@ -120,6 +111,14 @@ export function deactivate() {
 	deactivateClient();
 }
 
+function getSearchPath(workspaceFolder: vscode.WorkspaceFolder): string {
+	const config = ProjectConfigs.get(workspaceFolder)
+	let searchPath = workspaceFolder.uri.fsPath;
+	if (config?.searchPath){
+		searchPath = path.join(workspaceFolder.uri.fsPath, config?.searchPath)
+	}
+	return searchPath
+}
 
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>\/\*[^*][^/]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))/gi
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi
@@ -201,6 +200,7 @@ interface ProjectConfigJson {
 
 interface ProjectConfig {
 	globalIncludes?: string[]
+	searchPath?: string,
 	libraries?: Map<vscode.Uri, UserFunction[]>
 }
 
