@@ -20,6 +20,27 @@ function activate(context) {
         language: "br",
         scheme: "file"
     }, {
+        provideCompletionItems: (doc, position, token, context) => {
+            const completionItems = [];
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
+            if (workspaceFolder) {
+                const searchPath = getSearchPath(workspaceFolder);
+                for (const [uri, lib] of GlobalLibraries) {
+                    if (uri.fsPath.indexOf(searchPath.fsPath) === 0) {
+                        const libPath = uri.fsPath.substring(searchPath.fsPath.length + 1);
+                        completionItems.push({
+                            label: libPath
+                        });
+                    }
+                }
+            }
+            return completionItems;
+        }
+    }, "\"");
+    vscode.languages.registerCompletionItemProvider({
+        language: "br",
+        scheme: "file"
+    }, {
         provideCompletionItems: (doc, position) => {
             const completionItems = [];
             const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
@@ -28,7 +49,7 @@ function activate(context) {
                 if (config?.globalIncludes) {
                     for (const globalInclude of config.globalIncludes) {
                         const searchPath = getSearchPath(workspaceFolder);
-                        const globalUri = vscode.Uri.file(path.join(searchPath, globalInclude));
+                        const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude));
                         for (const [uri, lib] of GlobalLibraries) {
                             if (uri.toString() !== doc.uri.toString() && globalUri.toString() === uri.toString()) {
                                 for (const fn of lib) {
@@ -103,11 +124,13 @@ function deactivate() {
 exports.deactivate = deactivate;
 function getSearchPath(workspaceFolder) {
     const config = ProjectConfigs.get(workspaceFolder);
-    let searchPath = workspaceFolder.uri.fsPath;
-    if (config?.searchPath) {
-        searchPath = path.join(workspaceFolder.uri.fsPath, config?.searchPath);
+    const searchPath = workspaceFolder.uri;
+    if (config !== undefined && config.searchPath !== undefined) {
+        return vscode.Uri.joinPath(searchPath, config.searchPath.replace("\\", "/"));
     }
-    return searchPath;
+    else {
+        return workspaceFolder.uri;
+    }
 }
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>\/\*[^*][^/]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))/gi;
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi;
