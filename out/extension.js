@@ -23,6 +23,22 @@ function activate(context) {
         provideCompletionItems: (doc, position, token, context) => {
             const completionItems = new vscode.CompletionList();
             const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
+            const ISLIBRARY_LINKAGE_LIST = /library(\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')([\w\\]+)("|'))?\s*:\s*(fn\w*\$?\s*,?\s*)*$/i;
+            if (ISLIBRARY_LINKAGE_LIST.test(line)) {
+                completionItems.items.push({
+                    label: "fntest"
+                });
+            }
+            return completionItems;
+        }
+    }, ":", ",", " ");
+    vscode.languages.registerCompletionItemProvider({
+        language: "br",
+        scheme: "file"
+    }, {
+        provideCompletionItems: (doc, position, token, context) => {
+            const completionItems = new vscode.CompletionList();
+            const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
             const ISLIBRARY_LITERAL = /library\s*("|')$/gi;
             if (ISLIBRARY_LITERAL.test(line)) {
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
