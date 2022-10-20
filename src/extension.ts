@@ -25,24 +25,33 @@ export function activate(context: vscode.ExtensionContext) {
 		scheme: "file"
 	}, {
 		provideCompletionItems: (doc: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext) => {
-			const completionItems: vscode.CompletionItem[] = []
+			const completionItems: vscode.CompletionList<vscode.CompletionItem> = new vscode.CompletionList();
 
-			const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
-			if (workspaceFolder){
-				const searchPath = getSearchPath(workspaceFolder)
-				for (const [uri, lib] of GlobalLibraries) {
-					if (uri.fsPath.indexOf(searchPath.fsPath) === 0){
-						const libPath = uri.fsPath.substring(searchPath.fsPath.length + 1)
-						completionItems.push({
-							label: libPath
-						})
-					}
-				}				
+			const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
+			const ISLIBRARY_LITERAL = /library\s*("|')$/gi
+			if (ISLIBRARY_LITERAL.test(line)){
+				const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
+				if (workspaceFolder){
+					const searchPath = getSearchPath(workspaceFolder)
+					for (const [uri, lib] of GlobalLibraries) {
+						if (uri.fsPath.indexOf(searchPath.fsPath) === 0){
+							const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1))
+							const libPath = path.join(parsedPath.dir, parsedPath.name)
+							const itemLabel: vscode.CompletionItemLabel = {
+								label: libPath,
+								detail: parsedPath.ext
+							}
+							completionItems.items.push({
+								label: itemLabel
+							})
+						}
+					}				
+				}
 			}
 
 			return completionItems
 		}
-	}, "\"")
+	}, "\"", "'")
 
 	vscode.languages.registerCompletionItemProvider({
 		language: "br",

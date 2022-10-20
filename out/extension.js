@@ -21,22 +21,31 @@ function activate(context) {
         scheme: "file"
     }, {
         provideCompletionItems: (doc, position, token, context) => {
-            const completionItems = [];
-            const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
-            if (workspaceFolder) {
-                const searchPath = getSearchPath(workspaceFolder);
-                for (const [uri, lib] of GlobalLibraries) {
-                    if (uri.fsPath.indexOf(searchPath.fsPath) === 0) {
-                        const libPath = uri.fsPath.substring(searchPath.fsPath.length + 1);
-                        completionItems.push({
-                            label: libPath
-                        });
+            const completionItems = new vscode.CompletionList();
+            const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
+            const ISLIBRARY_LITERAL = /library\s*("|')$/gi;
+            if (ISLIBRARY_LITERAL.test(line)) {
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
+                if (workspaceFolder) {
+                    const searchPath = getSearchPath(workspaceFolder);
+                    for (const [uri, lib] of GlobalLibraries) {
+                        if (uri.fsPath.indexOf(searchPath.fsPath) === 0) {
+                            const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1));
+                            const libPath = path.join(parsedPath.dir, parsedPath.name);
+                            const itemLabel = {
+                                label: libPath,
+                                detail: parsedPath.ext
+                            };
+                            completionItems.items.push({
+                                label: itemLabel
+                            });
+                        }
                     }
                 }
             }
             return completionItems;
         }
-    }, "\"");
+    }, "\"", "'");
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
