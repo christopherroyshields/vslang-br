@@ -22,12 +22,32 @@ function activate(context) {
     }, {
         provideCompletionItems: (doc, position, token, context) => {
             const completionItems = new vscode.CompletionList();
-            const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
-            const ISLIBRARY_LINKAGE_LIST = /library(\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')([\w\\]+)("|'))?\s*:\s*(fn\w*\$?\s*,?\s*)*$/i;
-            if (ISLIBRARY_LINKAGE_LIST.test(line)) {
-                completionItems.items.push({
-                    label: "fntest"
-                });
+            if (context.triggerKind === vscode.CompletionTriggerKind.TriggerCharacter) {
+                const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
+                const ISLIBRARY_LINKAGE_LIST = /library(\s+(release\s*,)?(\s*nofiles\s*,)?\s*(?<libPath>"[\w\\]+"|'[\w\\]+')?)\s*:\s*(?<fnList>[a-z_, $]*)?$/i;
+                let match = line.match(ISLIBRARY_LINKAGE_LIST);
+                if (match?.groups) {
+                    const libPath = match.groups.libPath.replace(/'|"/g, '');
+                    for (const [uri, lib] of GlobalLibraries) {
+                        if (lib.linkPath.toLowerCase() == libPath.toLowerCase()) {
+                            for (const fn of lib.libraryList) {
+                                if (match.groups.fnList) {
+                                    const lineSearch = new RegExp("\\b" + fn.name.replace("$", "\\$") + "(,|\s|$)", "i");
+                                    if (!lineSearch.test(match.groups.fnList)) {
+                                        completionItems.items.push({
+                                            label: fn.name
+                                        });
+                                    }
+                                }
+                                else {
+                                    completionItems.items.push({
+                                        label: fn.name
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
             }
             return completionItems;
         }
@@ -50,7 +70,7 @@ function activate(context) {
                             const libPath = path.join(parsedPath.dir, parsedPath.name);
                             const itemLabel = {
                                 label: libPath,
-                                detail: parsedPath.ext
+                                detail: parsedPath.ext.substring(0, parsedPath.ext.length - 1)
                             };
                             completionItems.items.push({
                                 label: itemLabel
@@ -77,7 +97,7 @@ function activate(context) {
                         const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude));
                         for (const [uri, lib] of GlobalLibraries) {
                             if (uri.toString() !== doc.uri.toString() && globalUri.toString() === uri.toString()) {
-                                for (const fn of lib) {
+                                for (const fn of lib.libraryList) {
                                     completionItems.push({
                                         kind: vscode_languageclient_1.CompletionItemKind.Function,
                                         label: {
@@ -292,6 +312,19 @@ async function updateLibraryFunctions(uri) {
 }
 function updateWorkspaceCode(uri, workspaceFolder) {
 }
+class SourceLibrary {
+    constructor(uri, libraryList, workspaceFolder) {
+        this.uri = uri;
+        this.libraryList = libraryList;
+        this.linkPath = this.getLinkPath(workspaceFolder);
+    }
+    getLinkPath(workspaceFolder) {
+        const searchPath = getSearchPath(workspaceFolder);
+        const parsedPath = path.parse(this.uri.fsPath.substring(searchPath.fsPath.length + 1));
+        const libPath = path.join(parsedPath.dir, parsedPath.name);
+        return libPath;
+    }
+}
 async function startWatchingSource(workspaceFolder) {
     const watchers = [];
     const projectConfig = await getProjectConfig(workspaceFolder);
@@ -302,7 +335,8 @@ async function startWatchingSource(workspaceFolder) {
         for (const source of sourceFiles) {
             const sourceLibs = await updateLibraryFunctions(source);
             if (sourceLibs) {
-                GlobalLibraries.set(source, sourceLibs);
+                const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder);
+                GlobalLibraries.set(source, sourceLib);
             }
         }
         const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern);
@@ -311,7 +345,8 @@ async function startWatchingSource(workspaceFolder) {
             if (sourceLibs) {
                 for (const [uri] of GlobalLibraries) {
                     if (uri.toString() === source.toString()) {
-                        GlobalLibraries.set(uri, sourceLibs);
+                        const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder);
+                        GlobalLibraries.set(uri, sourceLib);
                     }
                 }
             }
@@ -326,7 +361,8 @@ async function startWatchingSource(workspaceFolder) {
         codeWatcher.onDidCreate(async (source) => {
             const sourceLibs = await updateLibraryFunctions(source);
             if (sourceLibs) {
-                GlobalLibraries.set(source, sourceLibs);
+                const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder);
+                GlobalLibraries.set(source, sourceLib);
             }
         });
     }
