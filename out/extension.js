@@ -11,11 +11,38 @@ const path = require("path");
 const functions_1 = require("./completions/functions");
 const BrParamType_1 = require("./types/BrParamType");
 const DocComment_1 = require("./types/DocComment");
+const common_1 = require("./util/common");
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
     (0, client_1.activateClient)(context);
     activateWorkspaceFolders(context);
+    vscode.languages.registerHoverProvider({
+        language: "br",
+        scheme: "file"
+    }, {
+        provideHover: (doc, position, token) => {
+            let hover;
+            if (doc) {
+                let doctext = doc.getText();
+                if ((0, common_1.isComment)(position, doctext, doc)) {
+                    return;
+                }
+                else {
+                    var wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
+                    if (wordRange) {
+                        let fn = (0, functions_1.getFunctionByName)(doc.getText(wordRange));
+                        if (fn) {
+                            let hover = (0, common_1.createHoverFromFunction)(fn);
+                            hover.range = wordRange;
+                            return hover;
+                        }
+                    }
+                }
+            }
+            return hover;
+        }
+    });
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"

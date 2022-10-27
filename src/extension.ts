@@ -5,11 +5,10 @@ import { activateClient, deactivateClient } from './client'
 import { Statements } from './statements';
 import { CompletionItemKind, CompletionItemLabelDetails, Disposable, WorkspaceFolder } from 'vscode-languageclient';
 import path = require('path');
-import { BrFunction, generateFunctionSignature, UserFunction, UserFunctionParameter } from './completions/functions';
+import { BrFunction, generateFunctionSignature, getFunctionByName, UserFunction, UserFunctionParameter } from './completions/functions';
 import { BrParamType } from './types/BrParamType';
 import { DocComment } from './types/DocComment';
-import { watch } from 'fs';
-import { match } from 'assert';
+import { createHoverFromFunction, isComment } from './util/common';
 
 export function activate(context: vscode.ExtensionContext) {
 	
@@ -20,6 +19,34 @@ export function activate(context: vscode.ExtensionContext) {
 	activateClient(context)
 
 	activateWorkspaceFolders(context)
+
+	vscode.languages.registerHoverProvider({
+		language: "br",
+		scheme: "file"
+	}, {
+		provideHover: (doc: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) => {
+			let hover: vscode.Hover | undefined
+
+			if (doc){
+				let doctext = doc.getText()
+				if (isComment(position, doctext, doc)){
+					return			
+				} else {
+					var wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
+					if (wordRange){
+						let fn = getFunctionByName(doc.getText(wordRange))
+						if (fn){
+							let hover = createHoverFromFunction(fn)
+							hover.range = wordRange
+							return hover
+						}
+					}
+				}
+			}
+		
+			return hover
+		}
+	})
 
 	vscode.languages.registerCompletionItemProvider({
 		language: "br",

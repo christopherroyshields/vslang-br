@@ -71,7 +71,6 @@ connection.onInitialize((params: InitializeParams) => {
 	const result: InitializeResult = {
 		capabilities: {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
-			hoverProvider: true,
 			completionProvider: {
 				resolveProvider: true
 			},
@@ -473,30 +472,6 @@ connection.onSignatureHelp(
 	}
 )
 
-connection.onHover((params: HoverParams): Hover | undefined => {
-	let doc: TextDocument | undefined = documents.get(params.textDocument.uri);
-	let hover: Hover | undefined
-
-	if (doc){
-		let doctext = doc.getText()
-		if (isComment(params.position, doctext, doc)){
-			return			
-		} else {
-			var wordRange = getWordRangeAtPosition(doctext.split("\n"), params.position);
-			if (wordRange){
-				let fn = br.getFunctionByName(doc.getText(wordRange))
-				if (fn){
-					let hover = createHoverFromFunction(fn)
-					hover.range = wordRange
-					return hover
-				}
-			}
-		}
-	}
-
-	return hover
-})
-
 function getFunctionCompletions(): CompletionItem[] {
 	let functionCompletions: CompletionItem[] = []
 	br.stringFunctions.forEach(internalFunction => {
@@ -517,50 +492,4 @@ documents.listen(connection);
 
 // Listen on the connection
 connection.listen();
-
-function isComment(cursorPosition: Position, doctext: string, doc: TextDocument): boolean {
-	let commentMatch: RegExpExecArray | null
-	const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
-	while ((commentMatch = STRING_OR_COMMENT.exec(doctext)) !== null) {
-		let commentRange: Range = {
-			start: doc.positionAt(commentMatch.index),
-			end: doc.positionAt(commentMatch.index + commentMatch.length)
-		}
-		let startOffset = commentMatch.index
-		let endOffset = commentMatch.index + commentMatch[0].length
-		if (doc.offsetAt(cursorPosition) < startOffset){
-			break
-		}
-		if (doc.offsetAt(cursorPosition) >= startOffset){
-			if (doc.offsetAt(cursorPosition) <= endOffset){
-				return true
-			}
-		}
-	}
-	return false
-}
-
-function createHoverFromFunction(fn: br.BrFunction): Hover {
-
-	let markDownString = '```br\n' + fn.name + br.generateFunctionSignature(fn) + '\n```\n---'
-
-	if (markDownString){
-		markDownString += '\n' + fn.documentation
-	}
-
-	fn.params?.forEach((param)=>{
-		if (param.documentation){
-			markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`
-		}
-	})
-
-	let markup: MarkupContent = {
-		kind: MarkupKind.Markdown,
-		value: markDownString
-	}
-
-	return {
-		contents: markup
-	}
-}
 
