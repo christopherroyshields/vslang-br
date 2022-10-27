@@ -69,7 +69,7 @@ export function activate(context: vscode.ExtensionContext) {
 			const completionItems: vscode.CompletionList<vscode.CompletionItem> = new vscode.CompletionList();
 
 			const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
-			const ISLIBRARY_LITERAL = /library\s*("|')$/gi
+			const ISLIBRARY_LITERAL = /library\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')$/gi
 			if (ISLIBRARY_LITERAL.test(line)){
 				const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
 				if (workspaceFolder){
