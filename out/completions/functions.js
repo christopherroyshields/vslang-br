@@ -453,20 +453,11 @@ exports.stringFunctions = [
         ],
     },
     {
-        name: "Mat",
-        documentation: "Returns an array that is an ascending index obtained from sorting the array within parenthesis.",
+        name: "AIDX",
+        documentation: "The AIDX internal function returns an array that is an ascending index obtained from sorting the array within parenthesis. The array to be sorted may be either string or numeric. The use of AIDX is permitted only in the MAT statement.",
         params: [
             {
-                name: "MAT ArrayToBeIndexed$",
-            },
-        ],
-    },
-    {
-        name: "Aidx",
-        documentation: "Returns an array of Subscripts that is an ascending index obtained from sorting the array within parenthesis.",
-        params: [
-            {
-                name: "MAT ArrayToBeIndexed$",
+                name: "<array name>",
             },
         ],
     },
