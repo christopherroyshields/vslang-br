@@ -13,10 +13,12 @@ const ConfiguredProject_1 = require("./class/ConfiguredProject");
 const SourceLibrary_1 = require("./class/SourceLibrary");
 const BrSignatureHelpProvider_1 = require("./providers/BrSignatureHelpProvider");
 const BrHoverProvider_1 = require("./providers/BrHoverProvider");
+const LibLinkListProvider_1 = require("./providers/LibLinkListProvider");
 const SOURCE_GLOB = '**/*.{brs,wbs}';
 const ConfiguredProjects = new Map();
 const signatureHelpProvider = new BrSignatureHelpProvider_1.BrSignatureHelpProvider(ConfiguredProjects);
 const hoverProvider = new BrHoverProvider_1.BrHoverProvider(ConfiguredProjects);
+const libLinkListProvider = new LibLinkListProvider_1.LibLinkListProvider(ConfiguredProjects);
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
@@ -33,45 +35,7 @@ function activate(context) {
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
-    }, {
-        provideCompletionItems: (doc, position, token, context) => {
-            const completionItems = new vscode.CompletionList();
-            if (context.triggerKind === vscode.CompletionTriggerKind.TriggerCharacter) {
-                const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
-                const ISLIBRARY_LINKAGE_LIST = /library(\s+(release\s*,)?(\s*nofiles\s*,)?\s*(?<libPath>"[\w\\]+"|'[\w\\]+')?)\s*:\s*(?<fnList>[a-z_, $]*)?$/i;
-                let match = line.match(ISLIBRARY_LINKAGE_LIST);
-                if (match?.groups) {
-                    const libPath = match.groups.libPath.replace(/'|"/g, '');
-                    const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
-                    if (workspaceFolder) {
-                        const project = ConfiguredProjects.get(workspaceFolder);
-                        if (project) {
-                            for (const [uri, lib] of project.libraries) {
-                                if (lib.linkPath?.toLowerCase() == libPath.toLowerCase()) {
-                                    for (const fn of lib.libraryList) {
-                                        if (match.groups.fnList) {
-                                            const lineSearch = new RegExp("\\b" + fn.name.replace("$", "\\$") + "(,|\s|$)", "i");
-                                            if (!lineSearch.test(match.groups.fnList)) {
-                                                completionItems.items.push({
-                                                    label: fn.name
-                                                });
-                                            }
-                                        }
-                                        else {
-                                            completionItems.items.push({
-                                                label: fn.name
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return completionItems;
-        }
-    }, ":", ",", " ");
+    }, libLinkListProvider, ":", ",", " ");
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
@@ -225,11 +189,11 @@ async function getProjectConfig(workspaceFolder) {
     }
     return projectConfig;
 }
-async function updateLibraryFunctions(uri) {
+async function updateLibraryFunctions(uri, project) {
     try {
         const libText = await vscode.workspace.fs.readFile(uri);
         if (libText) {
-            const newDoc = new SourceLibrary_1.SourceLibrary(uri, libText.toString());
+            const newDoc = new SourceLibrary_1.SourceLibrary(uri, libText.toString(), project);
             return newDoc;
         }
     }
@@ -242,14 +206,14 @@ async function startWatchingSource(workspaceFolder, project) {
     const folderPattern = new vscode.RelativePattern(workspaceFolder, SOURCE_GLOB);
     const sourceFiles = await vscode.workspace.findFiles(folderPattern);
     for (const source of sourceFiles) {
-        const sourceLib = await updateLibraryFunctions(source);
+        const sourceLib = await updateLibraryFunctions(source, project);
         if (sourceLib) {
             project.libraries.set(source.toString(), sourceLib);
         }
     }
     const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern);
     codeWatcher.onDidChange(async (sourceUri) => {
-        const sourceLib = await updateLibraryFunctions(sourceUri);
+        const sourceLib = await updateLibraryFunctions(sourceUri, project);
         if (sourceLib) {
             for (const [uri] of project.libraries) {
                 if (uri === sourceUri.toString()) {
@@ -262,7 +226,7 @@ async function startWatchingSource(workspaceFolder, project) {
         project.libraries.delete(sourceUri.toString());
     });
     codeWatcher.onDidCreate(async (sourceUri) => {
-        const sourceLib = await updateLibraryFunctions(sourceUri);
+        const sourceLib = await updateLibraryFunctions(sourceUri, project);
         if (sourceLib) {
             project.libraries.set(sourceUri.toString(), sourceLib);
         }
