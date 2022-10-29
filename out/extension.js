@@ -8,14 +8,15 @@ const client_1 = require("./client");
 const statements_1 = require("./statements");
 const vscode_languageclient_1 = require("vscode-languageclient");
 const path = require("path");
-const functions_1 = require("./completions/functions");
 const common_1 = require("./util/common");
 const ConfiguredProject_1 = require("./class/ConfiguredProject");
 const SourceLibrary_1 = require("./class/SourceLibrary");
-const SignatureHelpProvider_1 = require("./providers/SignatureHelpProvider");
+const BrSignatureHelpProvider_1 = require("./providers/BrSignatureHelpProvider");
+const BrHoverProvider_1 = require("./providers/BrHoverProvider");
 const SOURCE_GLOB = '**/*.{brs,wbs}';
 const ConfiguredProjects = new Map();
-const signatureHelpProvider = new SignatureHelpProvider_1.BrSignatureHelpProvider(ConfiguredProjects);
+const signatureHelpProvider = new BrSignatureHelpProvider_1.BrSignatureHelpProvider(ConfiguredProjects);
+const hoverProvider = new BrHoverProvider_1.BrHoverProvider(ConfiguredProjects);
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
@@ -28,59 +29,7 @@ function activate(context) {
     vscode.languages.registerHoverProvider({
         language: "br",
         scheme: "file"
-    }, {
-        provideHover: (doc, position, token) => {
-            const doctext = doc.getText();
-            if ((0, common_1.isComment)(position, doctext, doc)) {
-                return;
-            }
-            else {
-                const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
-                if (wordRange) {
-                    const word = doc.getText(wordRange);
-                    if (word) {
-                        if (word.substring(0, 2).toLowerCase() == "fn") {
-                            // local functions
-                            const localSource = new SourceLibrary_1.SourceLibrary(doc.uri, doc.getText());
-                            for (const fn of localSource.libraryList) {
-                                if (fn.name.toLowerCase() == word) {
-                                    const hover = (0, common_1.createHoverFromFunction)(fn);
-                                    hover.range = wordRange;
-                                    return hover;
-                                }
-                            }
-                            // library functions
-                            const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
-                            if (workspaceFolder) {
-                                const project = ConfiguredProjects.get(workspaceFolder);
-                                if (project) {
-                                    for (const [uri, lib] of project.libraries) {
-                                        for (const fn of lib.libraryList) {
-                                            if (fn.name.toLowerCase() === word) {
-                                                const hover = (0, common_1.createHoverFromFunction)(fn);
-                                                hover.range = wordRange;
-                                                return hover;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        else {
-                            // system functions
-                            const fn = (0, functions_1.getFunctionByName)(word);
-                            if (fn) {
-                                const hover = (0, common_1.createHoverFromFunction)(fn);
-                                hover.range = wordRange;
-                                return hover;
-                            }
-                        }
-                    }
-                    // local functions
-                }
-            }
-        }
-    });
+    }, hoverProvider);
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
@@ -229,7 +178,6 @@ function activate(context) {
             });
         }
     });
-    console.log('Extension "vslang-br" is now active!');
 }
 exports.activate = activate;
 function deactivate() {

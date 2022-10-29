@@ -6,9 +6,6 @@ import { FUNCTION_CALL_CONTEXT, STRING_LITERALS, stripBalancedFunctions } from "
 
 export class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, ConfiguredProject>
-  /**
-   *
-   */
   constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
     this.configuredProjects = configuredProjects
   }

@@ -8,18 +8,20 @@ import path = require('path');
 import { generateFunctionSignature, getFunctionByName, getFunctionsByName } from './completions/functions';
 import { BrParamType } from './types/BrParamType';
 import { DocComment } from './types/DocComment';
-import { createHoverFromFunction, getSearchPath, isComment, stripBalancedFunctions } from './util/common';
+import { getSearchPath, isComment, stripBalancedFunctions } from './util/common';
 import { ConfiguredProject } from './class/ConfiguredProject';
 import { UserFunction } from './class/UserFunction';
 import { UserFunctionParameter } from './class/UserFunctionParameter';
 import { ProjectConfig } from './interface/ProjectConfig';
 import { SourceLibrary } from './class/SourceLibrary';
-import { BrSignatureHelpProvider } from './providers/SignatureHelpProvider';
+import { BrSignatureHelpProvider } from './providers/BrSignatureHelpProvider';
+import { BrHoverProvider } from './providers/BrHoverProvider';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<vscode.WorkspaceFolder, ConfiguredProject>()
 
 const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
+const hoverProvider = new BrHoverProvider(ConfiguredProjects)
 
 export function activate(context: vscode.ExtensionContext) {
 	
@@ -39,62 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.languages.registerHoverProvider({
 		language: "br",
 		scheme: "file"
-	}, {
-		provideHover: (doc: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.Hover | undefined => {
-
-			const doctext = doc.getText()
-			if (isComment(position, doctext, doc)){
-				return			
-			} else {
-				const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
-				if (wordRange){
-					const word = doc.getText(wordRange)
-					if (word){
-						if (word.substring(0,2).toLowerCase() == "fn"){
-							
-							// local functions
-							const localSource = new SourceLibrary(doc.uri, doc.getText())
-							for (const fn of localSource.libraryList) {
-								if (fn.name.toLowerCase() == word){
-									const hover = createHoverFromFunction(fn)
-									hover.range = wordRange
-									return hover
-								}
-							}
-							
-							// library functions
-							const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
-							if (workspaceFolder){
-								const project = ConfiguredProjects.get(workspaceFolder)
-								if (project){
-									for (const [uri,lib] of project.libraries) {
-										for (const fn of lib.libraryList) {
-											if (fn.name.toLowerCase() === word){
-												const hover = createHoverFromFunction(fn)
-												hover.range = wordRange
-												return hover
-											}
-										}
-									}
-								}
-							}
-						}	else {
-							// system functions
-							const fn = getFunctionByName(word)
-							if (fn){
-								const hover = createHoverFromFunction(fn)
-								hover.range = wordRange
-								return hover
-							}
-						}					
-					}
-
-					// local functions
-				}
-			}
-		
-		}
-	})
+	}, hoverProvider)
 
 	vscode.languages.registerCompletionItemProvider({
 		language: "br",
@@ -255,9 +202,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 		}
 	})
-
-	console.log('Extension "vslang-br" is now active!');
-
 }
 
 export function deactivate() {

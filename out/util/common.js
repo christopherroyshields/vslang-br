@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSearchPath = exports.stripBalancedFunctions = exports.createHoverFromFunction = exports.isComment = exports.FUNCTION_CALL_CONTEXT = exports.STRING_LITERALS = void 0;
+exports.getSearchPath = exports.stripBalancedFunctions = exports.isComment = exports.FUNCTION_CALL_CONTEXT = exports.STRING_LITERALS = void 0;
 const vscode_1 = require("vscode");
-const functions_1 = require("../completions/functions");
 exports.STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
 exports.FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i;
 function isComment(cursorPosition, doctext, doc) {
@@ -23,20 +22,6 @@ function isComment(cursorPosition, doctext, doc) {
     return false;
 }
 exports.isComment = isComment;
-function createHoverFromFunction(fn) {
-    let markDownString = '```br\n' + fn.name + (0, functions_1.generateFunctionSignature)(fn) + '\n```\n---';
-    if (markDownString) {
-        markDownString += '\n' + fn.documentation;
-    }
-    fn.params?.forEach((param) => {
-        if (param.documentation) {
-            markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`;
-        }
-    });
-    let markup = new vscode_1.MarkdownString(markDownString);
-    return new vscode_1.Hover(markup);
-}
-exports.createHoverFromFunction = createHoverFromFunction;
 const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g;
 function stripBalancedFunctions(line) {
     if (CONTAINS_BALANCED_FN.test(line)) {

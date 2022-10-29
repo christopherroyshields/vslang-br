@@ -25,25 +25,6 @@ export function isComment(cursorPosition: Position, doctext: string, doc: TextDo
 	return false
 }
 
-export function createHoverFromFunction(fn: BrFunction): Hover {
-
-	let markDownString = '```br\n' + fn.name + generateFunctionSignature(fn) + '\n```\n---'
-
-	if (markDownString){
-		markDownString += '\n' + fn.documentation
-	}
-
-	fn.params?.forEach((param)=>{
-		if (param.documentation){
-			markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`
-		}
-	})
-
-	let markup = new MarkdownString(markDownString)
-
-	return new Hover(markup)
-}
-
 const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g
 export function stripBalancedFunctions(line: string){
 	if (CONTAINS_BALANCED_FN.test(line)){
