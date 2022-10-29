@@ -10,6 +10,18 @@ import { BrParamType } from './types/BrParamType';
 import { DocComment } from './types/DocComment';
 import { createHoverFromFunction, isComment } from './util/common';
 
+const SOURCE_GLOB = '**/*.{brs,wbs}'
+
+class ConfiguredProject {
+	config: ProjectConfig
+	libraries: Map<vscode.Uri, SourceLibrary> = new Map<vscode.Uri, SourceLibrary>()
+	constructor(config: ProjectConfig) {
+		this.config = config
+	}
+}
+
+const ConfiguredProjects = new Map<vscode.WorkspaceFolder, ConfiguredProject>()
+
 export function activate(context: vscode.ExtensionContext) {
 	
 	activateLexi(context)
@@ -24,27 +36,61 @@ export function activate(context: vscode.ExtensionContext) {
 		language: "br",
 		scheme: "file"
 	}, {
-		provideHover: (doc: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken) => {
-			let hover: vscode.Hover | undefined
+		provideHover: (doc: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.Hover | undefined => {
 
-			if (doc){
-				let doctext = doc.getText()
-				if (isComment(position, doctext, doc)){
-					return			
-				} else {
-					var wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
-					if (wordRange){
-						let fn = getFunctionByName(doc.getText(wordRange))
+			const doctext = doc.getText()
+			if (isComment(position, doctext, doc)){
+				return			
+			} else {
+				const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
+				if (wordRange){
+					const word = doc.getText(wordRange)
+					if (word){
+						if (word.substring(0,2).toLowerCase() == "fn"){
+							
+							// local functions
+							const localLibs = parseFunctionsFromSource(doc.getText(), false)
+							if (localLibs){
+								for (const fn of localLibs) {
+									if (fn.name.toLowerCase() == word){
+										const hover = createHoverFromFunction(fn)
+										hover.range = wordRange
+										return hover
+									}
+								}
+							}
+							
+							// library functions
+							const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
+							if (workspaceFolder){
+								const project = ConfiguredProjects.get(workspaceFolder)
+								if (project){
+									for (const [uri,lib] of project.libraries) {
+										for (const fn of lib.libraryList) {
+											if (fn.name.toLowerCase() === word){
+												const hover = createHoverFromFunction(fn)
+												hover.range = wordRange
+												return hover
+											}
+										}
+									}
+								}
+							}
+						}						
+
+						// system functions
+						const fn = getFunctionByName(word)
 						if (fn){
-							let hover = createHoverFromFunction(fn)
+							const hover = createHoverFromFunction(fn)
 							hover.range = wordRange
 							return hover
 						}
 					}
+
+					// local functions
 				}
 			}
 		
-			return hover
 		}
 	})
 
@@ -61,20 +107,26 @@ export function activate(context: vscode.ExtensionContext) {
 				let match = line.match(ISLIBRARY_LINKAGE_LIST)
 				if (match?.groups){
 					const libPath = match.groups.libPath.replace(/'|"/g, '')
-					for (const [uri,lib] of GlobalLibraries) {
-						if (lib.linkPath.toLowerCase() == libPath.toLowerCase()){
-							for (const fn of lib.libraryList) {
-								if (match.groups.fnList){
-									const lineSearch = new RegExp("\\b"+fn.name.replace("$","\\$")+"(,|\s|$)", "i")
-									if (!lineSearch.test(match.groups.fnList)){
-										completionItems.items.push({
-											label: fn.name
-										})
+					const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
+					if (workspaceFolder){
+						const project = ConfiguredProjects.get(workspaceFolder)
+						if (project){
+							for (const [uri,lib] of project.libraries) {
+								if (lib.linkPath.toLowerCase() == libPath.toLowerCase()){
+									for (const fn of lib.libraryList) {
+										if (match.groups.fnList){
+											const lineSearch = new RegExp("\\b"+fn.name.replace("$","\\$")+"(,|\s|$)", "i")
+											if (!lineSearch.test(match.groups.fnList)){
+												completionItems.items.push({
+													label: fn.name
+												})
+											}
+										} else {
+											completionItems.items.push({
+												label: fn.name
+											})
+										}
 									}
-								} else {
-									completionItems.items.push({
-										label: fn.name
-									})
 								}
 							}
 						}
@@ -100,20 +152,23 @@ export function activate(context: vscode.ExtensionContext) {
 			if (ISLIBRARY_LITERAL.test(line)){
 				const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
 				if (workspaceFolder){
-					const searchPath = getSearchPath(workspaceFolder)
-					for (const [uri, lib] of GlobalLibraries) {
-						if (uri.fsPath.indexOf(searchPath.fsPath) === 0){
-							const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1))
-							const libPath = path.join(parsedPath.dir, parsedPath.name)
-							const itemLabel: vscode.CompletionItemLabel = {
-								label: libPath,
-								detail: parsedPath.ext.substring(0,parsedPath.ext.length-1)
+					const project = ConfiguredProjects.get(workspaceFolder)
+					if (project){
+						const searchPath = getSearchPath(workspaceFolder, project)
+						for (const [uri, lib] of project.libraries) {
+							if (uri.fsPath.indexOf(searchPath.fsPath) === 0){
+								const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1))
+								const libPath = path.join(parsedPath.dir, parsedPath.name)
+								const itemLabel: vscode.CompletionItemLabel = {
+									label: libPath,
+									detail: parsedPath.ext.substring(0,parsedPath.ext.length-1)
+								}
+								completionItems.items.push({
+									label: itemLabel
+								})
 							}
-							completionItems.items.push({
-								label: itemLabel
-							})
-						}
-					}				
+						}				
+					}
 				}
 			}
 
@@ -130,24 +185,26 @@ export function activate(context: vscode.ExtensionContext) {
 
 			const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
 			if (workspaceFolder){
-				const config = ProjectConfigs.get(workspaceFolder)
-				if (config?.globalIncludes){
-					for (const globalInclude of config.globalIncludes) {
-						const searchPath = getSearchPath(workspaceFolder)
-						const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude))
-						for (const [uri, lib] of GlobalLibraries) {
-							if (uri.toString() !== doc.uri.toString() && globalUri.toString() ===  uri.toString()){
-								for (const fn of lib.libraryList){
-									completionItems.push({
-										kind: CompletionItemKind.Function,
-										label: {
-											label: fn.name,
-											detail: ' (library function)',
-											description: path.basename(uri.fsPath)
-										},
-										detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-										documentation: new vscode.MarkdownString(fn.getAllDocs())
-									})
+				const project = ConfiguredProjects.get(workspaceFolder)
+				if (project){
+					if (project?.config?.globalIncludes){
+						for (const globalInclude of project.config.globalIncludes) {
+							const searchPath = getSearchPath(workspaceFolder, project)
+							const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude))
+							for (const [uri, lib] of project.libraries) {
+								if (uri.toString() !== doc.uri.toString() && globalUri.toString() ===  uri.toString()){
+									for (const fn of lib.libraryList){
+										completionItems.push({
+											kind: CompletionItemKind.Function,
+											label: {
+												label: fn.name,
+												detail: ' (library function)',
+												description: path.basename(uri.fsPath)
+											},
+											detail: `(library function) ${fn.name}${fn.generateSignature()}`,
+											documentation: new vscode.MarkdownString(fn.getAllDocs())
+										})
+									}
 								}
 							}
 						}
@@ -212,8 +269,8 @@ export function deactivate() {
 	deactivateClient();
 }
 
-function getSearchPath(workspaceFolder: vscode.WorkspaceFolder): vscode.Uri {
-	const config = ProjectConfigs.get(workspaceFolder)
+function getSearchPath(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): vscode.Uri {
+	const config = project.config
 	const searchPath = workspaceFolder.uri;
 	if (config !== undefined && config.searchPath !== undefined){
 		return vscode.Uri.joinPath(searchPath, config.searchPath.replace("\\","/"))
@@ -302,10 +359,6 @@ interface ProjectConfig {
 	libraries?: Map<vscode.Uri, UserFunction[]>
 }
 
-const ProjectConfigs = new Map<vscode.WorkspaceFolder, ProjectConfig>()
-const GlobalLibraries = new Map<vscode.Uri, SourceLibrary>()
-const SOURCE_GLOB = '**/*.{brs,wbs}'
-
 /**
  * Sets up monitoring of project configuration
  * @param context extension context
@@ -383,64 +436,61 @@ class SourceLibrary {
 	libraryList: UserFunction[]
 	/** relative path for library statemtents */
 	linkPath: string
-	constructor(uri: vscode.Uri, libraryList: UserFunction[], workspaceFolder: vscode.WorkspaceFolder) {
+	constructor(uri: vscode.Uri, libraryList: UserFunction[], workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject) {
 		this.uri = uri
 		this.libraryList = libraryList
-		this.linkPath = this.getLinkPath(workspaceFolder)
+		this.linkPath = this.getLinkPath(workspaceFolder, project)
 	}
-	private getLinkPath(workspaceFolder: vscode.WorkspaceFolder): string {
-		const searchPath = getSearchPath(workspaceFolder)
+	private getLinkPath(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): string {
+		const searchPath = getSearchPath(workspaceFolder, project)
 		const parsedPath = path.parse(this.uri.fsPath.substring(searchPath.fsPath.length + 1))
 		const libPath = path.join(parsedPath.dir, parsedPath.name)
 		return libPath
 	}
 }
 
-async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder): Promise<vscode.Disposable[]> {
+async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): Promise<vscode.Disposable[]> {
 	const watchers: vscode.Disposable[] = []
-	const projectConfig = await getProjectConfig(workspaceFolder)
-	if (projectConfig) {
-		ProjectConfigs.set(workspaceFolder, projectConfig)
-		const folderPattern = new vscode.RelativePattern(workspaceFolder, SOURCE_GLOB)
-		const sourceFiles = await vscode.workspace.findFiles(folderPattern)
-		for (const source of sourceFiles) {
-			const sourceLibs = await updateLibraryFunctions(source)
-			if (sourceLibs){
-				const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder)
-				GlobalLibraries.set(source, sourceLib)
+	const folderPattern = new vscode.RelativePattern(workspaceFolder, SOURCE_GLOB)
+	const sourceFiles = await vscode.workspace.findFiles(folderPattern)
+
+	for (const source of sourceFiles) {
+		const sourceLibs = await updateLibraryFunctions(source)
+		if (sourceLibs){
+			const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project)
+			project.libraries.set(source, sourceLib)
+		}
+	}
+
+	const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern)
+	codeWatcher.onDidChange(async (source: vscode.Uri) => {
+		const sourceLibs = await updateLibraryFunctions(source)
+		if (sourceLibs){
+			for (const [uri] of project.libraries) {
+				if (uri.toString() === source.toString()){
+					const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project)
+					project.libraries.set(source, sourceLib)
+				}
 			}
 		}
+	}, undefined, watchers)
 
-		const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern)
-		codeWatcher.onDidChange(async (source: vscode.Uri) => {
-			const sourceLibs = await updateLibraryFunctions(source)
-			if (sourceLibs){
-				for (const [uri] of GlobalLibraries) {
-					if (uri.toString() === source.toString()){
-						const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder)
-						GlobalLibraries.set(uri, sourceLib)
-					}
-				}
+	codeWatcher.onDidDelete(async (source: vscode.Uri) => {
+		for (const [uri] of project.libraries) {
+			if (uri.toString() === source.toString()){
+				project.libraries.delete(uri)
 			}
-		}, undefined, watchers)
+		}
+	})
 
-		codeWatcher.onDidDelete(async (source: vscode.Uri) => {
-			for (const [uri] of GlobalLibraries) {
-				if (uri.toString() === source.toString()){
-					GlobalLibraries.delete(uri)
-				}
-			}
-		})
+	codeWatcher.onDidCreate(async (source: vscode.Uri) => {
+		const sourceLibs = await updateLibraryFunctions(source)
+		if (sourceLibs){
+			const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project)
+			project.libraries.set(source, sourceLib)
+		}
+	})
 
-		codeWatcher.onDidCreate(async (source: vscode.Uri) => {
-			const sourceLibs = await updateLibraryFunctions(source)
-			if (sourceLibs){
-				const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder)
-				GlobalLibraries.set(source, sourceLib)
-			}
-		})
-
-	}
 	return watchers
 }
 
@@ -454,21 +504,33 @@ async function startWatchingWorkpaceFolder(context: vscode.ExtensionContext, wor
 	projectWatcher.onDidChange(async (uri: vscode.Uri) => {
 		const projectConfig = await getProjectConfig(workspaceFolder)
 		if (projectConfig){
-			ProjectConfigs.set(workspaceFolder, projectConfig)
+			const project = new ConfiguredProject(projectConfig)
+			ConfiguredProjects.set(workspaceFolder, project)
 		}
 	}, undefined, disposables)
 
 	projectWatcher.onDidDelete((uri: vscode.Uri) => {
-		ProjectConfigs.delete(workspaceFolder)
+		ConfiguredProjects.delete(workspaceFolder)
 		watchers.forEach(d => d.dispose())
 		watchers = []
 	}, undefined, disposables)
 
 	projectWatcher.onDidCreate(async (uri: vscode.Uri) => {
-		watchers = await startWatchingSource(workspaceFolder)
+		const projectConfig = await getProjectConfig(workspaceFolder)
+		if (projectConfig){
+			const project = new ConfiguredProject(projectConfig)
+			ConfiguredProjects.set(workspaceFolder, project)
+			watchers = await startWatchingSource(workspaceFolder, project)
+		}
 	}, undefined, disposables)
 
-	watchers = await startWatchingSource(workspaceFolder)
+	const projectConfig = await getProjectConfig(workspaceFolder)
+	if (projectConfig){
+		const project = new ConfiguredProject(projectConfig)
+		ConfiguredProjects.set(workspaceFolder, project)
+		watchers = await startWatchingSource(workspaceFolder, project)
+	}
+
 	return disposables.concat(watchers)
 }
 

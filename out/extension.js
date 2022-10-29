@@ -12,6 +12,14 @@ const functions_1 = require("./completions/functions");
 const BrParamType_1 = require("./types/BrParamType");
 const DocComment_1 = require("./types/DocComment");
 const common_1 = require("./util/common");
+const SOURCE_GLOB = '**/*.{brs,wbs}';
+class ConfiguredProject {
+    constructor(config) {
+        this.libraries = new Map();
+        this.config = config;
+    }
+}
+const ConfiguredProjects = new Map();
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
@@ -22,25 +30,55 @@ function activate(context) {
         scheme: "file"
     }, {
         provideHover: (doc, position, token) => {
-            let hover;
-            if (doc) {
-                let doctext = doc.getText();
-                if ((0, common_1.isComment)(position, doctext, doc)) {
-                    return;
-                }
-                else {
-                    var wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
-                    if (wordRange) {
-                        let fn = (0, functions_1.getFunctionByName)(doc.getText(wordRange));
+            const doctext = doc.getText();
+            if ((0, common_1.isComment)(position, doctext, doc)) {
+                return;
+            }
+            else {
+                const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
+                if (wordRange) {
+                    const word = doc.getText(wordRange);
+                    if (word) {
+                        if (word.substring(0, 2).toLowerCase() == "fn") {
+                            // local functions
+                            const localLibs = parseFunctionsFromSource(doc.getText(), false);
+                            if (localLibs) {
+                                for (const fn of localLibs) {
+                                    if (fn.name.toLowerCase() == word) {
+                                        const hover = (0, common_1.createHoverFromFunction)(fn);
+                                        hover.range = wordRange;
+                                        return hover;
+                                    }
+                                }
+                            }
+                            // library functions
+                            const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
+                            if (workspaceFolder) {
+                                const project = ConfiguredProjects.get(workspaceFolder);
+                                if (project) {
+                                    for (const [uri, lib] of project.libraries) {
+                                        for (const fn of lib.libraryList) {
+                                            if (fn.name.toLowerCase() === word) {
+                                                const hover = (0, common_1.createHoverFromFunction)(fn);
+                                                hover.range = wordRange;
+                                                return hover;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // system functions
+                        const fn = (0, functions_1.getFunctionByName)(word);
                         if (fn) {
-                            let hover = (0, common_1.createHoverFromFunction)(fn);
+                            const hover = (0, common_1.createHoverFromFunction)(fn);
                             hover.range = wordRange;
                             return hover;
                         }
                     }
+                    // local functions
                 }
             }
-            return hover;
         }
     });
     vscode.languages.registerCompletionItemProvider({
@@ -55,21 +93,27 @@ function activate(context) {
                 let match = line.match(ISLIBRARY_LINKAGE_LIST);
                 if (match?.groups) {
                     const libPath = match.groups.libPath.replace(/'|"/g, '');
-                    for (const [uri, lib] of GlobalLibraries) {
-                        if (lib.linkPath.toLowerCase() == libPath.toLowerCase()) {
-                            for (const fn of lib.libraryList) {
-                                if (match.groups.fnList) {
-                                    const lineSearch = new RegExp("\\b" + fn.name.replace("$", "\\$") + "(,|\s|$)", "i");
-                                    if (!lineSearch.test(match.groups.fnList)) {
-                                        completionItems.items.push({
-                                            label: fn.name
-                                        });
+                    const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
+                    if (workspaceFolder) {
+                        const project = ConfiguredProjects.get(workspaceFolder);
+                        if (project) {
+                            for (const [uri, lib] of project.libraries) {
+                                if (lib.linkPath.toLowerCase() == libPath.toLowerCase()) {
+                                    for (const fn of lib.libraryList) {
+                                        if (match.groups.fnList) {
+                                            const lineSearch = new RegExp("\\b" + fn.name.replace("$", "\\$") + "(,|\s|$)", "i");
+                                            if (!lineSearch.test(match.groups.fnList)) {
+                                                completionItems.items.push({
+                                                    label: fn.name
+                                                });
+                                            }
+                                        }
+                                        else {
+                                            completionItems.items.push({
+                                                label: fn.name
+                                            });
+                                        }
                                     }
-                                }
-                                else {
-                                    completionItems.items.push({
-                                        label: fn.name
-                                    });
                                 }
                             }
                         }
@@ -90,18 +134,21 @@ function activate(context) {
             if (ISLIBRARY_LITERAL.test(line)) {
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
                 if (workspaceFolder) {
-                    const searchPath = getSearchPath(workspaceFolder);
-                    for (const [uri, lib] of GlobalLibraries) {
-                        if (uri.fsPath.indexOf(searchPath.fsPath) === 0) {
-                            const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1));
-                            const libPath = path.join(parsedPath.dir, parsedPath.name);
-                            const itemLabel = {
-                                label: libPath,
-                                detail: parsedPath.ext.substring(0, parsedPath.ext.length - 1)
-                            };
-                            completionItems.items.push({
-                                label: itemLabel
-                            });
+                    const project = ConfiguredProjects.get(workspaceFolder);
+                    if (project) {
+                        const searchPath = getSearchPath(workspaceFolder, project);
+                        for (const [uri, lib] of project.libraries) {
+                            if (uri.fsPath.indexOf(searchPath.fsPath) === 0) {
+                                const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1));
+                                const libPath = path.join(parsedPath.dir, parsedPath.name);
+                                const itemLabel = {
+                                    label: libPath,
+                                    detail: parsedPath.ext.substring(0, parsedPath.ext.length - 1)
+                                };
+                                completionItems.items.push({
+                                    label: itemLabel
+                                });
+                            }
                         }
                     }
                 }
@@ -117,24 +164,26 @@ function activate(context) {
             const completionItems = [];
             const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
             if (workspaceFolder) {
-                const config = ProjectConfigs.get(workspaceFolder);
-                if (config?.globalIncludes) {
-                    for (const globalInclude of config.globalIncludes) {
-                        const searchPath = getSearchPath(workspaceFolder);
-                        const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude));
-                        for (const [uri, lib] of GlobalLibraries) {
-                            if (uri.toString() !== doc.uri.toString() && globalUri.toString() === uri.toString()) {
-                                for (const fn of lib.libraryList) {
-                                    completionItems.push({
-                                        kind: vscode_languageclient_1.CompletionItemKind.Function,
-                                        label: {
-                                            label: fn.name,
-                                            detail: ' (library function)',
-                                            description: path.basename(uri.fsPath)
-                                        },
-                                        detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-                                        documentation: new vscode.MarkdownString(fn.getAllDocs())
-                                    });
+                const project = ConfiguredProjects.get(workspaceFolder);
+                if (project) {
+                    if (project?.config?.globalIncludes) {
+                        for (const globalInclude of project.config.globalIncludes) {
+                            const searchPath = getSearchPath(workspaceFolder, project);
+                            const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude));
+                            for (const [uri, lib] of project.libraries) {
+                                if (uri.toString() !== doc.uri.toString() && globalUri.toString() === uri.toString()) {
+                                    for (const fn of lib.libraryList) {
+                                        completionItems.push({
+                                            kind: vscode_languageclient_1.CompletionItemKind.Function,
+                                            label: {
+                                                label: fn.name,
+                                                detail: ' (library function)',
+                                                description: path.basename(uri.fsPath)
+                                            },
+                                            detail: `(library function) ${fn.name}${fn.generateSignature()}`,
+                                            documentation: new vscode.MarkdownString(fn.getAllDocs())
+                                        });
+                                    }
                                 }
                             }
                         }
@@ -194,8 +243,8 @@ function deactivate() {
     (0, client_1.deactivateClient)();
 }
 exports.deactivate = deactivate;
-function getSearchPath(workspaceFolder) {
-    const config = ProjectConfigs.get(workspaceFolder);
+function getSearchPath(workspaceFolder, project) {
+    const config = project.config;
     const searchPath = workspaceFolder.uri;
     if (config !== undefined && config.searchPath !== undefined) {
         return vscode.Uri.joinPath(searchPath, config.searchPath.replace("\\", "/"));
@@ -268,9 +317,6 @@ function parseFunctionsFromSource(sourceText, librariesOnly = true) {
     }
     return functions;
 }
-const ProjectConfigs = new Map();
-const GlobalLibraries = new Map();
-const SOURCE_GLOB = '**/*.{brs,wbs}';
 /**
  * Sets up monitoring of project configuration
  * @param context extension context
@@ -340,59 +386,55 @@ async function updateLibraryFunctions(uri) {
 function updateWorkspaceCode(uri, workspaceFolder) {
 }
 class SourceLibrary {
-    constructor(uri, libraryList, workspaceFolder) {
+    constructor(uri, libraryList, workspaceFolder, project) {
         this.uri = uri;
         this.libraryList = libraryList;
-        this.linkPath = this.getLinkPath(workspaceFolder);
+        this.linkPath = this.getLinkPath(workspaceFolder, project);
     }
-    getLinkPath(workspaceFolder) {
-        const searchPath = getSearchPath(workspaceFolder);
+    getLinkPath(workspaceFolder, project) {
+        const searchPath = getSearchPath(workspaceFolder, project);
         const parsedPath = path.parse(this.uri.fsPath.substring(searchPath.fsPath.length + 1));
         const libPath = path.join(parsedPath.dir, parsedPath.name);
         return libPath;
     }
 }
-async function startWatchingSource(workspaceFolder) {
+async function startWatchingSource(workspaceFolder, project) {
     const watchers = [];
-    const projectConfig = await getProjectConfig(workspaceFolder);
-    if (projectConfig) {
-        ProjectConfigs.set(workspaceFolder, projectConfig);
-        const folderPattern = new vscode.RelativePattern(workspaceFolder, SOURCE_GLOB);
-        const sourceFiles = await vscode.workspace.findFiles(folderPattern);
-        for (const source of sourceFiles) {
-            const sourceLibs = await updateLibraryFunctions(source);
-            if (sourceLibs) {
-                const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder);
-                GlobalLibraries.set(source, sourceLib);
+    const folderPattern = new vscode.RelativePattern(workspaceFolder, SOURCE_GLOB);
+    const sourceFiles = await vscode.workspace.findFiles(folderPattern);
+    for (const source of sourceFiles) {
+        const sourceLibs = await updateLibraryFunctions(source);
+        if (sourceLibs) {
+            const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
+            project.libraries.set(source, sourceLib);
+        }
+    }
+    const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern);
+    codeWatcher.onDidChange(async (source) => {
+        const sourceLibs = await updateLibraryFunctions(source);
+        if (sourceLibs) {
+            for (const [uri] of project.libraries) {
+                if (uri.toString() === source.toString()) {
+                    const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
+                    project.libraries.set(source, sourceLib);
+                }
             }
         }
-        const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern);
-        codeWatcher.onDidChange(async (source) => {
-            const sourceLibs = await updateLibraryFunctions(source);
-            if (sourceLibs) {
-                for (const [uri] of GlobalLibraries) {
-                    if (uri.toString() === source.toString()) {
-                        const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder);
-                        GlobalLibraries.set(uri, sourceLib);
-                    }
-                }
+    }, undefined, watchers);
+    codeWatcher.onDidDelete(async (source) => {
+        for (const [uri] of project.libraries) {
+            if (uri.toString() === source.toString()) {
+                project.libraries.delete(uri);
             }
-        }, undefined, watchers);
-        codeWatcher.onDidDelete(async (source) => {
-            for (const [uri] of GlobalLibraries) {
-                if (uri.toString() === source.toString()) {
-                    GlobalLibraries.delete(uri);
-                }
-            }
-        });
-        codeWatcher.onDidCreate(async (source) => {
-            const sourceLibs = await updateLibraryFunctions(source);
-            if (sourceLibs) {
-                const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder);
-                GlobalLibraries.set(source, sourceLib);
-            }
-        });
-    }
+        }
+    });
+    codeWatcher.onDidCreate(async (source) => {
+        const sourceLibs = await updateLibraryFunctions(source);
+        if (sourceLibs) {
+            const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
+            project.libraries.set(source, sourceLib);
+        }
+    });
     return watchers;
 }
 async function startWatchingWorkpaceFolder(context, workspaceFolder) {
@@ -403,18 +445,29 @@ async function startWatchingWorkpaceFolder(context, workspaceFolder) {
     projectWatcher.onDidChange(async (uri) => {
         const projectConfig = await getProjectConfig(workspaceFolder);
         if (projectConfig) {
-            ProjectConfigs.set(workspaceFolder, projectConfig);
+            const project = new ConfiguredProject(projectConfig);
+            ConfiguredProjects.set(workspaceFolder, project);
         }
     }, undefined, disposables);
     projectWatcher.onDidDelete((uri) => {
-        ProjectConfigs.delete(workspaceFolder);
+        ConfiguredProjects.delete(workspaceFolder);
         watchers.forEach(d => d.dispose());
         watchers = [];
     }, undefined, disposables);
     projectWatcher.onDidCreate(async (uri) => {
-        watchers = await startWatchingSource(workspaceFolder);
+        const projectConfig = await getProjectConfig(workspaceFolder);
+        if (projectConfig) {
+            const project = new ConfiguredProject(projectConfig);
+            ConfiguredProjects.set(workspaceFolder, project);
+            watchers = await startWatchingSource(workspaceFolder, project);
+        }
     }, undefined, disposables);
-    watchers = await startWatchingSource(workspaceFolder);
+    const projectConfig = await getProjectConfig(workspaceFolder);
+    if (projectConfig) {
+        const project = new ConfiguredProject(projectConfig);
+        ConfiguredProjects.set(workspaceFolder, project);
+        watchers = await startWatchingSource(workspaceFolder, project);
+    }
     return disposables.concat(watchers);
 }
 //# sourceMappingURL=extension.js.map
