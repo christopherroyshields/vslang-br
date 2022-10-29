@@ -511,13 +511,9 @@ async function updateLibraryFunctions(uri: vscode.Uri): Promise<UserFunction[] |
 			libs = parseFunctionsFromSource(libText.toString())
 		}
 	} catch {
-		vscode.window.showWarningMessage(`Global library not found ${uri.fsPath}`)
+		vscode.window.showWarningMessage(`Library source not found ${uri.fsPath}`)
 	}
 	return libs
-}
-
-function updateWorkspaceCode(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder) {
-
 }
 
 async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): Promise<vscode.Disposable[]> {

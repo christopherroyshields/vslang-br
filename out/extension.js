@@ -468,11 +468,9 @@ async function updateLibraryFunctions(uri) {
         }
     }
     catch {
-        vscode.window.showWarningMessage(`Global library not found ${uri.fsPath}`);
+        vscode.window.showWarningMessage(`Library source not found ${uri.fsPath}`);
     }
     return libs;
-}
-function updateWorkspaceCode(uri, workspaceFolder) {
 }
 async function startWatchingSource(workspaceFolder, project) {
     const watchers = [];
