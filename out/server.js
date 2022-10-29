@@ -25,10 +25,7 @@ connection.onInitialize((params) => {
         capabilities.textDocument.publishDiagnostics.relatedInformation);
     const result = {
         capabilities: {
-            textDocumentSync: node_1.TextDocumentSyncKind.Incremental,
-            completionProvider: {
-                resolveProvider: true
-            }
+            textDocumentSync: node_1.TextDocumentSyncKind.Incremental
         }
     };
     if (hasWorkspaceFolderCapability) {

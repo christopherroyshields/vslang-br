@@ -70,10 +70,7 @@ connection.onInitialize((params: InitializeParams) => {
 
 	const result: InitializeResult = {
 		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Incremental,
-			completionProvider: {
-				resolveProvider: true
-			}
+			textDocumentSync: TextDocumentSyncKind.Incremental
 		}
 	};
 
