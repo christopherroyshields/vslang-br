@@ -138,8 +138,8 @@ function activate(context) {
                     if (project) {
                         const searchPath = getSearchPath(workspaceFolder, project);
                         for (const [uri, lib] of project.libraries) {
-                            if (uri.fsPath.indexOf(searchPath.fsPath) === 0) {
-                                const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1));
+                            if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0) {
+                                const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1));
                                 const libPath = path.join(parsedPath.dir, parsedPath.name);
                                 const itemLabel = {
                                     label: libPath,
@@ -171,14 +171,14 @@ function activate(context) {
                             const searchPath = getSearchPath(workspaceFolder, project);
                             const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude));
                             for (const [uri, lib] of project.libraries) {
-                                if (uri.toString() !== doc.uri.toString() && globalUri.toString() === uri.toString()) {
+                                if (uri !== doc.uri.toString() && globalUri.toString() === uri) {
                                     for (const fn of lib.libraryList) {
                                         completionItems.push({
                                             kind: vscode_languageclient_1.CompletionItemKind.Function,
                                             label: {
                                                 label: fn.name,
                                                 detail: ' (library function)',
-                                                description: path.basename(uri.fsPath)
+                                                description: path.basename(lib.uri.fsPath)
                                             },
                                             detail: `(library function) ${fn.name}${fn.generateSignature()}`,
                                             documentation: new vscode.MarkdownString(fn.getAllDocs())
@@ -406,7 +406,7 @@ async function startWatchingSource(workspaceFolder, project) {
         const sourceLibs = await updateLibraryFunctions(source);
         if (sourceLibs) {
             const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
-            project.libraries.set(source, sourceLib);
+            project.libraries.set(source.toString(), sourceLib);
         }
     }
     const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern);
@@ -414,16 +414,16 @@ async function startWatchingSource(workspaceFolder, project) {
         const sourceLibs = await updateLibraryFunctions(source);
         if (sourceLibs) {
             for (const [uri] of project.libraries) {
-                if (uri.toString() === source.toString()) {
+                if (uri === source.toString()) {
                     const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
-                    project.libraries.set(source, sourceLib);
+                    project.libraries.set(source.toString(), sourceLib);
                 }
             }
         }
     }, undefined, watchers);
     codeWatcher.onDidDelete(async (source) => {
         for (const [uri] of project.libraries) {
-            if (uri.toString() === source.toString()) {
+            if (uri === source.toString()) {
                 project.libraries.delete(uri);
             }
         }
@@ -432,7 +432,7 @@ async function startWatchingSource(workspaceFolder, project) {
         const sourceLibs = await updateLibraryFunctions(source);
         if (sourceLibs) {
             const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
-            project.libraries.set(source, sourceLib);
+            project.libraries.set(source.toString(), sourceLib);
         }
     });
     return watchers;

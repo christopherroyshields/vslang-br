@@ -14,7 +14,7 @@ const SOURCE_GLOB = '**/*.{brs,wbs}'
 
 class ConfiguredProject {
 	config: ProjectConfig
-	libraries: Map<vscode.Uri, SourceLibrary> = new Map<vscode.Uri, SourceLibrary>()
+	libraries = new Map<string, SourceLibrary>()
 	constructor(config: ProjectConfig) {
 		this.config = config
 	}
@@ -156,8 +156,8 @@ export function activate(context: vscode.ExtensionContext) {
 					if (project){
 						const searchPath = getSearchPath(workspaceFolder, project)
 						for (const [uri, lib] of project.libraries) {
-							if (uri.fsPath.indexOf(searchPath.fsPath) === 0){
-								const parsedPath = path.parse(uri.fsPath.substring(searchPath.fsPath.length + 1))
+							if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
+								const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1))
 								const libPath = path.join(parsedPath.dir, parsedPath.name)
 								const itemLabel: vscode.CompletionItemLabel = {
 									label: libPath,
@@ -192,14 +192,14 @@ export function activate(context: vscode.ExtensionContext) {
 							const searchPath = getSearchPath(workspaceFolder, project)
 							const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude))
 							for (const [uri, lib] of project.libraries) {
-								if (uri.toString() !== doc.uri.toString() && globalUri.toString() ===  uri.toString()){
+								if (uri !== doc.uri.toString() && globalUri.toString() === uri){
 									for (const fn of lib.libraryList){
 										completionItems.push({
 											kind: CompletionItemKind.Function,
 											label: {
 												label: fn.name,
 												detail: ' (library function)',
-												description: path.basename(uri.fsPath)
+												description: path.basename(lib.uri.fsPath)
 											},
 											detail: `(library function) ${fn.name}${fn.generateSignature()}`,
 											documentation: new vscode.MarkdownString(fn.getAllDocs())
@@ -458,7 +458,7 @@ async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, proj
 		const sourceLibs = await updateLibraryFunctions(source)
 		if (sourceLibs){
 			const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project)
-			project.libraries.set(source, sourceLib)
+			project.libraries.set(source.toString(), sourceLib)
 		}
 	}
 
@@ -467,9 +467,9 @@ async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, proj
 		const sourceLibs = await updateLibraryFunctions(source)
 		if (sourceLibs){
 			for (const [uri] of project.libraries) {
-				if (uri.toString() === source.toString()){
+				if (uri === source.toString()){
 					const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project)
-					project.libraries.set(source, sourceLib)
+					project.libraries.set(source.toString(), sourceLib)
 				}
 			}
 		}
@@ -477,7 +477,7 @@ async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, proj
 
 	codeWatcher.onDidDelete(async (source: vscode.Uri) => {
 		for (const [uri] of project.libraries) {
-			if (uri.toString() === source.toString()){
+			if (uri === source.toString()){
 				project.libraries.delete(uri)
 			}
 		}
@@ -487,7 +487,7 @@ async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, proj
 		const sourceLibs = await updateLibraryFunctions(source)
 		if (sourceLibs){
 			const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project)
-			project.libraries.set(source, sourceLib)
+			project.libraries.set(source.toString(), sourceLib)
 		}
 	})
 
