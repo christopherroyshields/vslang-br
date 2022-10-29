@@ -111,17 +111,13 @@ function getFunctionDetails(preText: string, doc: vscode.TextDocument): vscode.S
 					}
 				}
 			} else {
-				const brFunctions = getFunctionsByName(context.groups.name)
-				if (brFunctions){
-					for (let brFnIndex = 0; brFnIndex < brFunctions.length; brFnIndex++) {
-
-		
-						let brFunction = brFunctions[brFnIndex];
-	
+				const internalFunctions = getFunctionsByName(context.groups.name)
+				if (internalFunctions){
+					for (const fn of internalFunctions) {
 						let params: vscode.ParameterInformation[] = []
-						if (brFunction && brFunction.params){
-							for (let paramIndex = 0; paramIndex < brFunction.params.length; paramIndex++) {
-								let el = brFunction.params[paramIndex];
+						if (fn && fn.params){
+							for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
+								let el = fn.params[paramIndex];
 								params.push({
 									label: el.name,
 									documentation: el.documentation
@@ -130,7 +126,7 @@ function getFunctionDetails(preText: string, doc: vscode.TextDocument): vscode.S
 						}
 			
 						sigHelp.signatures.push({
-							label: brFunction.name + generateFunctionSignature(brFunction),
+							label: fn.name + generateFunctionSignature(fn),
 							parameters: params,
 							activeParameter: context.groups.params?.split(',').length - 1
 						})
