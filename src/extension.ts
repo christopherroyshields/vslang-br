@@ -17,6 +17,7 @@ import { SourceLibrary } from './class/SourceLibrary';
 import { BrSignatureHelpProvider } from './providers/BrSignatureHelpProvider';
 import { BrHoverProvider } from './providers/BrHoverProvider';
 import { LibLinkListProvider } from './providers/LibLinkListProvider';
+import { LibPathProvider } from './providers/LibPathProvider';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<vscode.WorkspaceFolder, ConfiguredProject>()
@@ -24,6 +25,7 @@ const ConfiguredProjects = new Map<vscode.WorkspaceFolder, ConfiguredProject>()
 const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
 const hoverProvider = new BrHoverProvider(ConfiguredProjects)
 const libLinkListProvider = new LibLinkListProvider(ConfiguredProjects)
+const libPathProvider = new LibPathProvider(ConfiguredProjects)
 
 export function activate(context: vscode.ExtensionContext) {
 	
@@ -54,38 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.languages.registerCompletionItemProvider({
 		language: "br",
 		scheme: "file"
-	}, {
-		provideCompletionItems: (doc: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext) => {
-			const completionItems: vscode.CompletionList<vscode.CompletionItem> = new vscode.CompletionList();
-
-			const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
-			const ISLIBRARY_LITERAL = /library\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')$/gi
-			if (ISLIBRARY_LITERAL.test(line)){
-				const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
-				if (workspaceFolder){
-					const project = ConfiguredProjects.get(workspaceFolder)
-					if (project){
-						const searchPath = getSearchPath(workspaceFolder, project)
-						for (const [uri, lib] of project.libraries) {
-							if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
-								const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1))
-								const libPath = path.join(parsedPath.dir, parsedPath.name)
-								const itemLabel: vscode.CompletionItemLabel = {
-									label: libPath,
-									detail: parsedPath.ext.substring(0,parsedPath.ext.length-1)
-								}
-								completionItems.items.push({
-									label: itemLabel
-								})
-							}
-						}				
-					}
-				}
-			}
-
-			return completionItems
-		}
-	}, "\"", "'")
+	}, libPathProvider, "\"", "'")
 
 	vscode.languages.registerCompletionItemProvider({
 		language: "br",

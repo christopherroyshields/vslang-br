@@ -8,17 +8,18 @@ const client_1 = require("./client");
 const statements_1 = require("./statements");
 const vscode_languageclient_1 = require("vscode-languageclient");
 const path = require("path");
-const common_1 = require("./util/common");
 const ConfiguredProject_1 = require("./class/ConfiguredProject");
 const SourceLibrary_1 = require("./class/SourceLibrary");
 const BrSignatureHelpProvider_1 = require("./providers/BrSignatureHelpProvider");
 const BrHoverProvider_1 = require("./providers/BrHoverProvider");
 const LibLinkListProvider_1 = require("./providers/LibLinkListProvider");
+const LibPathProvider_1 = require("./providers/LibPathProvider");
 const SOURCE_GLOB = '**/*.{brs,wbs}';
 const ConfiguredProjects = new Map();
 const signatureHelpProvider = new BrSignatureHelpProvider_1.BrSignatureHelpProvider(ConfiguredProjects);
 const hoverProvider = new BrHoverProvider_1.BrHoverProvider(ConfiguredProjects);
 const libLinkListProvider = new LibLinkListProvider_1.LibLinkListProvider(ConfiguredProjects);
+const libPathProvider = new LibPathProvider_1.LibPathProvider(ConfiguredProjects);
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
@@ -39,36 +40,7 @@ function activate(context) {
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
-    }, {
-        provideCompletionItems: (doc, position, token, context) => {
-            const completionItems = new vscode.CompletionList();
-            const line = doc.getText(new vscode.Range(doc.lineAt(position).range.start, position));
-            const ISLIBRARY_LITERAL = /library\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')$/gi;
-            if (ISLIBRARY_LITERAL.test(line)) {
-                const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
-                if (workspaceFolder) {
-                    const project = ConfiguredProjects.get(workspaceFolder);
-                    if (project) {
-                        const searchPath = (0, common_1.getSearchPath)(workspaceFolder, project);
-                        for (const [uri, lib] of project.libraries) {
-                            if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0) {
-                                const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1));
-                                const libPath = path.join(parsedPath.dir, parsedPath.name);
-                                const itemLabel = {
-                                    label: libPath,
-                                    detail: parsedPath.ext.substring(0, parsedPath.ext.length - 1)
-                                };
-                                completionItems.items.push({
-                                    label: itemLabel
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-            return completionItems;
-        }
-    }, "\"", "'");
+    }, libPathProvider, "\"", "'");
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
