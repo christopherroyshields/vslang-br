@@ -18,6 +18,7 @@ import { BrSignatureHelpProvider } from './providers/BrSignatureHelpProvider';
 import { BrHoverProvider } from './providers/BrHoverProvider';
 import { LibLinkListProvider } from './providers/LibLinkListProvider';
 import { LibPathProvider } from './providers/LibPathProvider';
+import { FuncCompletionProvider } from './providers/FuncCompletionProvider';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<vscode.WorkspaceFolder, ConfiguredProject>()
@@ -26,6 +27,7 @@ const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
 const hoverProvider = new BrHoverProvider(ConfiguredProjects)
 const libLinkListProvider = new LibLinkListProvider(ConfiguredProjects)
 const libPathProvider = new LibPathProvider(ConfiguredProjects)
+const funcCompletionProvider = new FuncCompletionProvider(ConfiguredProjects)
 
 export function activate(context: vscode.ExtensionContext) {
 	
@@ -37,75 +39,19 @@ export function activate(context: vscode.ExtensionContext) {
 
 	activateWorkspaceFolders(context)
 
-	vscode.languages.registerSignatureHelpProvider({
-		language: "br",
-		scheme: "file"
-	}, signatureHelpProvider, "(", ",")
+	const sel: vscode.DocumentSelector = {
+		language: "br"
+	}
 
-	vscode.languages.registerHoverProvider({
-		language: "br",
-		scheme: "file"
-	}, hoverProvider)
+	vscode.languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
 
-	vscode.languages.registerCompletionItemProvider({
-		language: "br",
-		scheme: "file"
-	}, libLinkListProvider, ":", ",", " ")
+	vscode.languages.registerHoverProvider(sel, hoverProvider)
+
+	vscode.languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ")
 	
-	
-	vscode.languages.registerCompletionItemProvider({
-		language: "br",
-		scheme: "file"
-	}, libPathProvider, "\"", "'")
+	vscode.languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'")
 
-	vscode.languages.registerCompletionItemProvider({
-		language: "br",
-		scheme: "file"
-	}, {
-		provideCompletionItems: (doc: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] => {
-			const completionItems: vscode.CompletionItem[] = []
-
-			const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri)
-			if (workspaceFolder){
-				const project = ConfiguredProjects.get(workspaceFolder)
-				if (project){
-					for (const [uri, lib] of project.libraries) {
-						if (uri !== doc.uri.toString()){
-							for (const fn of lib.libraryList){
-								if (fn.isLibrary){
-									completionItems.push({
-										kind: CompletionItemKind.Function,
-										label: {
-											label: fn.name,
-											detail: ' (library function)',
-											description: path.basename(lib.uri.fsPath)
-										},
-										detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-										documentation: new vscode.MarkdownString(fn.getAllDocs())
-									})
-								}
-							}
-						}
-					}
-				}
-			}
-
-			const source = new SourceLibrary(doc.uri, doc.getText())
-			for (const fn of source.libraryList) {
-				completionItems.push({
-					kind: CompletionItemKind.Function,
-					label: {
-						label: fn.name,
-						detail: ` (${fn.isLibrary ? 'library' : 'local'} function)`
-					},
-					detail: `(${fn.isLibrary ? 'library' : 'local'} function) ${fn.name}${fn.generateSignature()}`,
-					documentation: new vscode.MarkdownString(fn.getAllDocs())
-				})
-			}
-
-			return completionItems
-		}
-	})
+	vscode.languages.registerCompletionItemProvider(sel, funcCompletionProvider)
 
 	vscode.languages.registerCompletionItemProvider({
 		language: "br",

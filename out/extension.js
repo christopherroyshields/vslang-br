@@ -6,7 +6,6 @@ const lexi_1 = require("./lexi");
 const next_prev_1 = require("./next-prev");
 const client_1 = require("./client");
 const statements_1 = require("./statements");
-const vscode_languageclient_1 = require("vscode-languageclient");
 const path = require("path");
 const ConfiguredProject_1 = require("./class/ConfiguredProject");
 const SourceLibrary_1 = require("./class/SourceLibrary");
@@ -14,78 +13,27 @@ const BrSignatureHelpProvider_1 = require("./providers/BrSignatureHelpProvider")
 const BrHoverProvider_1 = require("./providers/BrHoverProvider");
 const LibLinkListProvider_1 = require("./providers/LibLinkListProvider");
 const LibPathProvider_1 = require("./providers/LibPathProvider");
+const FuncCompletionProvider_1 = require("./providers/FuncCompletionProvider");
 const SOURCE_GLOB = '**/*.{brs,wbs}';
 const ConfiguredProjects = new Map();
 const signatureHelpProvider = new BrSignatureHelpProvider_1.BrSignatureHelpProvider(ConfiguredProjects);
 const hoverProvider = new BrHoverProvider_1.BrHoverProvider(ConfiguredProjects);
 const libLinkListProvider = new LibLinkListProvider_1.LibLinkListProvider(ConfiguredProjects);
 const libPathProvider = new LibPathProvider_1.LibPathProvider(ConfiguredProjects);
+const funcCompletionProvider = new FuncCompletionProvider_1.FuncCompletionProvider(ConfiguredProjects);
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
     (0, client_1.activateClient)(context);
     activateWorkspaceFolders(context);
-    vscode.languages.registerSignatureHelpProvider({
-        language: "br",
-        scheme: "file"
-    }, signatureHelpProvider, "(", ",");
-    vscode.languages.registerHoverProvider({
-        language: "br",
-        scheme: "file"
-    }, hoverProvider);
-    vscode.languages.registerCompletionItemProvider({
-        language: "br",
-        scheme: "file"
-    }, libLinkListProvider, ":", ",", " ");
-    vscode.languages.registerCompletionItemProvider({
-        language: "br",
-        scheme: "file"
-    }, libPathProvider, "\"", "'");
-    vscode.languages.registerCompletionItemProvider({
-        language: "br",
-        scheme: "file"
-    }, {
-        provideCompletionItems: (doc, position) => {
-            const completionItems = [];
-            const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
-            if (workspaceFolder) {
-                const project = ConfiguredProjects.get(workspaceFolder);
-                if (project) {
-                    for (const [uri, lib] of project.libraries) {
-                        if (uri !== doc.uri.toString()) {
-                            for (const fn of lib.libraryList) {
-                                if (fn.isLibrary) {
-                                    completionItems.push({
-                                        kind: vscode_languageclient_1.CompletionItemKind.Function,
-                                        label: {
-                                            label: fn.name,
-                                            detail: ' (library function)',
-                                            description: path.basename(lib.uri.fsPath)
-                                        },
-                                        detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-                                        documentation: new vscode.MarkdownString(fn.getAllDocs())
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            const source = new SourceLibrary_1.SourceLibrary(doc.uri, doc.getText());
-            for (const fn of source.libraryList) {
-                completionItems.push({
-                    kind: vscode_languageclient_1.CompletionItemKind.Function,
-                    label: {
-                        label: fn.name,
-                        detail: ` (${fn.isLibrary ? 'library' : 'local'} function)`
-                    },
-                    detail: `(${fn.isLibrary ? 'library' : 'local'} function) ${fn.name}${fn.generateSignature()}`,
-                    documentation: new vscode.MarkdownString(fn.getAllDocs())
-                });
-            }
-            return completionItems;
-        }
-    });
+    const sel = {
+        language: "br"
+    };
+    vscode.languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",");
+    vscode.languages.registerHoverProvider(sel, hoverProvider);
+    vscode.languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ");
+    vscode.languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'");
+    vscode.languages.registerCompletionItemProvider(sel, funcCompletionProvider);
     vscode.languages.registerCompletionItemProvider({
         language: "br",
         scheme: "file"
