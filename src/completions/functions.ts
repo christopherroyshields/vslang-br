@@ -3,16 +3,6 @@ import { CompletionItem, CompletionItemKind, InsertTextFormat } from "vscode-lan
 import { BrFunction } from "../interface/BrFunction"
 import { BrParamType } from "../types/BrParamType"
 
-class InternalFunction implements BrFunction {
-  generateSignature(): string {
-    throw new Error("Method not implemented.")
-  }
-  name: string = ''
-  description?: string
-  documentation?: string
-  params?: FunctionParameter[]
-}
-
 /**
  * Function to generate example function call for display purposes
  * @param fn Function to generate full function call

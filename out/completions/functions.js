@@ -1,14 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stringFunctions = exports.getFunctionsByName = exports.getFunctionByName = exports.generateFunctionSignature = void 0;
-class InternalFunction {
-    constructor() {
-        this.name = '';
-    }
-    generateSignature() {
-        throw new Error("Method not implemented.");
-    }
-}
 /**
  * Function to generate example function call for display purposes
  * @param fn Function to generate full function call
