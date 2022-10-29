@@ -73,10 +73,6 @@ connection.onInitialize((params: InitializeParams) => {
 			textDocumentSync: TextDocumentSyncKind.Incremental,
 			completionProvider: {
 				resolveProvider: true
-			},
-			signatureHelpProvider: {
-				triggerCharacters: ['('],
-				retriggerCharacters: [',']
 			}
 		}
 	};

@@ -20,11 +20,128 @@ class ConfiguredProject {
     }
 }
 const ConfiguredProjects = new Map();
+function sigHelpProvider(doc, position, token) {
+    const doctext = doc.getText(new vscode.Range(doc.positionAt(0), position));
+    const sigHelp = getFunctionDetails(doctext, doc);
+    if (sigHelp)
+        return sigHelp;
+}
+const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
+const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i;
+const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g;
+function stripBalancedFunctions(line) {
+    if (CONTAINS_BALANCED_FN.test(line)) {
+        line = line.replace(CONTAINS_BALANCED_FN, "");
+        line = stripBalancedFunctions(line);
+    }
+    return line;
+}
+function getFunctionDetails(preText, doc) {
+    // strip functions with params
+    if (preText) {
+        // remove literals first
+        preText = preText.replace(STRING_LITERALS, "");
+        preText = stripBalancedFunctions(preText);
+        let context = FUNCTION_CALL_CONTEXT.exec(preText);
+        if (context && context.groups && !context.groups.isDef) {
+            const sigHelp = {
+                signatures: [],
+                activeSignature: 0,
+                activeParameter: 0
+            };
+            if (context.groups.name.substring(0, 2).toLocaleLowerCase() === "fn") {
+                const localLibs = parseFunctionsFromSource(doc.getText(), false);
+                if (localLibs) {
+                    for (const fn of localLibs) {
+                        if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()) {
+                            const params = [];
+                            if (fn && fn.params) {
+                                for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
+                                    const el = fn.params[paramIndex];
+                                    params.push({
+                                        label: el.name,
+                                        documentation: el.documentation
+                                    });
+                                }
+                            }
+                            const sigInfo = new vscode.SignatureInformation(fn.name + (0, functions_1.generateFunctionSignature)(fn));
+                            sigInfo.parameters = params;
+                            sigInfo.activeParameter = context.groups.params?.split(',').length - 1;
+                            sigHelp.signatures.push(sigInfo);
+                        }
+                    }
+                }
+                const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
+                if (workspaceFolder) {
+                    const project = ConfiguredProjects.get(workspaceFolder);
+                    if (project) {
+                        for (const [libUri, lib] of project.libraries) {
+                            if (libUri !== doc.uri.toString()) {
+                                for (const fn of lib.libraryList) {
+                                    if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()) {
+                                        const params = [];
+                                        if (fn && fn.params) {
+                                            for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
+                                                const el = fn.params[paramIndex];
+                                                params.push({
+                                                    label: el.name,
+                                                    documentation: el.documentation
+                                                });
+                                            }
+                                        }
+                                        const sigInfo = new vscode.SignatureInformation(fn.name + (0, functions_1.generateFunctionSignature)(fn));
+                                        sigInfo.parameters = params;
+                                        sigInfo.activeParameter = context.groups.params?.split(',').length - 1;
+                                        sigHelp.signatures.push(sigInfo);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                const brFunctions = (0, functions_1.getFunctionsByName)(context.groups.name);
+                if (brFunctions) {
+                    for (let brFnIndex = 0; brFnIndex < brFunctions.length; brFnIndex++) {
+                        let brFunction = brFunctions[brFnIndex];
+                        let params = [];
+                        if (brFunction && brFunction.params) {
+                            for (let paramIndex = 0; paramIndex < brFunction.params.length; paramIndex++) {
+                                let el = brFunction.params[paramIndex];
+                                params.push({
+                                    label: el.name,
+                                    documentation: el.documentation
+                                });
+                            }
+                        }
+                        sigHelp.signatures.push({
+                            label: brFunction.name + (0, functions_1.generateFunctionSignature)(brFunction),
+                            parameters: params,
+                            activeParameter: context.groups.params?.split(',').length - 1
+                        });
+                    }
+                }
+            }
+            return sigHelp;
+        }
+        else {
+            // not in function call with parameters
+            return;
+        }
+    }
+}
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
     (0, client_1.activateClient)(context);
     activateWorkspaceFolders(context);
+    vscode.languages.registerSignatureHelpProvider({
+        language: "br",
+        scheme: "file"
+    }, {
+        provideSignatureHelp: sigHelpProvider
+    }, "(", ",");
     vscode.languages.registerHoverProvider({
         language: "br",
         scheme: "file"
