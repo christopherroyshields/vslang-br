@@ -3,6 +3,10 @@ import { ConfiguredProject } from "../class/ConfiguredProject"
 import { generateFunctionSignature } from "../completions/functions"
 import { BrFunction } from "../interface/BrFunction"
 
+export const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
+export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
+
+
 export function isComment(cursorPosition: Position, doctext: string, doc: TextDocument): boolean {
 	let commentMatch: RegExpExecArray | null
 	const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g

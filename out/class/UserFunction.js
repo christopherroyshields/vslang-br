@@ -9,8 +9,9 @@ class UserFunction {
     /**
      * @param name - function name
      */
-    constructor(name) {
+    constructor(name, isLibrary) {
         this.name = name;
+        this.isLibrary = isLibrary;
     }
     /**
      *

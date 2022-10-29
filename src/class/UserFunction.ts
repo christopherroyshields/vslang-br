@@ -7,14 +7,16 @@ import { UserFunctionParameter } from "./UserFunctionParameter"
  */
  export class UserFunction implements BrFunction {
   name: string
+  isLibrary: boolean
   description?: string
   documentation?: string
   params?: UserFunctionParameter[]
   /**
    * @param name - function name
    */
-  constructor(name: string) {
+  constructor(name: string, isLibrary: boolean) {
     this.name = name
+    this.isLibrary = isLibrary
   }
 
   /**
