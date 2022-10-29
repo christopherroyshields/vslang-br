@@ -1,17 +1,8 @@
-import * as vscode from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
-import { Statements } from './statements';
-import { CompletionItemKind, CompletionItemLabelDetails, Disposable, WorkspaceFolder } from 'vscode-languageclient';
 import path = require('path');
-import { generateFunctionSignature, getFunctionByName, getFunctionsByName } from './completions/functions';
-import { BrParamType } from './types/BrParamType';
-import { DocComment } from './types/DocComment';
-import { getSearchPath, isComment, stripBalancedFunctions } from './util/common';
 import { ConfiguredProject } from './class/ConfiguredProject';
-import { UserFunction } from './class/UserFunction';
-import { UserFunctionParameter } from './class/UserFunctionParameter';
 import { ProjectConfig } from './interface/ProjectConfig';
 import { SourceLibrary } from './class/SourceLibrary';
 import { BrSignatureHelpProvider } from './providers/BrSignatureHelpProvider';
@@ -19,17 +10,20 @@ import { BrHoverProvider } from './providers/BrHoverProvider';
 import { LibLinkListProvider } from './providers/LibLinkListProvider';
 import { LibPathProvider } from './providers/LibPathProvider';
 import { FuncCompletionProvider } from './providers/FuncCompletionProvider';
+import { StatementCompletionProvider } from './providers/StatementCompletionProvider';
+import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent } from 'vscode';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
-const ConfiguredProjects = new Map<vscode.WorkspaceFolder, ConfiguredProject>()
+const ConfiguredProjects = new Map<WorkspaceFolder, ConfiguredProject>()
 
 const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
 const hoverProvider = new BrHoverProvider(ConfiguredProjects)
 const libLinkListProvider = new LibLinkListProvider(ConfiguredProjects)
 const libPathProvider = new LibPathProvider(ConfiguredProjects)
 const funcCompletionProvider = new FuncCompletionProvider(ConfiguredProjects)
+const statementCompletionProvider = new StatementCompletionProvider(ConfiguredProjects)
 
-export function activate(context: vscode.ExtensionContext) {
+export function activate(context: ExtensionContext) {
 	
 	activateLexi(context)
 
@@ -39,48 +33,21 @@ export function activate(context: vscode.ExtensionContext) {
 
 	activateWorkspaceFolders(context)
 
-	const sel: vscode.DocumentSelector = {
+	const sel: DocumentSelector = {
 		language: "br"
 	}
 
-	vscode.languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
+	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
 
-	vscode.languages.registerHoverProvider(sel, hoverProvider)
+	languages.registerHoverProvider(sel, hoverProvider)
 
-	vscode.languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ")
+	languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ")
 	
-	vscode.languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'")
+	languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'")
 
-	vscode.languages.registerCompletionItemProvider(sel, funcCompletionProvider)
+	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
 
-	vscode.languages.registerCompletionItemProvider({
-		language: "br",
-		scheme: "file"
-	}, {
-		provideCompletionItems: (doc: vscode.TextDocument, position: vscode.Position): vscode.CompletionItem[] => {
-
-			let word = doc.getText(doc.getWordRangeAtPosition(position))
-			let isLower = !/[A-Z]/.test(word)
-			
-			return Statements.map((s)=>{
-				let md = new vscode.MarkdownString()
-				let item: vscode.CompletionItem = {
-					label: {
-						label: isLower ? s.name.toLocaleLowerCase() : s.name,
-						description: 'statement'
-					},
-					detail: s.description,
-					documentation: md,
-					kind: vscode.CompletionItemKind.Keyword
-				}
-				if (s.documentation) md.appendMarkdown(s.documentation)
-				if (s.docUrl) md.appendMarkdown(` [docs...](${s.docUrl})`)
-				if (s.example) md.appendCodeblock(s.example) 
-				return item
-			})
-
-		}
-	})
+	languages.registerCompletionItemProvider(sel, statementCompletionProvider)
 }
 
 export function deactivate() {
@@ -91,9 +58,9 @@ export function deactivate() {
  * Sets up monitoring of project configuration
  * @param context extension context
  */
-function activateWorkspaceFolders(context: vscode.ExtensionContext) {
-	const folderDisposables: Map<vscode.WorkspaceFolder, Disposable[]> = new Map()
-	vscode.workspace.onDidChangeWorkspaceFolders(async ({ added, removed }: vscode.WorkspaceFoldersChangeEvent) => {
+function activateWorkspaceFolders(context: ExtensionContext) {
+	const folderDisposables: Map<WorkspaceFolder, Disposable[]> = new Map()
+	workspace.onDidChangeWorkspaceFolders(async ({ added, removed }: WorkspaceFoldersChangeEvent) => {
 		if (added) {
 			for (let workspaceFolder of added) {
 				folderDisposables.set(workspaceFolder, await startWatchingWorkpaceFolder(context, workspaceFolder))
@@ -107,18 +74,18 @@ function activateWorkspaceFolders(context: vscode.ExtensionContext) {
 		}
 	})
 
-	if (vscode.workspace.workspaceFolders){
-		vscode.workspace.workspaceFolders.forEach(async (workspaceFolder: vscode.WorkspaceFolder) => {
+	if (workspace.workspaceFolders){
+		workspace.workspaceFolders.forEach(async (workspaceFolder: WorkspaceFolder) => {
 			folderDisposables.set(workspaceFolder, await startWatchingWorkpaceFolder(context, workspaceFolder))
 		})
 	}
 }
 
-async function getProjectConfig(workspaceFolder: vscode.WorkspaceFolder): Promise<ProjectConfig | null> {
-	let projectFileUri: vscode.Uri = vscode.Uri.file(path.join(workspaceFolder.uri.fsPath, "br-project.json"))
+async function getProjectConfig(workspaceFolder: WorkspaceFolder): Promise<ProjectConfig | null> {
+	let projectFileUri: Uri = Uri.file(path.join(workspaceFolder.uri.fsPath, "br-project.json"))
 	let projectConfig: ProjectConfig | null = null
 	try {
-		let projectConfigText = await vscode.workspace.fs.readFile(projectFileUri)
+		let projectConfigText = await workspace.fs.readFile(projectFileUri)
 		projectConfig = {}
 		if (projectConfigText){
 			projectConfig = JSON.parse(projectConfigText.toString())
@@ -129,22 +96,22 @@ async function getProjectConfig(workspaceFolder: vscode.WorkspaceFolder): Promis
 	return projectConfig
 }
 
-async function updateLibraryFunctions(uri: vscode.Uri, project: ConfiguredProject): Promise<SourceLibrary | undefined> {
+async function updateLibraryFunctions(uri: Uri, project: ConfiguredProject): Promise<SourceLibrary | undefined> {
 	try {
-		const libText = await vscode.workspace.fs.readFile(uri)
+		const libText = await workspace.fs.readFile(uri)
 		if (libText){
 			const newDoc = new SourceLibrary(uri, libText.toString(), project)
 			return newDoc
 		}
 	} catch {
-		vscode.window.showWarningMessage(`Library source not found ${uri.fsPath}`)
+		window.showWarningMessage(`Library source not found ${uri.fsPath}`)
 	}
 }
 
-async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): Promise<vscode.Disposable[]> {
-	const watchers: vscode.Disposable[] = []
-	const folderPattern = new vscode.RelativePattern(workspaceFolder, SOURCE_GLOB)
-	const sourceFiles = await vscode.workspace.findFiles(folderPattern)
+async function startWatchingSource(workspaceFolder: WorkspaceFolder, project: ConfiguredProject): Promise<Disposable[]> {
+	const watchers: Disposable[] = []
+	const folderPattern = new RelativePattern(workspaceFolder, SOURCE_GLOB)
+	const sourceFiles = await workspace.findFiles(folderPattern)
 
 	for (const source of sourceFiles) {
 		const sourceLib = await updateLibraryFunctions(source, project)
@@ -153,8 +120,8 @@ async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, proj
 		}
 	}
 
-	const codeWatcher = vscode.workspace.createFileSystemWatcher(folderPattern)
-	codeWatcher.onDidChange(async (sourceUri: vscode.Uri) => {
+	const codeWatcher = workspace.createFileSystemWatcher(folderPattern)
+	codeWatcher.onDidChange(async (sourceUri: Uri) => {
 		const sourceLib = await updateLibraryFunctions(sourceUri, project)
 		if (sourceLib){
 			for (const [uri] of project.libraries) {
@@ -165,11 +132,11 @@ async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, proj
 		}
 	}, undefined, watchers)
 
-	codeWatcher.onDidDelete(async (sourceUri: vscode.Uri) => {
+	codeWatcher.onDidDelete(async (sourceUri: Uri) => {
 		project.libraries.delete(sourceUri.toString())
 	})
 
-	codeWatcher.onDidCreate(async (sourceUri: vscode.Uri) => {
+	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
 		const sourceLib = await updateLibraryFunctions(sourceUri, project)
 		if (sourceLib){
 			project.libraries.set(sourceUri.toString(), sourceLib)
@@ -179,14 +146,14 @@ async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, proj
 	return watchers
 }
 
-async function startWatchingWorkpaceFolder(context: vscode.ExtensionContext, workspaceFolder: vscode.WorkspaceFolder): Promise<Disposable[]> {
+async function startWatchingWorkpaceFolder(context: ExtensionContext, workspaceFolder: WorkspaceFolder): Promise<Disposable[]> {
 	const disposables: Disposable[] = []
-	const projectFilePattern = new vscode.RelativePattern(workspaceFolder, "br-project.json")
-	const projectWatcher = vscode.workspace.createFileSystemWatcher(projectFilePattern)
+	const projectFilePattern = new RelativePattern(workspaceFolder, "br-project.json")
+	const projectWatcher = workspace.createFileSystemWatcher(projectFilePattern)
 
-	let watchers: vscode.Disposable[] = []
+	let watchers: Disposable[] = []
 
-	projectWatcher.onDidChange(async (uri: vscode.Uri) => {
+	projectWatcher.onDidChange(async (uri: Uri) => {
 		const projectConfig = await getProjectConfig(workspaceFolder)
 		if (projectConfig){
 			const project = new ConfiguredProject(projectConfig)
@@ -194,13 +161,13 @@ async function startWatchingWorkpaceFolder(context: vscode.ExtensionContext, wor
 		}
 	}, undefined, disposables)
 
-	projectWatcher.onDidDelete((uri: vscode.Uri) => {
+	projectWatcher.onDidDelete((uri: Uri) => {
 		ConfiguredProjects.delete(workspaceFolder)
 		watchers.forEach(d => d.dispose())
 		watchers = []
 	}, undefined, disposables)
 
-	projectWatcher.onDidCreate(async (uri: vscode.Uri) => {
+	projectWatcher.onDidCreate(async (uri: Uri) => {
 		const projectConfig = await getProjectConfig(workspaceFolder)
 		if (projectConfig){
 			const project = new ConfiguredProject(projectConfig)
