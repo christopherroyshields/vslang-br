@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createHoverFromFunction = exports.isComment = void 0;
+exports.getSearchPath = exports.stripBalancedFunctions = exports.createHoverFromFunction = exports.isComment = void 0;
 const vscode_1 = require("vscode");
 const functions_1 = require("../completions/functions");
 function isComment(cursorPosition, doctext, doc) {
@@ -35,4 +35,24 @@ function createHoverFromFunction(fn) {
     return new vscode_1.Hover(markup);
 }
 exports.createHoverFromFunction = createHoverFromFunction;
+const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g;
+function stripBalancedFunctions(line) {
+    if (CONTAINS_BALANCED_FN.test(line)) {
+        line = line.replace(CONTAINS_BALANCED_FN, "");
+        line = stripBalancedFunctions(line);
+    }
+    return line;
+}
+exports.stripBalancedFunctions = stripBalancedFunctions;
+function getSearchPath(workspaceFolder, project) {
+    const config = project.config;
+    const searchPath = workspaceFolder.uri;
+    if (config !== undefined && config.searchPath !== undefined) {
+        return vscode_1.Uri.joinPath(searchPath, config.searchPath.replace("\\", "/"));
+    }
+    else {
+        return workspaceFolder.uri;
+    }
+}
+exports.getSearchPath = getSearchPath;
 //# sourceMappingURL=common.js.map

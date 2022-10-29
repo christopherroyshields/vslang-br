@@ -12,13 +12,13 @@ const functions_1 = require("./completions/functions");
 const BrParamType_1 = require("./types/BrParamType");
 const DocComment_1 = require("./types/DocComment");
 const common_1 = require("./util/common");
+const ConfiguredProject_1 = require("./class/ConfiguredProject");
+const UserFunction_1 = require("./class/UserFunction");
+const UserFunctionParameter_1 = require("./class/UserFunctionParameter");
+const SourceLibrary_1 = require("./class/SourceLibrary");
 const SOURCE_GLOB = '**/*.{brs,wbs}';
-class ConfiguredProject {
-    constructor(config) {
-        this.libraries = new Map();
-        this.config = config;
-    }
-}
+const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
+const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i;
 const ConfiguredProjects = new Map();
 function sigHelpProvider(doc, position, token) {
     const doctext = doc.getText(new vscode.Range(doc.positionAt(0), position));
@@ -26,22 +26,12 @@ function sigHelpProvider(doc, position, token) {
     if (sigHelp)
         return sigHelp;
 }
-const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
-const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i;
-const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g;
-function stripBalancedFunctions(line) {
-    if (CONTAINS_BALANCED_FN.test(line)) {
-        line = line.replace(CONTAINS_BALANCED_FN, "");
-        line = stripBalancedFunctions(line);
-    }
-    return line;
-}
 function getFunctionDetails(preText, doc) {
     // strip functions with params
     if (preText) {
         // remove literals first
         preText = preText.replace(STRING_LITERALS, "");
-        preText = stripBalancedFunctions(preText);
+        preText = (0, common_1.stripBalancedFunctions)(preText);
         let context = FUNCTION_CALL_CONTEXT.exec(preText);
         if (context && context.groups && !context.groups.isDef) {
             const sigHelp = {
@@ -51,24 +41,21 @@ function getFunctionDetails(preText, doc) {
             };
             if (context.groups.name.substring(0, 2).toLocaleLowerCase() === "fn") {
                 const localLibs = parseFunctionsFromSource(doc.getText(), false);
-                if (localLibs) {
-                    for (const fn of localLibs) {
-                        if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()) {
-                            const params = [];
-                            if (fn && fn.params) {
-                                for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
-                                    const el = fn.params[paramIndex];
-                                    params.push({
-                                        label: el.name,
-                                        documentation: el.documentation
-                                    });
-                                }
+                for (const fn of localLibs) {
+                    if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()) {
+                        const params = [];
+                        if (fn && fn.params) {
+                            for (const param of fn.params) {
+                                params.push({
+                                    label: param.name,
+                                    documentation: param.documentation
+                                });
                             }
-                            const sigInfo = new vscode.SignatureInformation(fn.name + (0, functions_1.generateFunctionSignature)(fn));
-                            sigInfo.parameters = params;
-                            sigInfo.activeParameter = context.groups.params?.split(',').length - 1;
-                            sigHelp.signatures.push(sigInfo);
                         }
+                        const sigInfo = new vscode.SignatureInformation(fn.name + (0, functions_1.generateFunctionSignature)(fn), new vscode.MarkdownString(fn.documentation));
+                        sigInfo.parameters = params;
+                        sigInfo.activeParameter = context.groups.params?.split(',').length - 1;
+                        sigHelp.signatures.push(sigInfo);
                     }
                 }
                 const workspaceFolder = vscode.workspace.getWorkspaceFolder(doc.uri);
@@ -158,13 +145,11 @@ function activate(context) {
                         if (word.substring(0, 2).toLowerCase() == "fn") {
                             // local functions
                             const localLibs = parseFunctionsFromSource(doc.getText(), false);
-                            if (localLibs) {
-                                for (const fn of localLibs) {
-                                    if (fn.name.toLowerCase() == word) {
-                                        const hover = (0, common_1.createHoverFromFunction)(fn);
-                                        hover.range = wordRange;
-                                        return hover;
-                                    }
+                            for (const fn of localLibs) {
+                                if (fn.name.toLowerCase() == word) {
+                                    const hover = (0, common_1.createHoverFromFunction)(fn);
+                                    hover.range = wordRange;
+                                    return hover;
                                 }
                             }
                             // library functions
@@ -184,12 +169,14 @@ function activate(context) {
                                 }
                             }
                         }
-                        // system functions
-                        const fn = (0, functions_1.getFunctionByName)(word);
-                        if (fn) {
-                            const hover = (0, common_1.createHoverFromFunction)(fn);
-                            hover.range = wordRange;
-                            return hover;
+                        else {
+                            // system functions
+                            const fn = (0, functions_1.getFunctionByName)(word);
+                            if (fn) {
+                                const hover = (0, common_1.createHoverFromFunction)(fn);
+                                hover.range = wordRange;
+                                return hover;
+                            }
                         }
                     }
                     // local functions
@@ -252,7 +239,7 @@ function activate(context) {
                 if (workspaceFolder) {
                     const project = ConfiguredProjects.get(workspaceFolder);
                     if (project) {
-                        const searchPath = getSearchPath(workspaceFolder, project);
+                        const searchPath = (0, common_1.getSearchPath)(workspaceFolder, project);
                         for (const [uri, lib] of project.libraries) {
                             if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0) {
                                 const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1));
@@ -284,7 +271,7 @@ function activate(context) {
                 if (project) {
                     if (project?.config?.globalIncludes) {
                         for (const globalInclude of project.config.globalIncludes) {
-                            const searchPath = getSearchPath(workspaceFolder, project);
+                            const searchPath = (0, common_1.getSearchPath)(workspaceFolder, project);
                             const globalUri = vscode.Uri.file(path.join(searchPath.fsPath, globalInclude));
                             for (const [uri, lib] of project.libraries) {
                                 if (uri !== doc.uri.toString() && globalUri.toString() === uri) {
@@ -307,19 +294,16 @@ function activate(context) {
                 }
             }
             const userFunctions = parseFunctionsFromSource(doc.getText(), false);
-            if (userFunctions) {
-                for (let fnIndex = 0; fnIndex < userFunctions.length; fnIndex++) {
-                    const fn = userFunctions[fnIndex];
-                    completionItems.push({
-                        kind: vscode_languageclient_1.CompletionItemKind.Function,
-                        label: {
-                            label: fn.name,
-                            detail: ' (local function)'
-                        },
-                        detail: `(local function) ${fn.name}${fn.generateSignature()}`,
-                        documentation: new vscode.MarkdownString(fn.getAllDocs())
-                    });
-                }
+            for (const fn of userFunctions) {
+                completionItems.push({
+                    kind: vscode_languageclient_1.CompletionItemKind.Function,
+                    label: {
+                        label: fn.name,
+                        detail: ' (local function)'
+                    },
+                    detail: `(local function) ${fn.name}${fn.generateSignature()}`,
+                    documentation: new vscode.MarkdownString(fn.getAllDocs())
+                });
             }
             return completionItems;
         }
@@ -359,25 +343,15 @@ function deactivate() {
     (0, client_1.deactivateClient)();
 }
 exports.deactivate = deactivate;
-function getSearchPath(workspaceFolder, project) {
-    const config = project.config;
-    const searchPath = workspaceFolder.uri;
-    if (config !== undefined && config.searchPath !== undefined) {
-        return vscode.Uri.joinPath(searchPath, config.searchPath.replace("\\", "/"));
-    }
-    else {
-        return workspaceFolder.uri;
-    }
-}
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>\/\*[^*][^/]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))/gi;
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi;
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g;
 function parseFunctionsFromSource(sourceText, librariesOnly = true) {
-    let functions = null;
+    const functions = [];
     let matches = sourceText.matchAll(FIND_COMMENTS_AND_FUNCTIONS);
     for (const match of matches) {
         if (match.groups?.name && (!librariesOnly || match.groups?.isLibrary)) {
-            const lib = new functions_1.UserFunction(match.groups.name);
+            const lib = new UserFunction_1.UserFunction(match.groups.name);
             let fnDoc;
             if (match.groups.comments) {
                 fnDoc = DocComment_1.DocComment.parse(match.groups.comments);
@@ -394,7 +368,7 @@ function parseFunctionsFromSource(sourceText, librariesOnly = true) {
                         if (paramMatch.groups.name.trim() == "___") {
                             break;
                         }
-                        const libParam = new functions_1.UserFunctionParameter();
+                        const libParam = new UserFunctionParameter_1.UserFunctionParameter();
                         libParam.name = paramMatch.groups.name;
                         libParam.isReference = paramMatch.groups.isReference ? true : false;
                         libParam.isOptional = isOptional;
@@ -427,7 +401,6 @@ function parseFunctionsFromSource(sourceText, librariesOnly = true) {
                     }
                 }
             }
-            functions = functions ?? [];
             functions.push(lib);
         }
     }
@@ -501,19 +474,6 @@ async function updateLibraryFunctions(uri) {
 }
 function updateWorkspaceCode(uri, workspaceFolder) {
 }
-class SourceLibrary {
-    constructor(uri, libraryList, workspaceFolder, project) {
-        this.uri = uri;
-        this.libraryList = libraryList;
-        this.linkPath = this.getLinkPath(workspaceFolder, project);
-    }
-    getLinkPath(workspaceFolder, project) {
-        const searchPath = getSearchPath(workspaceFolder, project);
-        const parsedPath = path.parse(this.uri.fsPath.substring(searchPath.fsPath.length + 1));
-        const libPath = path.join(parsedPath.dir, parsedPath.name);
-        return libPath;
-    }
-}
 async function startWatchingSource(workspaceFolder, project) {
     const watchers = [];
     const folderPattern = new vscode.RelativePattern(workspaceFolder, SOURCE_GLOB);
@@ -521,7 +481,7 @@ async function startWatchingSource(workspaceFolder, project) {
     for (const source of sourceFiles) {
         const sourceLibs = await updateLibraryFunctions(source);
         if (sourceLibs) {
-            const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
+            const sourceLib = new SourceLibrary_1.SourceLibrary(source, sourceLibs, workspaceFolder, project);
             project.libraries.set(source.toString(), sourceLib);
         }
     }
@@ -531,7 +491,7 @@ async function startWatchingSource(workspaceFolder, project) {
         if (sourceLibs) {
             for (const [uri] of project.libraries) {
                 if (uri === source.toString()) {
-                    const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
+                    const sourceLib = new SourceLibrary_1.SourceLibrary(source, sourceLibs, workspaceFolder, project);
                     project.libraries.set(source.toString(), sourceLib);
                 }
             }
@@ -547,7 +507,7 @@ async function startWatchingSource(workspaceFolder, project) {
     codeWatcher.onDidCreate(async (source) => {
         const sourceLibs = await updateLibraryFunctions(source);
         if (sourceLibs) {
-            const sourceLib = new SourceLibrary(source, sourceLibs, workspaceFolder, project);
+            const sourceLib = new SourceLibrary_1.SourceLibrary(source, sourceLibs, workspaceFolder, project);
             project.libraries.set(source.toString(), sourceLib);
         }
     });
@@ -561,7 +521,7 @@ async function startWatchingWorkpaceFolder(context, workspaceFolder) {
     projectWatcher.onDidChange(async (uri) => {
         const projectConfig = await getProjectConfig(workspaceFolder);
         if (projectConfig) {
-            const project = new ConfiguredProject(projectConfig);
+            const project = new ConfiguredProject_1.ConfiguredProject(projectConfig);
             ConfiguredProjects.set(workspaceFolder, project);
         }
     }, undefined, disposables);
@@ -573,14 +533,14 @@ async function startWatchingWorkpaceFolder(context, workspaceFolder) {
     projectWatcher.onDidCreate(async (uri) => {
         const projectConfig = await getProjectConfig(workspaceFolder);
         if (projectConfig) {
-            const project = new ConfiguredProject(projectConfig);
+            const project = new ConfiguredProject_1.ConfiguredProject(projectConfig);
             ConfiguredProjects.set(workspaceFolder, project);
             watchers = await startWatchingSource(workspaceFolder, project);
         }
     }, undefined, disposables);
     const projectConfig = await getProjectConfig(workspaceFolder);
     if (projectConfig) {
-        const project = new ConfiguredProject(projectConfig);
+        const project = new ConfiguredProject_1.ConfiguredProject(projectConfig);
         ConfiguredProjects.set(workspaceFolder, project);
         watchers = await startWatchingSource(workspaceFolder, project);
     }

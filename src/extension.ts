@@ -5,20 +5,19 @@ import { activateClient, deactivateClient } from './client'
 import { Statements } from './statements';
 import { CompletionItemKind, CompletionItemLabelDetails, Disposable, WorkspaceFolder } from 'vscode-languageclient';
 import path = require('path');
-import { BrFunction, generateFunctionSignature, getFunctionByName, getFunctionsByName, UserFunction, UserFunctionParameter } from './completions/functions';
+import { generateFunctionSignature, getFunctionByName, getFunctionsByName } from './completions/functions';
 import { BrParamType } from './types/BrParamType';
 import { DocComment } from './types/DocComment';
-import { createHoverFromFunction, isComment } from './util/common';
+import { createHoverFromFunction, getSearchPath, isComment, stripBalancedFunctions } from './util/common';
+import { ConfiguredProject } from './class/ConfiguredProject';
+import { UserFunction } from './class/UserFunction';
+import { UserFunctionParameter } from './class/UserFunctionParameter';
+import { ProjectConfig } from './interface/ProjectConfig';
+import { SourceLibrary } from './class/SourceLibrary';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
-
-class ConfiguredProject {
-	config: ProjectConfig
-	libraries = new Map<string, SourceLibrary>()
-	constructor(config: ProjectConfig) {
-		this.config = config
-	}
-}
+const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
+const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
 
 const ConfiguredProjects = new Map<vscode.WorkspaceFolder, ConfiguredProject>()
 
@@ -26,19 +25,6 @@ function sigHelpProvider(doc: vscode.TextDocument, position: vscode.Position, to
 	const doctext = doc.getText(new vscode.Range(doc.positionAt(0), position))
 	const sigHelp = getFunctionDetails(doctext, doc)
 	if (sigHelp) return sigHelp
-}
-
-const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
-const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
-
-const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g
-
-function stripBalancedFunctions(line: string){
-	if (CONTAINS_BALANCED_FN.test(line)){
-		line = line.replace(CONTAINS_BALANCED_FN, "")
-		line = stripBalancedFunctions(line)
-	}
-	return line
 }
 
 function getFunctionDetails(preText: string, doc: vscode.TextDocument): vscode.SignatureHelp | undefined {
@@ -59,25 +45,22 @@ function getFunctionDetails(preText: string, doc: vscode.TextDocument): vscode.S
 
 			if (context.groups.name.substring(0,2).toLocaleLowerCase()==="fn"){
 				const localLibs = parseFunctionsFromSource(doc.getText(), false)
-				if (localLibs){
-					for (const fn of localLibs) {
-						if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
-							const params: vscode.ParameterInformation[] = []
-							if (fn && fn.params){
-								for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
-									const el = fn.params[paramIndex];
-									params.push({
-										label: el.name,
-										documentation: el.documentation
-									})
-								}
+				for (const fn of localLibs) {
+					if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
+						const params: vscode.ParameterInformation[] = []
+						if (fn && fn.params){
+							for (const param of fn.params) {
+								params.push({
+									label: param.name,
+									documentation: param.documentation
+								})
 							}
-			
-							const sigInfo = new vscode.SignatureInformation(fn.name + generateFunctionSignature(fn))
-							sigInfo.parameters = params
-							sigInfo.activeParameter = context.groups.params?.split(',').length - 1
-							sigHelp.signatures.push(sigInfo)
 						}
+		
+						const sigInfo = new vscode.SignatureInformation(fn.name + generateFunctionSignature(fn), new vscode.MarkdownString(fn.documentation))
+						sigInfo.parameters = params
+						sigInfo.activeParameter = context.groups.params?.split(',').length - 1
+						sigHelp.signatures.push(sigInfo)
 					}
 				}
 
@@ -178,13 +161,11 @@ export function activate(context: vscode.ExtensionContext) {
 							
 							// local functions
 							const localLibs = parseFunctionsFromSource(doc.getText(), false)
-							if (localLibs){
-								for (const fn of localLibs) {
-									if (fn.name.toLowerCase() == word){
-										const hover = createHoverFromFunction(fn)
-										hover.range = wordRange
-										return hover
-									}
+							for (const fn of localLibs) {
+								if (fn.name.toLowerCase() == word){
+									const hover = createHoverFromFunction(fn)
+									hover.range = wordRange
+									return hover
 								}
 							}
 							
@@ -204,15 +185,15 @@ export function activate(context: vscode.ExtensionContext) {
 									}
 								}
 							}
-						}						
-
-						// system functions
-						const fn = getFunctionByName(word)
-						if (fn){
-							const hover = createHoverFromFunction(fn)
-							hover.range = wordRange
-							return hover
-						}
+						}	else {
+							// system functions
+							const fn = getFunctionByName(word)
+							if (fn){
+								const hover = createHoverFromFunction(fn)
+								hover.range = wordRange
+								return hover
+							}
+						}					
 					}
 
 					// local functions
@@ -341,19 +322,16 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 
 			const userFunctions = parseFunctionsFromSource(doc.getText(), false)
-			if (userFunctions){
-				for (let fnIndex = 0; fnIndex < userFunctions.length; fnIndex++) {
-					const fn = userFunctions[fnIndex];
-					completionItems.push({
-						kind: CompletionItemKind.Function,
-						label: {
-							label: fn.name,
-							detail: ' (local function)'
-						},
-						detail: `(local function) ${fn.name}${fn.generateSignature()}`,
-						documentation: new vscode.MarkdownString(fn.getAllDocs())
-					})
-				}
+			for (const fn of userFunctions) {
+				completionItems.push({
+					kind: CompletionItemKind.Function,
+					label: {
+						label: fn.name,
+						detail: ' (local function)'
+					},
+					detail: `(local function) ${fn.name}${fn.generateSignature()}`,
+					documentation: new vscode.MarkdownString(fn.getAllDocs())
+				})
 			}
 
 			return completionItems
@@ -397,22 +375,12 @@ export function deactivate() {
 	deactivateClient();
 }
 
-function getSearchPath(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): vscode.Uri {
-	const config = project.config
-	const searchPath = workspaceFolder.uri;
-	if (config !== undefined && config.searchPath !== undefined){
-		return vscode.Uri.joinPath(searchPath, config.searchPath.replace("\\","/"))
-	} else {
-		return workspaceFolder.uri
-	}
-}
-
 const FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>\/\*[^*][^/]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))/gi
 const PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi
 const LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
 
-function parseFunctionsFromSource(sourceText: string, librariesOnly: boolean = true): UserFunction[] | null {
-	let functions: UserFunction[] | null = null
+function parseFunctionsFromSource(sourceText: string, librariesOnly: boolean = true): UserFunction[] {
+	const functions: UserFunction[] = []
 	let matches = sourceText.matchAll(FIND_COMMENTS_AND_FUNCTIONS)
 	for (const match of matches) {
 		if (match.groups?.name && (!librariesOnly || match.groups?.isLibrary)){
@@ -474,17 +442,10 @@ function parseFunctionsFromSource(sourceText: string, librariesOnly: boolean = t
 					}
 				}
 			}
-			functions = functions ?? [];
 			functions.push(lib)
 		}
 	}
 	return functions
-}
-
-interface ProjectConfig {
-	globalIncludes?: string[]
-	searchPath?: string,
-	libraries?: Map<vscode.Uri, UserFunction[]>
 }
 
 /**
@@ -557,24 +518,6 @@ async function updateLibraryFunctions(uri: vscode.Uri): Promise<UserFunction[] |
 
 function updateWorkspaceCode(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder) {
 
-}
-
-class SourceLibrary {
-	uri: vscode.Uri
-	libraryList: UserFunction[]
-	/** relative path for library statemtents */
-	linkPath: string
-	constructor(uri: vscode.Uri, libraryList: UserFunction[], workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject) {
-		this.uri = uri
-		this.libraryList = libraryList
-		this.linkPath = this.getLinkPath(workspaceFolder, project)
-	}
-	private getLinkPath(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): string {
-		const searchPath = getSearchPath(workspaceFolder, project)
-		const parsedPath = path.parse(this.uri.fsPath.substring(searchPath.fsPath.length + 1))
-		const libPath = path.join(parsedPath.dir, parsedPath.name)
-		return libPath
-	}
 }
 
 async function startWatchingSource(workspaceFolder: vscode.WorkspaceFolder, project: ConfiguredProject): Promise<vscode.Disposable[]> {

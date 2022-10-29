@@ -38,7 +38,7 @@ import {
 
 import * as br from './completions/functions';
 import * as vscode from 'vscode';
-import { getWordRangeAtPosition } from './util/document';
+import { UserFunction } from './class/UserFunction';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -147,7 +147,7 @@ documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
 });
 
-const userFunctions: br.UserFunction[] = []
+const userFunctions: UserFunction[] = []
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.

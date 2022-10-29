@@ -1,5 +1,7 @@
-import { Hover, MarkdownString, Position, Range, TextDocument } from "vscode"
-import { BrFunction, generateFunctionSignature } from "../completions/functions"
+import { Hover, MarkdownString, Position, Range, TextDocument, Uri, WorkspaceFolder } from "vscode"
+import { ConfiguredProject } from "../class/ConfiguredProject"
+import { generateFunctionSignature } from "../completions/functions"
+import { BrFunction } from "../interface/BrFunction"
 
 export function isComment(cursorPosition: Position, doctext: string, doc: TextDocument): boolean {
 	let commentMatch: RegExpExecArray | null
@@ -37,3 +39,24 @@ export function createHoverFromFunction(fn: BrFunction): Hover {
 
 	return new Hover(markup)
 }
+
+const CONTAINS_BALANCED_FN = /[a-zA-Z][\w]*\$?(\*\d+)?\([^()]*\)/g
+export function stripBalancedFunctions(line: string){
+	if (CONTAINS_BALANCED_FN.test(line)){
+		line = line.replace(CONTAINS_BALANCED_FN, "")
+		line = stripBalancedFunctions(line)
+	}
+	return line
+}
+
+export function getSearchPath(workspaceFolder: WorkspaceFolder, project: ConfiguredProject): Uri {
+	const config = project.config
+	const searchPath = workspaceFolder.uri;
+	if (config !== undefined && config.searchPath !== undefined){
+		return Uri.joinPath(searchPath, config.searchPath.replace("\\","/"))
+	} else {
+		return workspaceFolder.uri
+	}
+}
+
+
