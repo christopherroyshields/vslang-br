@@ -12,6 +12,7 @@ import { LibPathProvider } from './providers/LibPathProvider';
 import { FuncCompletionProvider } from './providers/FuncCompletionProvider';
 import { StatementCompletionProvider } from './providers/StatementCompletionProvider';
 import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent } from 'vscode';
+import { BrSourceSymbolProvider } from './providers/BrSymbolProvider';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<WorkspaceFolder, ConfiguredProject>()
@@ -22,6 +23,7 @@ const libLinkListProvider = new LibLinkListProvider(ConfiguredProjects)
 const libPathProvider = new LibPathProvider(ConfiguredProjects)
 const funcCompletionProvider = new FuncCompletionProvider(ConfiguredProjects)
 const statementCompletionProvider = new StatementCompletionProvider(ConfiguredProjects)
+const brSourceSymbolProvider = new BrSourceSymbolProvider()
 
 export function activate(context: ExtensionContext) {
 	
@@ -48,6 +50,8 @@ export function activate(context: ExtensionContext) {
 	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
 
 	languages.registerCompletionItemProvider(sel, statementCompletionProvider)
+
+	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
 }
 
 export function deactivate() {
