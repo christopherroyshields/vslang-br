@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BrSourceSymbolProvider = void 0;
 const vscode_1 = require("vscode");
 const LABEL_SEARCH = /(?:\/\*[\s\S]+?(?:\*\/|$)|`[\s\S]+?(?:`|$)|(?:^|\n)\s*?(?:\d{0,5})(?:\s*)?(?<label>\w[\w\d]*):)/gi;
+const FUNCTION_SEARCH = /(?:\/\*[\s\S]+?(?:\*\/|$)|`[\s\S]+?(?:`|$)|(?:^|\n)\s*?(?:\d{0,5})(?:\s*)?def\s+(?:library\s+)?(?<fn>\w[\w\d]*)\b)/gi;
 class BrSourceSymbolProvider {
     provideDocumentSymbols(doc, token) {
         const symbolInfoList = [];
@@ -19,10 +20,20 @@ class BrSourceSymbolProvider {
                     symbolInfoList.push(symbolInfo);
                 }
             }
-            // const pos = new Position(labelMatch.groups)
-            // const loc = new Location(doc.uri, new Position(1,0))
-            // const symbol1 = new SymbolInformation("foo1", SymbolKind.Function, "container", loc)
-            // const symbol2 = new SymbolInformation("foo2", SymbolKind.Function, "container", new Location(doc.uri, new Position(0,0)))
+        }
+        const funcMatches = doc.getText().matchAll(FUNCTION_SEARCH);
+        for (const funcMatch of funcMatches) {
+            if (funcMatch[1]) {
+                const whiteSpace = funcMatch[0].search(/\S/);
+                if (funcMatch.index !== undefined) {
+                    const start = funcMatch.index + whiteSpace;
+                    const end = funcMatch.index + funcMatch[0].length - 1;
+                    const selectionRange = new vscode_1.Range(doc.positionAt(start), doc.positionAt(end));
+                    const labelRange = doc.lineAt(doc.positionAt(start).line).range;
+                    const symbolInfo = new vscode_1.DocumentSymbol(funcMatch[1], 'function', vscode_1.SymbolKind.Function, labelRange, selectionRange);
+                    symbolInfoList.push(symbolInfo);
+                }
+            }
         }
         return symbolInfoList;
     }
