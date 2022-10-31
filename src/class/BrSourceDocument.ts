@@ -9,7 +9,7 @@ import UserFunctionParameter from "./UserFunctionParameter"
 
 export default class BrSourceDocument {
 	uri: Uri
-	libraryList: UserFunction[]
+	functions: UserFunction[]
 	/** relative path for library statemtents */
 	linkPath?: string
   static PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi
@@ -18,7 +18,7 @@ export default class BrSourceDocument {
 
 	constructor(uri: Uri, text: string, project?: ConfiguredProject) {
 		this.uri = uri
-		this.libraryList = this.parseFunctionsFromSource(text)
+		this.functions = this.parseFunctionsFromSource(text)
     if (project){
       const workspaceFolder = workspace.getWorkspaceFolder(this.uri)
       if (workspaceFolder){

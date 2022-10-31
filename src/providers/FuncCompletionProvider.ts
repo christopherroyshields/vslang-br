@@ -20,7 +20,7 @@ import BaseCompletionProvider from "./BaseCompletionProvider";
       if (project){
         for (const [uri, lib] of project.libraries) {
           if (uri !== doc.uri.toString()){
-            for (const fn of lib.libraryList){
+            for (const fn of lib.functions){
               if (fn.isLibrary){
                 completionItems.push({
                   kind: CompletionItemKind.Function,
@@ -40,7 +40,7 @@ import BaseCompletionProvider from "./BaseCompletionProvider";
     }
 
     const source = new BrSourceDocument(doc.uri, doc.getText())
-    for (const fn of source.libraryList) {
+    for (const fn of source.functions) {
       completionItems.push({
         kind: CompletionItemKind.Function,
         label: {

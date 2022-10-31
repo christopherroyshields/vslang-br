@@ -24,7 +24,7 @@ export default class BrHoverProvider implements HoverProvider {
             
             // local functions
             const localSource = new BrSourceDocument(doc.uri, doc.getText())
-            for (const fn of localSource.libraryList) {
+            for (const fn of localSource.functions) {
               if (fn.name.toLowerCase() == word.toLocaleLowerCase()){
                 const hover = this.createHoverFromFunction(fn)
                 hover.range = wordRange
@@ -38,7 +38,7 @@ export default class BrHoverProvider implements HoverProvider {
               const project = this.configuredProjects.get(workspaceFolder)
               if (project){
                 for (const [uri,lib] of project.libraries) {
-                  for (const fn of lib.libraryList) {
+                  for (const fn of lib.functions) {
                     if (fn.name.toLowerCase() === word.toLocaleLowerCase()){
                       const hover = this.createHoverFromFunction(fn)
                       hover.range = wordRange

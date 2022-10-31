@@ -30,7 +30,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
           const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
           const localLib = new BrSourceDocument(doc.uri, doc.getText())
           
-          for (const fn of localLib.libraryList) {
+          for (const fn of localLib.functions) {
             if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
               const params: ParameterInformation[] = []
               if (fn && fn.params){
@@ -54,7 +54,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
             if (project){
               for (const [libUri,lib] of project.libraries) {
                 if (libUri !== doc.uri.toString()){
-                  for (const fn of lib.libraryList) {
+                  for (const fn of lib.functions) {
                     if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
                       const params: ParameterInformation[] = []
                       if (fn && fn.params){
