@@ -14,6 +14,7 @@ const LibPathProvider_1 = require("./providers/LibPathProvider");
 const FuncCompletionProvider_1 = require("./providers/FuncCompletionProvider");
 const StatementCompletionProvider_1 = require("./providers/StatementCompletionProvider");
 const vscode_1 = require("vscode");
+const BrSymbolProvider_1 = require("./providers/BrSymbolProvider");
 const SOURCE_GLOB = '**/*.{brs,wbs}';
 const ConfiguredProjects = new Map();
 const signatureHelpProvider = new BrSignatureHelpProvider_1.BrSignatureHelpProvider(ConfiguredProjects);
@@ -22,6 +23,7 @@ const libLinkListProvider = new LibLinkListProvider_1.LibLinkListProvider(Config
 const libPathProvider = new LibPathProvider_1.LibPathProvider(ConfiguredProjects);
 const funcCompletionProvider = new FuncCompletionProvider_1.FuncCompletionProvider(ConfiguredProjects);
 const statementCompletionProvider = new StatementCompletionProvider_1.StatementCompletionProvider(ConfiguredProjects);
+const brSourceSymbolProvider = new BrSymbolProvider_1.BrSourceSymbolProvider();
 function activate(context) {
     (0, lexi_1.activateLexi)(context);
     (0, next_prev_1.activateNextPrev)(context);
@@ -36,6 +38,7 @@ function activate(context) {
     vscode_1.languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'");
     vscode_1.languages.registerCompletionItemProvider(sel, funcCompletionProvider);
     vscode_1.languages.registerCompletionItemProvider(sel, statementCompletionProvider);
+    vscode_1.languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider);
 }
 exports.activate = activate;
 function deactivate() {

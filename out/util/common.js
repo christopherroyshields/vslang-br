@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSearchPath = exports.stripBalancedFunctions = exports.isComment = exports.FUNCTION_CALL_CONTEXT = exports.STRING_LITERALS = void 0;
+exports.getSearchPath = exports.stripBalancedFunctions = exports.isComment = exports.STRING_OR_COMMENT = exports.FUNCTION_CALL_CONTEXT = exports.STRING_LITERALS = void 0;
 const vscode_1 = require("vscode");
 exports.STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
 exports.FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i;
+exports.STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
 function isComment(cursorPosition, doctext, doc) {
     let commentMatch;
-    const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g;
-    while ((commentMatch = STRING_OR_COMMENT.exec(doctext)) !== null) {
+    while ((commentMatch = exports.STRING_OR_COMMENT.exec(doctext)) !== null) {
         let startOffset = commentMatch.index;
         let endOffset = commentMatch.index + commentMatch[0].length;
         if (doc.offsetAt(cursorPosition) < startOffset) {
