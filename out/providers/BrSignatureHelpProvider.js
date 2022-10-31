@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BrSignatureHelpProvider = void 0;
 const vscode_1 = require("vscode");
-const SourceLibrary_1 = require("../class/SourceLibrary");
+const BrSourceDocument_1 = require("../class/BrSourceDocument");
 const functions_1 = require("../completions/functions");
 const common_1 = require("../util/common");
 class BrSignatureHelpProvider {
@@ -25,7 +25,7 @@ class BrSignatureHelpProvider {
                 };
                 if (context.groups.name.substring(0, 2).toLocaleLowerCase() === "fn") {
                     const workspaceFolder = vscode_1.workspace.getWorkspaceFolder(doc.uri);
-                    const localLib = new SourceLibrary_1.SourceLibrary(doc.uri, doc.getText());
+                    const localLib = new BrSourceDocument_1.BrSourceDocument(doc.uri, doc.getText());
                     for (const fn of localLib.libraryList) {
                         if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()) {
                             const params = [];

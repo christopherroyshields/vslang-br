@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BrHoverProvider = void 0;
 const vscode_1 = require("vscode");
 const vscode_2 = require("vscode");
-const SourceLibrary_1 = require("../class/SourceLibrary");
+const BrSourceDocument_1 = require("../class/BrSourceDocument");
 const functions_1 = require("../completions/functions");
 const common_1 = require("../util/common");
 class BrHoverProvider {
@@ -22,7 +22,7 @@ class BrHoverProvider {
                 if (word) {
                     if (word.substring(0, 2).toLowerCase() == "fn") {
                         // local functions
-                        const localSource = new SourceLibrary_1.SourceLibrary(doc.uri, doc.getText());
+                        const localSource = new BrSourceDocument_1.BrSourceDocument(doc.uri, doc.getText());
                         for (const fn of localSource.libraryList) {
                             if (fn.name.toLowerCase() == word.toLocaleLowerCase()) {
                                 const hover = this.createHoverFromFunction(fn);

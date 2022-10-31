@@ -4,7 +4,7 @@ import { activateClient, deactivateClient } from './client'
 import path = require('path');
 import { ConfiguredProject } from './class/ConfiguredProject';
 import { ProjectConfig } from './interface/ProjectConfig';
-import { SourceLibrary } from './class/SourceLibrary';
+import { BrSourceDocument } from './class/BrSourceDocument';
 import { BrSignatureHelpProvider } from './providers/BrSignatureHelpProvider';
 import { BrHoverProvider } from './providers/BrHoverProvider';
 import { LibLinkListProvider } from './providers/LibLinkListProvider';
@@ -100,11 +100,11 @@ async function getProjectConfig(workspaceFolder: WorkspaceFolder): Promise<Proje
 	return projectConfig
 }
 
-async function updateLibraryFunctions(uri: Uri, project: ConfiguredProject): Promise<SourceLibrary | undefined> {
+async function updateLibraryFunctions(uri: Uri, project: ConfiguredProject): Promise<BrSourceDocument | undefined> {
 	try {
 		const libText = await workspace.fs.readFile(uri)
 		if (libText){
-			const newDoc = new SourceLibrary(uri, libText.toString(), project)
+			const newDoc = new BrSourceDocument(uri, libText.toString(), project)
 			return newDoc
 		}
 	} catch {

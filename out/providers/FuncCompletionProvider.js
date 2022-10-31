@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FuncCompletionProvider = void 0;
 const path = require("path");
 const vscode_1 = require("vscode");
-const SourceLibrary_1 = require("../class/SourceLibrary");
+const BrSourceDocument_1 = require("../class/BrSourceDocument");
 const BaseCompletionProvider_1 = require("./BaseCompletionProvider");
 /**
  * Library statement linkage list completion provider
@@ -38,7 +38,7 @@ class FuncCompletionProvider extends BaseCompletionProvider_1.BaseCompletionProv
                 }
             }
         }
-        const source = new SourceLibrary_1.SourceLibrary(doc.uri, doc.getText());
+        const source = new BrSourceDocument_1.BrSourceDocument(doc.uri, doc.getText());
         for (const fn of source.libraryList) {
             completionItems.push({
                 kind: vscode_1.CompletionItemKind.Function,

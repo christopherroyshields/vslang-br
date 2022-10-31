@@ -1,9 +1,9 @@
 import { ProjectConfig } from "../interface/ProjectConfig"
-import { SourceLibrary } from "./SourceLibrary"
+import { BrSourceDocument } from "./BrSourceDocument"
 
 export class ConfiguredProject {
 	config: ProjectConfig
-	libraries = new Map<string, SourceLibrary>()
+	libraries = new Map<string, BrSourceDocument>()
 	constructor(config: ProjectConfig) {
 		this.config = config
 	}

@@ -1,7 +1,7 @@
 import { MarkdownString, workspace, WorkspaceFolder } from 'vscode';
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode";
 import { ConfiguredProject } from '../class/ConfiguredProject';
-import { SourceLibrary } from "../class/SourceLibrary";
+import { BrSourceDocument } from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionByName } from '../completions/functions';
 import { BrFunction } from '../interface/BrFunction';
 import { isComment } from "../util/common";
@@ -23,7 +23,7 @@ export class BrHoverProvider implements HoverProvider {
           if (word.substring(0,2).toLowerCase() == "fn"){
             
             // local functions
-            const localSource = new SourceLibrary(doc.uri, doc.getText())
+            const localSource = new BrSourceDocument(doc.uri, doc.getText())
             for (const fn of localSource.libraryList) {
               if (fn.name.toLowerCase() == word.toLocaleLowerCase()){
                 const hover = this.createHoverFromFunction(fn)

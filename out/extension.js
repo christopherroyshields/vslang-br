@@ -6,7 +6,7 @@ const next_prev_1 = require("./next-prev");
 const client_1 = require("./client");
 const path = require("path");
 const ConfiguredProject_1 = require("./class/ConfiguredProject");
-const SourceLibrary_1 = require("./class/SourceLibrary");
+const BrSourceDocument_1 = require("./class/BrSourceDocument");
 const BrSignatureHelpProvider_1 = require("./providers/BrSignatureHelpProvider");
 const BrHoverProvider_1 = require("./providers/BrHoverProvider");
 const LibLinkListProvider_1 = require("./providers/LibLinkListProvider");
@@ -90,7 +90,7 @@ async function updateLibraryFunctions(uri, project) {
     try {
         const libText = await vscode_1.workspace.fs.readFile(uri);
         if (libText) {
-            const newDoc = new SourceLibrary_1.SourceLibrary(uri, libText.toString(), project);
+            const newDoc = new BrSourceDocument_1.BrSourceDocument(uri, libText.toString(), project);
             return newDoc;
         }
     }

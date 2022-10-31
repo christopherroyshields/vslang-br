@@ -1,7 +1,7 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionList, MarkdownString, Position, TextDocument, workspace, WorkspaceFolder } from "vscode";
 import { ConfiguredProject } from "../class/ConfiguredProject";
-import { SourceLibrary } from "../class/SourceLibrary";
+import { BrSourceDocument } from "../class/BrSourceDocument";
 import { Statements } from "../statements";
 import { BaseCompletionProvider } from "./BaseCompletionProvider";
 

@@ -1,6 +1,6 @@
 import { CancellationToken, MarkdownString, ParameterInformation, Position, ProviderResult, Range, SignatureHelp, SignatureHelpContext, SignatureHelpProvider, SignatureInformation, TextDocument, workspace, WorkspaceFolder } from "vscode";
 import { ConfiguredProject } from "../class/ConfiguredProject";
-import { SourceLibrary } from "../class/SourceLibrary";
+import { BrSourceDocument } from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionsByName } from "../completions/functions";
 import { FUNCTION_CALL_CONTEXT, STRING_LITERALS, stripBalancedFunctions } from "../util/common";
 
@@ -28,7 +28,7 @@ export class BrSignatureHelpProvider implements SignatureHelpProvider {
   
         if (context.groups.name.substring(0,2).toLocaleLowerCase()==="fn"){
           const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
-          const localLib = new SourceLibrary(doc.uri, doc.getText())
+          const localLib = new BrSourceDocument(doc.uri, doc.getText())
           
           for (const fn of localLib.libraryList) {
             if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){

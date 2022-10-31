@@ -7,7 +7,7 @@ import { ConfiguredProject } from "./ConfiguredProject"
 import { UserFunction } from "./UserFunction"
 import { UserFunctionParameter } from "./UserFunctionParameter"
 
-export class SourceLibrary {
+export class BrSourceDocument {
 	uri: Uri
 	libraryList: UserFunction[]
 	/** relative path for library statemtents */
@@ -36,7 +36,7 @@ export class SourceLibrary {
 
   private parseFunctionsFromSource(sourceText: string): UserFunction[] {
     const functions: UserFunction[] = []
-    let matches = sourceText.matchAll(SourceLibrary.FIND_COMMENTS_AND_FUNCTIONS)
+    let matches = sourceText.matchAll(BrSourceDocument.FIND_COMMENTS_AND_FUNCTIONS)
     for (const match of matches) {
       if (match.groups?.name){
         
@@ -53,8 +53,8 @@ export class SourceLibrary {
           lib.params = []
   
           // remove line continuations
-          const params = match.groups.params.replace(SourceLibrary.LINE_CONTINUATIONS, "")
-          const it = params.matchAll(SourceLibrary.PARAM_SEARCH)
+          const params = match.groups.params.replace(BrSourceDocument.LINE_CONTINUATIONS, "")
+          const it = params.matchAll(BrSourceDocument.PARAM_SEARCH)
   
           let isOptional = false
           for (const paramMatch of it) {

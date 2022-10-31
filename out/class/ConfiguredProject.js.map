@@ -1,1 +1,1 @@
-{"version":3,"file":"ConfiguredProject.js","sourceRoot":"","sources":["../../src/class/ConfiguredProject.ts"],"names":[],"mappings":";;;AAGA,MAAa,iBAAiB;IAG7B,YAAY,MAAqB;QADjC,cAAS,GAAG,IAAI,GAAG,EAAyB,CAAA;QAE3C,IAAI,CAAC,MAAM,GAAG,MAAM,CAAA;IACrB,CAAC;CACD;AAND,8CAMC"}
+{"version":3,"file":"ConfiguredProject.js","sourceRoot":"","sources":["../../src/class/ConfiguredProject.ts"],"names":[],"mappings":";;;AAGA,MAAa,iBAAiB;IAG7B,YAAY,MAAqB;QADjC,cAAS,GAAG,IAAI,GAAG,EAA4B,CAAA;QAE9C,IAAI,CAAC,MAAM,GAAG,MAAM,CAAA;IACrB,CAAC;CACD;AAND,8CAMC"}

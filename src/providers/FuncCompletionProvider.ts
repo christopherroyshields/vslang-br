@@ -1,7 +1,7 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionList, MarkdownString, Position, TextDocument, workspace, WorkspaceFolder } from "vscode";
 import { ConfiguredProject } from "../class/ConfiguredProject";
-import { SourceLibrary } from "../class/SourceLibrary";
+import { BrSourceDocument } from "../class/BrSourceDocument";
 import { BaseCompletionProvider } from "./BaseCompletionProvider";
 
 /**
@@ -39,7 +39,7 @@ import { BaseCompletionProvider } from "./BaseCompletionProvider";
       }
     }
 
-    const source = new SourceLibrary(doc.uri, doc.getText())
+    const source = new BrSourceDocument(doc.uri, doc.getText())
     for (const fn of source.libraryList) {
       completionItems.push({
         kind: CompletionItemKind.Function,
