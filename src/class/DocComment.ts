@@ -1,4 +1,4 @@
-export class DocComment extends Object {
+export default class DocComment extends Object {
 	text?: string
 	params: Map<string, string> = new Map<string,string>()
 	static textSearch: RegExp = /^[\s\S]*?(?=@|$)/

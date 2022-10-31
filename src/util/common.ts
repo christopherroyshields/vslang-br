@@ -1,7 +1,7 @@
 import { Hover, MarkdownString, Position, Range, TextDocument, Uri, WorkspaceFolder } from "vscode"
-import { ConfiguredProject } from "../class/ConfiguredProject"
+import ConfiguredProject from "../class/ConfiguredProject"
 import { generateFunctionSignature } from "../completions/functions"
-import { BrFunction } from "../interface/BrFunction"
+import BrFunction from "../interface/BrFunction"
 
 export const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i

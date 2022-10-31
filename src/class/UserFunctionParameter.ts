@@ -1,7 +1,7 @@
-import { FunctionParameter } from "../interface/FunctionParameter"
+import FunctionParameter from "../interface/FunctionParameter"
 import { BrParamType } from "../types/BrParamType"
 
-export class UserFunctionParameter implements FunctionParameter {
+export default class UserFunctionParameter implements FunctionParameter {
   name: string = ""
   length?: number | undefined
   documentation?: string | undefined

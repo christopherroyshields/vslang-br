@@ -3,7 +3,7 @@ import { CancellationToken, DocumentSymbol, DocumentSymbolProvider, Location, Po
 const LABEL_SEARCH = /(?:\/\*[\s\S]+?(?:\*\/|$)|`[\s\S]+?(?:`|$)|(?:^|\n)\s*?(?:\d{0,5})(?:\s*)?(?<label>\w[\w\d]*):)/gi
 const FUNCTION_SEARCH = /(?:\/\*[\s\S]+?(?:\*\/|$)|`[\s\S]+?(?:`|$)|(?:^|\n)\s*?(?:\d{0,5})(?:\s*)?def\s+(?:library\s+)?(?<fn>\w[\w\d]*)\b)/gi
 
-export class BrSourceSymbolProvider implements DocumentSymbolProvider {
+export default class BrSourceSymbolProvider implements DocumentSymbolProvider {
   provideDocumentSymbols(doc: TextDocument, token: CancellationToken): SymbolInformation[] | DocumentSymbol[] {
     const symbolInfoList: DocumentSymbol[] = []
 

@@ -38,7 +38,7 @@ import {
 
 import * as br from './completions/functions';
 import * as vscode from 'vscode';
-import { UserFunction } from './class/UserFunction';
+import UserFunction from './class/UserFunction';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.

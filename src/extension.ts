@@ -1,18 +1,18 @@
+import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent } from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
-import path = require('path');
-import { ConfiguredProject } from './class/ConfiguredProject';
-import { ProjectConfig } from './interface/ProjectConfig';
-import { BrSourceDocument } from './class/BrSourceDocument';
-import { BrSignatureHelpProvider } from './providers/BrSignatureHelpProvider';
-import { BrHoverProvider } from './providers/BrHoverProvider';
-import { LibLinkListProvider } from './providers/LibLinkListProvider';
-import { LibPathProvider } from './providers/LibPathProvider';
-import { FuncCompletionProvider } from './providers/FuncCompletionProvider';
-import { StatementCompletionProvider } from './providers/StatementCompletionProvider';
-import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent } from 'vscode';
-import { BrSourceSymbolProvider } from './providers/BrSymbolProvider';
+import * as path from 'path'
+import ConfiguredProject from './class/ConfiguredProject';
+import ProjectConfig from './interface/ProjectConfig';
+import BrSourceDocument from './class/BrSourceDocument';
+import BrSignatureHelpProvider from './providers/BrSignatureHelpProvider';
+import BrHoverProvider from './providers/BrHoverProvider';
+import LibLinkListProvider from './providers/LibLinkListProvider';
+import LibPathProvider from './providers/LibPathProvider';
+import FuncCompletionProvider from './providers/FuncCompletionProvider';
+import StatementCompletionProvider from './providers/StatementCompletionProvider';
+import BrSourceSymbolProvider from './providers/BrSymbolProvider';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<WorkspaceFolder, ConfiguredProject>()

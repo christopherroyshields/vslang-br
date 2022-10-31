@@ -1,11 +1,11 @@
 import { EOL } from "os"
-import { BrFunction } from "../interface/BrFunction"
-import { UserFunctionParameter } from "./UserFunctionParameter"
+import BrFunction from "../interface/BrFunction"
+import UserFunctionParameter from "./UserFunctionParameter"
 
 /**
  * User Defined BR Function found in source
  */
- export class UserFunction implements BrFunction {
+ export default class UserFunction implements BrFunction {
   name: string
   isLibrary: boolean
   description?: string

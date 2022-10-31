@@ -1,11 +1,11 @@
 import { CancellationToken, CompletionContext, CompletionItem, CompletionList, CompletionTriggerKind, Position, Range, TextDocument, workspace, WorkspaceFolder } from "vscode";
-import { ConfiguredProject } from "../class/ConfiguredProject";
-import { BaseCompletionProvider } from "./BaseCompletionProvider";
+import ConfiguredProject from "../class/ConfiguredProject";
+import BaseCompletionProvider from "./BaseCompletionProvider";
 
 /**
  * Library statement linkage list completion provider
  */
-export class LibLinkListProvider extends BaseCompletionProvider {
+export default class LibLinkListProvider extends BaseCompletionProvider {
   constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
     super(configuredProjects)
   }

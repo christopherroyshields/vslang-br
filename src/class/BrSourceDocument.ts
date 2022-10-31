@@ -1,13 +1,13 @@
 import path = require("path")
 import { TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
 import { BrParamType } from "../types/BrParamType"
-import { DocComment } from "../types/DocComment"
+import DocComment from "./DocComment"
 import { getSearchPath } from "../util/common"
-import { ConfiguredProject } from "./ConfiguredProject"
-import { UserFunction } from "./UserFunction"
-import { UserFunctionParameter } from "./UserFunctionParameter"
+import ConfiguredProject from "./ConfiguredProject"
+import UserFunction from "./UserFunction"
+import UserFunctionParameter from "./UserFunctionParameter"
 
-export class BrSourceDocument {
+export default class BrSourceDocument {
 	uri: Uri
 	libraryList: UserFunction[]
 	/** relative path for library statemtents */

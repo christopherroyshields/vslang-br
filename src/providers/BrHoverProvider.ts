@@ -1,12 +1,12 @@
 import { MarkdownString, workspace, WorkspaceFolder } from 'vscode';
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode";
-import { ConfiguredProject } from '../class/ConfiguredProject';
-import { BrSourceDocument } from "../class/BrSourceDocument";
+import ConfiguredProject from '../class/ConfiguredProject';
+import BrSourceDocument from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionByName } from '../completions/functions';
-import { BrFunction } from '../interface/BrFunction';
+import BrFunction from '../interface/BrFunction';
 import { isComment } from "../util/common";
 
-export class BrHoverProvider implements HoverProvider {
+export default class BrHoverProvider implements HoverProvider {
   configuredProjects: Map<WorkspaceFolder, ConfiguredProject>
   constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
     this.configuredProjects = configuredProjects

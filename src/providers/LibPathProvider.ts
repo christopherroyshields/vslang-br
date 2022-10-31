@@ -1,13 +1,13 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemLabel, CompletionList, CompletionTriggerKind, Position, Range, TextDocument, workspace, WorkspaceFolder } from "vscode";
-import { ConfiguredProject } from "../class/ConfiguredProject";
+import ConfiguredProject from "../class/ConfiguredProject";
 import { getSearchPath } from "../util/common";
-import { BaseCompletionProvider } from "./BaseCompletionProvider";
+import BaseCompletionProvider from "./BaseCompletionProvider";
 
 /**
  * Library statement file path provider
  */
-export class LibPathProvider extends BaseCompletionProvider {
+export default class LibPathProvider extends BaseCompletionProvider {
   constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
     super(configuredProjects)
   }

@@ -1,7 +1,7 @@
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemProvider, CompletionList, Position, ProviderResult, TextDocument, WorkspaceFolder } from "vscode"
-import { ConfiguredProject } from "../class/ConfiguredProject"
+import ConfiguredProject from "../class/ConfiguredProject"
 
-export class BaseCompletionProvider implements CompletionItemProvider {
+export default class BaseCompletionProvider implements CompletionItemProvider {
   configuredProjects: Map<WorkspaceFolder, ConfiguredProject>
   constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
     this.configuredProjects = configuredProjects

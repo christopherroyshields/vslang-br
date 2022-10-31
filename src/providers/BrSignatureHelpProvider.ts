@@ -1,10 +1,10 @@
 import { CancellationToken, MarkdownString, ParameterInformation, Position, ProviderResult, Range, SignatureHelp, SignatureHelpContext, SignatureHelpProvider, SignatureInformation, TextDocument, workspace, WorkspaceFolder } from "vscode";
-import { ConfiguredProject } from "../class/ConfiguredProject";
-import { BrSourceDocument } from "../class/BrSourceDocument";
+import ConfiguredProject from "../class/ConfiguredProject";
+import BrSourceDocument from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionsByName } from "../completions/functions";
 import { FUNCTION_CALL_CONTEXT, STRING_LITERALS, stripBalancedFunctions } from "../util/common";
 
-export class BrSignatureHelpProvider implements SignatureHelpProvider {
+export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, ConfiguredProject>
   constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
     this.configuredProjects = configuredProjects

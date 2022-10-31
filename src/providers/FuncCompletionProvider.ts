@@ -1,13 +1,13 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionList, MarkdownString, Position, TextDocument, workspace, WorkspaceFolder } from "vscode";
-import { ConfiguredProject } from "../class/ConfiguredProject";
-import { BrSourceDocument } from "../class/BrSourceDocument";
-import { BaseCompletionProvider } from "./BaseCompletionProvider";
+import ConfiguredProject from "../class/ConfiguredProject";
+import BrSourceDocument from "../class/BrSourceDocument";
+import BaseCompletionProvider from "./BaseCompletionProvider";
 
 /**
  * Library statement linkage list completion provider
  */
- export class FuncCompletionProvider extends BaseCompletionProvider {
+ export default class FuncCompletionProvider extends BaseCompletionProvider {
   constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
     super(configuredProjects)
   }
