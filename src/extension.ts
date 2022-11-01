@@ -2,10 +2,6 @@ import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, D
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
-import * as path from 'path'
-import ConfiguredProject from './class/ConfiguredProject';
-import ProjectConfig from './interface/ProjectConfig';
-import BrSourceDocument from './class/BrSourceDocument';
 import BrSignatureHelpProvider from './providers/BrSignatureHelpProvider';
 import BrHoverProvider from './providers/BrHoverProvider';
 import LibLinkListProvider from './providers/LibLinkListProvider';

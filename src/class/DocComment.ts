@@ -1,11 +1,8 @@
-export default class DocComment extends Object {
+export default class DocComment {
 	text?: string
 	params: Map<string, string> = new Map<string,string>()
 	static textSearch: RegExp = /^[\s\S]*?(?=@|$)/
 	static paramSearch: RegExp = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi
-	constructor() {
-		super();
-	}
 
 	/**
 	 * Function removes leading asterisk from comment lines
