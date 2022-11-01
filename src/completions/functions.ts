@@ -1,7 +1,7 @@
 import { EOL } from "os"
 import { CompletionItem, CompletionItemKind, InsertTextFormat } from "vscode-languageserver"
 import BrFunction from "../interface/BrFunction"
-import { BrParamType } from "../types/BrParamType"
+import { VariableType } from "../types/VariableType"
 
 /**
  * Function to generate example function call for display purposes

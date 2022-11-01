@@ -1,4 +1,4 @@
-export enum BrParamType {
+export enum VariableType {
   string,
   number,
   stringarray,

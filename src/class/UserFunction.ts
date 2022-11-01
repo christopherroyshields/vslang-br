@@ -8,6 +8,7 @@ import UserFunctionParameter from "./UserFunctionParameter"
  export default class UserFunction implements BrFunction {
   name: string
   isLibrary: boolean
+  body: string = ""
   description?: string
   documentation?: string
   params?: UserFunctionParameter[]

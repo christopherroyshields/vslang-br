@@ -10,6 +10,7 @@ import FuncCompletionProvider from './providers/FuncCompletionProvider';
 import StatementCompletionProvider from './providers/StatementCompletionProvider';
 import BrSourceSymbolProvider from './providers/BrSymbolProvider';
 import ProjectSourceDocument from './class/ProjectSourceDocument';
+import BrSourceDocument from './class/BrSourceDocument';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>()
@@ -49,6 +50,11 @@ export function activate(context: ExtensionContext) {
 	languages.registerCompletionItemProvider(sel, statementCompletionProvider)
 
 	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
+
+	workspace.onDidChangeTextDocument((e)=>{
+		const testdoc = new BrSourceDocument(e.document.getText())
+		console.log(testdoc.variables);
+	})
 }
 
 export function deactivate() {
