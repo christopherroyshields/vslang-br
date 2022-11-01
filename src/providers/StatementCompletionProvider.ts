@@ -4,12 +4,13 @@ import ConfiguredProject from "../class/ConfiguredProject";
 import BrSourceDocument from "../class/BrSourceDocument";
 import { Statements } from "../statements";
 import BaseCompletionProvider from "./BaseCompletionProvider";
+import ProjectSourceDocument from "../class/ProjectSourceDocument";
 
 /**
  * Library statement linkage list completion provider
  */
 export default class StatementCompletionProvider extends BaseCompletionProvider {
-  constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
+  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
     super(configuredProjects)
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken): CompletionItem[] {

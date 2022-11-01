@@ -13,9 +13,10 @@ import LibPathProvider from './providers/LibPathProvider';
 import FuncCompletionProvider from './providers/FuncCompletionProvider';
 import StatementCompletionProvider from './providers/StatementCompletionProvider';
 import BrSourceSymbolProvider from './providers/BrSymbolProvider';
+import ProjectSourceDocument from './class/ProjectSourceDocument';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
-const ConfiguredProjects = new Map<WorkspaceFolder, ConfiguredProject>()
+const ConfiguredProjects = new Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>()
 
 const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
 const hoverProvider = new BrHoverProvider(ConfiguredProjects)
@@ -33,7 +34,7 @@ export function activate(context: ExtensionContext) {
 
 	activateClient(context)
 
-	activateWorkspaceFolders(context)
+	activateWorkspaceFolders()
 
 	const sel: DocumentSelector = {
 		language: "br"
@@ -60,51 +61,40 @@ export function deactivate() {
 
 /**
  * Sets up monitoring of project configuration
- * @param context extension context
  */
-function activateWorkspaceFolders(context: ExtensionContext) {
-	const folderDisposables: Map<WorkspaceFolder, Disposable[]> = new Map()
+function activateWorkspaceFolders() {
+	const disposablesMap = new Map<WorkspaceFolder,Disposable[]>()
+	if (workspace.workspaceFolders){
+		workspace.workspaceFolders.forEach(async (workspaceFolder: WorkspaceFolder) => {
+			const disposables: Disposable[] = []
+			const project = await startWatchingSource(workspaceFolder, disposables)
+			ConfiguredProjects.set(workspaceFolder, project)
+			disposablesMap.set(workspaceFolder, disposables)
+		})
+	}
+
 	workspace.onDidChangeWorkspaceFolders(async ({ added, removed }: WorkspaceFoldersChangeEvent) => {
 		if (added) {
-			for (let workspaceFolder of added) {
-				folderDisposables.set(workspaceFolder, await startWatchingWorkpaceFolder(context, workspaceFolder))
+			for (const workspaceFolder of added) {
+				const disposables: Disposable[] = []
+				const project = await startWatchingSource(workspaceFolder,  disposables)
+				ConfiguredProjects.set(workspaceFolder, project)
+				disposablesMap.set(workspaceFolder, disposables)
 			};
 		}
 		if (removed){
-			for (let workspaceFolder of removed) {
-				folderDisposables.get(workspaceFolder)?.forEach(d => d.dispose())
-				folderDisposables.delete(workspaceFolder)
+			for (const workspaceFolder of removed) {
+				disposablesMap.get(workspaceFolder)?.forEach(d => d.dispose())
 			}
 		}
 	})
-
-	if (workspace.workspaceFolders){
-		workspace.workspaceFolders.forEach(async (workspaceFolder: WorkspaceFolder) => {
-			folderDisposables.set(workspaceFolder, await startWatchingWorkpaceFolder(context, workspaceFolder))
-		})
-	}
 }
 
-async function getProjectConfig(workspaceFolder: WorkspaceFolder): Promise<ProjectConfig | null> {
-	let projectFileUri: Uri = Uri.file(path.join(workspaceFolder.uri.fsPath, "br-project.json"))
-	let projectConfig: ProjectConfig | null = null
-	try {
-		let projectConfigText = await workspace.fs.readFile(projectFileUri)
-		projectConfig = {}
-		if (projectConfigText){
-			projectConfig = JSON.parse(projectConfigText.toString())
-		}
-	} catch (error) {
-		console.log('no project file in workspace');
-	}
-	return projectConfig
-}
-
-async function updateLibraryFunctions(uri: Uri, project: ConfiguredProject): Promise<BrSourceDocument | undefined> {
+async function updateLibraryFunctions(uri: Uri, workspaceFolder: WorkspaceFolder): Promise<ProjectSourceDocument | undefined> {
 	try {
 		const libText = await workspace.fs.readFile(uri)
 		if (libText){
-			const newDoc = new BrSourceDocument(uri, libText.toString(), project)
+			const newDoc = new ProjectSourceDocument(libText.toString(), uri, workspaceFolder)
 			return newDoc
 		}
 	} catch {
@@ -112,81 +102,40 @@ async function updateLibraryFunctions(uri: Uri, project: ConfiguredProject): Pro
 	}
 }
 
-async function startWatchingSource(workspaceFolder: WorkspaceFolder, project: ConfiguredProject): Promise<Disposable[]> {
-	const watchers: Disposable[] = []
+async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables: Disposable[]): Promise<Map<string, ProjectSourceDocument>> {
 	const folderPattern = new RelativePattern(workspaceFolder, SOURCE_GLOB)
-	const sourceFiles = await workspace.findFiles(folderPattern)
+	const project = new Map<string, ProjectSourceDocument>()
 
-	for (const source of sourceFiles) {
-		const sourceLib = await updateLibraryFunctions(source, project)
+	const sourceFiles = await workspace.findFiles(folderPattern)
+	for (const sourceUri of sourceFiles) {
+		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
-			project.libraries.set(source.toString(), sourceLib)
+			project.set(sourceUri.toString(), sourceLib)
 		}
 	}
 
 	const codeWatcher = workspace.createFileSystemWatcher(folderPattern)
 	codeWatcher.onDidChange(async (sourceUri: Uri) => {
-		const sourceLib = await updateLibraryFunctions(sourceUri, project)
+		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
-			for (const [uri] of project.libraries) {
+			for (const [uri] of project) {
 				if (uri === sourceUri.toString()){
-					project.libraries.set(sourceUri.toString(), sourceLib)
+					project.set(sourceUri.toString(), sourceLib)
 				}
 			}
 		}
-	}, undefined, watchers)
+	}, undefined, disposables)
 
 	codeWatcher.onDidDelete(async (sourceUri: Uri) => {
-		project.libraries.delete(sourceUri.toString())
-	})
+		project.delete(sourceUri.toString())
+	}, undefined, disposables)
 
 	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
-		const sourceLib = await updateLibraryFunctions(sourceUri, project)
+		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
-			project.libraries.set(sourceUri.toString(), sourceLib)
+			project.set(sourceUri.toString(), sourceLib)
 		}
-	})
+	}, undefined, disposables)
 
-	return watchers
+	return project
 }
-
-async function startWatchingWorkpaceFolder(context: ExtensionContext, workspaceFolder: WorkspaceFolder): Promise<Disposable[]> {
-	const disposables: Disposable[] = []
-	const projectFilePattern = new RelativePattern(workspaceFolder, "br-project.json")
-	const projectWatcher = workspace.createFileSystemWatcher(projectFilePattern)
-
-	let watchers: Disposable[] = []
-
-	projectWatcher.onDidChange(async (uri: Uri) => {
-		const projectConfig = await getProjectConfig(workspaceFolder)
-		if (projectConfig){
-			const project = new ConfiguredProject(projectConfig)
-			ConfiguredProjects.set(workspaceFolder, project)
-		}
-	}, undefined, disposables)
-
-	projectWatcher.onDidDelete((uri: Uri) => {
-		ConfiguredProjects.delete(workspaceFolder)
-		watchers.forEach(d => d.dispose())
-		watchers = []
-	}, undefined, disposables)
-
-	projectWatcher.onDidCreate(async (uri: Uri) => {
-		const projectConfig = await getProjectConfig(workspaceFolder)
-		if (projectConfig){
-			const project = new ConfiguredProject(projectConfig)
-			ConfiguredProjects.set(workspaceFolder, project)
-			watchers = await startWatchingSource(workspaceFolder, project)
-		}
-	}, undefined, disposables)
-
-	const projectConfig = await getProjectConfig(workspaceFolder)
-	if (projectConfig){
-		const project = new ConfiguredProject(projectConfig)
-		ConfiguredProjects.set(workspaceFolder, project)
-		watchers = await startWatchingSource(workspaceFolder, project)
-	}
-
-	return disposables.concat(watchers)
-}
-

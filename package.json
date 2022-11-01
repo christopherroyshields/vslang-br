@@ -21,22 +21,24 @@
       }
     ],
     "configuration": {
-      "type": "object",
       "title": "Business Rules!",
       "properties": {
-        "languageServer.completions.includeFileio": {
+        "br.searchPath": {
+          "order": 0,
           "scope": "resource",
-          "type": "boolean",
-          "default": true,
-          "description": "Enables integrated completions for Fileio functions"
+          "type": "string",
+          "default": "",
+          "description": "Subdirectory on workspace folder to calculate relative paths to libraries and data files. If blank uses workspace folder."
         },
         "languageServer.maxNumberOfProblems": {
+          "order": 1,
           "scope": "resource",
           "type": "number",
           "default": 100,
           "description": "Controls the maximum number of problems produced by the server."
         },
         "languageServer.trace.server": {
+          "order": 2,
           "scope": "window",
           "type": "string",
           "enum": [

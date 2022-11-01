@@ -3,10 +3,11 @@ import ConfiguredProject from "../class/ConfiguredProject";
 import BrSourceDocument from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionsByName } from "../completions/functions";
 import { FUNCTION_CALL_CONTEXT, STRING_LITERALS, stripBalancedFunctions } from "../util/common";
+import ProjectSourceDocument from "../class/ProjectSourceDocument";
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
-  configuredProjects: Map<WorkspaceFolder, ConfiguredProject>
-  constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
+  configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>
+  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
     this.configuredProjects = configuredProjects
   }
 
@@ -28,7 +29,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   
         if (context.groups.name.substring(0,2).toLocaleLowerCase()==="fn"){
           const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
-          const localLib = new BrSourceDocument(doc.uri, doc.getText())
+          const localLib = new BrSourceDocument(doc.getText())
           
           for (const fn of localLib.functions) {
             if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
@@ -52,7 +53,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
           if (workspaceFolder){
             const project = this.configuredProjects.get(workspaceFolder)
             if (project){
-              for (const [libUri,lib] of project.libraries) {
+              for (const [libUri,lib] of project) {
                 if (libUri !== doc.uri.toString()){
                   for (const fn of lib.functions) {
                     if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){

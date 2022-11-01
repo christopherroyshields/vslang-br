@@ -3,12 +3,13 @@ import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKin
 import ConfiguredProject from "../class/ConfiguredProject";
 import BrSourceDocument from "../class/BrSourceDocument";
 import BaseCompletionProvider from "./BaseCompletionProvider";
+import ProjectSourceDocument from "../class/ProjectSourceDocument";
 
 /**
  * Library statement linkage list completion provider
  */
  export default class FuncCompletionProvider extends BaseCompletionProvider {
-  constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
+  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
     super(configuredProjects)
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken): CompletionItem[] {
@@ -18,7 +19,7 @@ import BaseCompletionProvider from "./BaseCompletionProvider";
     if (workspaceFolder){
       const project = this.configuredProjects.get(workspaceFolder)
       if (project){
-        for (const [uri, lib] of project.libraries) {
+        for (const [uri, lib] of project) {
           if (uri !== doc.uri.toString()){
             for (const fn of lib.functions){
               if (fn.isLibrary){
@@ -39,7 +40,7 @@ import BaseCompletionProvider from "./BaseCompletionProvider";
       }
     }
 
-    const source = new BrSourceDocument(doc.uri, doc.getText())
+    const source = new BrSourceDocument(doc.getText())
     for (const fn of source.functions) {
       completionItems.push({
         kind: CompletionItemKind.Function,

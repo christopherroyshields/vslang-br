@@ -5,10 +5,11 @@ import BrSourceDocument from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionByName } from '../completions/functions';
 import BrFunction from '../interface/BrFunction';
 import { isComment } from "../util/common";
+import ProjectSourceDocument from '../class/ProjectSourceDocument';
 
 export default class BrHoverProvider implements HoverProvider {
-  configuredProjects: Map<WorkspaceFolder, ConfiguredProject>
-  constructor(configuredProjects: Map<WorkspaceFolder, ConfiguredProject>) {
+  configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>
+  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
     this.configuredProjects = configuredProjects
   }
   provideHover(doc: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover> {
@@ -23,7 +24,7 @@ export default class BrHoverProvider implements HoverProvider {
           if (word.substring(0,2).toLowerCase() == "fn"){
             
             // local functions
-            const localSource = new BrSourceDocument(doc.uri, doc.getText())
+            const localSource = new BrSourceDocument(doc.getText())
             for (const fn of localSource.functions) {
               if (fn.name.toLowerCase() == word.toLocaleLowerCase()){
                 const hover = this.createHoverFromFunction(fn)
@@ -37,7 +38,7 @@ export default class BrHoverProvider implements HoverProvider {
             if (workspaceFolder){
               const project = this.configuredProjects.get(workspaceFolder)
               if (project){
-                for (const [uri,lib] of project.libraries) {
+                for (const [uri,lib] of project) {
                   for (const fn of lib.functions) {
                     if (fn.name.toLowerCase() === word.toLocaleLowerCase()){
                       const hover = this.createHoverFromFunction(fn)

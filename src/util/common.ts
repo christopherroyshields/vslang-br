@@ -1,4 +1,4 @@
-import { Hover, MarkdownString, Position, Range, TextDocument, Uri, WorkspaceFolder } from "vscode"
+import { Hover, MarkdownString, Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
 import ConfiguredProject from "../class/ConfiguredProject"
 import { generateFunctionSignature } from "../completions/functions"
 import BrFunction from "../interface/BrFunction"
@@ -33,11 +33,10 @@ export function stripBalancedFunctions(line: string){
 	return line
 }
 
-export function getSearchPath(workspaceFolder: WorkspaceFolder, project: ConfiguredProject): Uri {
-	const config = project.config
-	const searchPath = workspaceFolder.uri;
-	if (config !== undefined && config.searchPath !== undefined){
-		return Uri.joinPath(searchPath, config.searchPath.replace("\\","/"))
+export function getSearchPath(workspaceFolder: WorkspaceFolder): Uri {
+	const searchPath: string = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
+	if (searchPath){
+		return Uri.joinPath(workspaceFolder.uri, searchPath.replace("\\","/"))
 	} else {
 		return workspaceFolder.uri
 	}

@@ -8,7 +8,6 @@ import UserFunction from "./UserFunction"
 import UserFunctionParameter from "./UserFunctionParameter"
 
 export default class BrSourceDocument {
-	uri: Uri
 	functions: UserFunction[]
 	/** relative path for library statemtents */
 	linkPath?: string
@@ -16,22 +15,8 @@ export default class BrSourceDocument {
   static LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
   static FIND_COMMENTS_AND_FUNCTIONS = /(?:(?<string_or_comment>\/\*[^*][^/]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(?:`|$)|\"(?:[^\"]|"")*(?:\"|$)|'(?:[^\']|'')*(?:'|$)|`(?:[^\`]|``)*(?:`|b))|(?:(?:(?:\/\*(?<comments>[\s\S]*?)\*\/)\s*)?(\n\s*\d+\s+)?\bdef\s+(?:(?<isLibrary>library)\s+)?(?<name>\w*\$?)(\*\d+)?(?:\((?<params>[!&\w$, ;*\r\n\t]+)\))?))/gi
 
-	constructor(uri: Uri, text: string, project?: ConfiguredProject) {
-		this.uri = uri
+	constructor(text: string) {
 		this.functions = this.parseFunctionsFromSource(text)
-    if (project){
-      const workspaceFolder = workspace.getWorkspaceFolder(this.uri)
-      if (workspaceFolder){
-        this.linkPath = this.getLinkPath(workspaceFolder, project)
-      }
-    }
-	}
-
-  private getLinkPath(workspaceFolder: WorkspaceFolder, project: ConfiguredProject): string {
-		const searchPath = getSearchPath(workspaceFolder, project)
-		const parsedPath = path.parse(this.uri.fsPath.substring(searchPath.fsPath.length + 1))
-		const libPath = path.join(parsedPath.dir, parsedPath.name)
-		return libPath
 	}
 
   private parseFunctionsFromSource(sourceText: string): UserFunction[] {
