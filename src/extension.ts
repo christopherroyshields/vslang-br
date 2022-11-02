@@ -11,6 +11,7 @@ import StatementCompletionProvider from './providers/StatementCompletionProvider
 import BrSourceSymbolProvider from './providers/BrSymbolProvider';
 import ProjectSourceDocument from './class/ProjectSourceDocument';
 import BrSourceDocument from './class/BrSourceDocument';
+import { performance } from 'perf_hooks';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>()
@@ -52,8 +53,14 @@ export function activate(context: ExtensionContext) {
 	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
 
 	workspace.onDidChangeTextDocument((e)=>{
+		var startTime = performance.now()
+
 		const testdoc = new BrSourceDocument(e.document.getText())
-		console.log(testdoc.variables);
+				
+		var endTime = performance.now()
+		
+		console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
+		// console.log(testdoc.variables);
 	})
 }
 

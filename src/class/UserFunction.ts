@@ -11,7 +11,7 @@ import UserFunctionParameter from "./UserFunctionParameter"
   body: string = ""
   description?: string
   documentation?: string
-  params?: UserFunctionParameter[]
+  params: UserFunctionParameter[] = []
   /**
    * @param name - function name
    */

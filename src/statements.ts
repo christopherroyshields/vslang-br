@@ -14,7 +14,7 @@ export const Statements: Statement[] = [
     description: "Def Statement",
     documentation: "Defines function.",
     docUrl: "http://www.brwiki.com/index.php?title=Def",
-    example: 'def fn${1:name}(${2:params})\n  $3\nfnend'
+    example: 'def fnfoo(bar)\n\t! body\nfnend'
   },
   {
     name: "def library",
@@ -87,6 +87,12 @@ export const Statements: Statement[] = [
     description: "Exit Do Statement",
     documentation: "Jumps out of a do loop to the line following the loop.",
     docUrl: "http://brwiki2.brulescorp.com/index.php?title=Exit_do"
+  },
+  {
+    name: "Fnend",
+    description: "Fnend Statement",
+    documentation: "The FnEnd (FN) and End Def statements indicates the end of a definition of a multi-lined user defined function.",
+    docUrl: "http://brwiki2.brulescorp.com/index.php?title=Fnend"
   },
   {
     name: "Print",

@@ -127,7 +127,7 @@
 					"name": "keyword.operator.mathematical.br"
 				},
 				{
-					"match": "^\\s*?(\\d{0,5})(?:\\s*)?([\\w\\d]+:)",
+					"match": "^ *?(\\d{0,5})(?: *)?([a-zA-Z_]\\w{0,29}:) *[\\w!]",
 					"captures": {
 						"1": {
 							"name":"linenumber.br"
@@ -138,7 +138,7 @@
 					}
 				},
 				{
-					"match": "^\\s*(\\d{1,5})",
+					"match": "^ *(\\d{1,5})",
 					"name": "linenumber.br"
 				},
 				{
@@ -146,7 +146,7 @@
 					"name": "keyword.control.br"
 				},
 				{
-					"match": "\\b(?i:ALTERNATE|ATTR|BASE|BORDER|DROP|EVENT|EXTERNAL|FILES|INTERNAL|INVP|KEYED|NATIVE|NOKEY|NONE|OUTIN|OUTPUT|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING)\\b",
+					"match": "\\b(?i:ALTERNATE|ATTR|BASE|BORDER|DROP|EVENT|EXTERNAL|FILES|INTERNAL|INVP|KEYED|NATIVE|NOFILES|NOKEY|NONE|OUTIN|OUTPUT|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING)\\b",
 					"name": "keyword.other.br"
 				},
 				{
