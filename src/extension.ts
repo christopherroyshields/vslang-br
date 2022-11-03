@@ -55,10 +55,12 @@ export function activate(context: ExtensionContext) {
 	workspace.onDidChangeTextDocument((e)=>{
 		var startTime = performance.now()
 
-		const testdoc = new BrSourceDocument(e.document.getText())
+		// const testdoc = new BrSourceDocument(e.document.getText())
+		const wordCount = BrSourceDocument.parse(e.document)
 				
 		var endTime = performance.now()
 		
+		console.log(wordCount)
 		console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
 		// console.log(testdoc.variables);
 	})
