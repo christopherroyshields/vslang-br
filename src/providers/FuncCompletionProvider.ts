@@ -63,20 +63,14 @@ import { BrVariable } from "../class/BrVariable";
       })
     }
 
-    const varNameSet = new Map<string, CompletionItem>()
-    for (const v of source.variables){
-      const key = v.name.toLowerCase()
+    for (const [k,v] of source.variables){
       const label: CompletionItemLabel = {
         label: v.name.replace(/mat /i, ""),
         detail: ` (${typeLabel.get(v.type)})`
       }
       const completionItem = new CompletionItem(label, CompletionItemKind.Variable)
-      completionItem.detail = `(variable) ${key}: ${typeLabel.get(v.type)}`
-      varNameSet.set(key, completionItem)
-    }
-
-    for (const [name, v] of varNameSet){
-      completionItems.push(v)
+      completionItem.detail = `(variable) ${v.name}: ${typeLabel.get(v.type)}`
+      completionItems.push(completionItem)
     }
 
     return completionItems

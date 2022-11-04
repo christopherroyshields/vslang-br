@@ -56,11 +56,10 @@ export function activate(context: ExtensionContext) {
 		var startTime = performance.now()
 
 		// const testdoc = new BrSourceDocument(e.document.getText())
-		const src = BrSourceDocument.parse(e.document)
+		const src = new BrSourceDocument(e.document.getText())
 				
 		var endTime = performance.now()
 		
-		console.log(src.variables.length)
 		console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
 		// console.log(testdoc.variables);
 	})

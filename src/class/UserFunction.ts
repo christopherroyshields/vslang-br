@@ -1,12 +1,7 @@
 import { EOL } from "os"
-import { integer } from "vscode-languageclient"
 import BrFunction from "../interface/BrFunction"
+import { EntityOffset } from "./EntityOffset"
 import UserFunctionParameter from "./UserFunctionParameter"
-
-interface EntityOffset {
-  start: integer,
-  end: integer
-}
 
 /**
  * User Defined BR Function found in source

@@ -8,7 +8,7 @@ export default class BrSourceSymbolProvider implements DocumentSymbolProvider {
   provideDocumentSymbols(doc: TextDocument, token: CancellationToken): SymbolInformation[] | DocumentSymbol[] {
     const symbolInfoList: DocumentSymbol[] = []
 
-    const brSource = BrSourceDocument.parse(doc)
+    const brSource = new BrSourceDocument(doc.getText())
 
     for (const label of brSource.labels) {
       const labelRange = new Range(doc.positionAt(label.offset.start),doc.positionAt(label.offset.end))
