@@ -1,6 +1,12 @@
 import { EOL } from "os"
+import { integer } from "vscode-languageclient"
 import BrFunction from "../interface/BrFunction"
 import UserFunctionParameter from "./UserFunctionParameter"
+
+interface EntityOffset {
+  start: integer,
+  end: integer
+}
 
 /**
  * User Defined BR Function found in source
@@ -8,10 +14,13 @@ import UserFunctionParameter from "./UserFunctionParameter"
  export default class UserFunction implements BrFunction {
   name: string
   isLibrary: boolean
-  body: string = ""
   description?: string
   documentation?: string
   params: UserFunctionParameter[] = []
+  offset: EntityOffset = {
+    start: 0,
+    end: 0
+  }
   /**
    * @param name - function name
    */
