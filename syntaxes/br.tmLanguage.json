@@ -127,7 +127,7 @@
 					"name": "keyword.operator.mathematical.br"
 				},
 				{
-					"match": "^ *?(\\d{0,5})(?: *)?([a-zA-Z_]\\w{0,29}:) *[\\w!]",
+					"match": "^ *?(\\d{0,5})(?: *)?([a-zA-Z_]\\w{0,29}:)(?= *[^ \r?\n])",
 					"captures": {
 						"1": {
 							"name":"linenumber.br"
