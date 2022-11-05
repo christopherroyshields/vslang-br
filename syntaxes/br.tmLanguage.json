@@ -18,16 +18,36 @@
 	],
 	"repository": {
 		"comments": {
-			"patterns": [{
-				"name": "comment.line",
-				"begin": "!(?!:)",
-				"end": "(!:|\n|$)",
-				"endCaptures": {
-					"0": {
-						"name": "keyword.operator"
+			"patterns": [				{
+					"match": "((?:^|\\r?\\n) *(\\d{1,5})? *(?:[a-zA-Z_]\\w*: *)?|!: *)(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
+					"captures": {
+						"1": {
+							"name": "linenumber.br"
+						},
+						"3": {
+							"name": "keyword.statement.br"
+						}
 					}
-				}
-			},{
+				},
+				{
+					"match": "(?:^|\\r?\\n) *(\\d{1,5})?([a-zA-Z_]\\w*:)(?! *(\\r?\\n|$))",
+					"captures": {
+						"1": {
+							"name":"linenumber.br"
+						},
+						"2": {
+							"name":"line-label.br"
+						}
+					}
+				},
+				{
+					"match": "(?:^|\\r?\\n) *(\\d{1,5})\\b",
+					"captures": {
+						"1": {
+							"name":"linenumber.br"
+						}
+					}
+				},{
 				"name": "comment.block",
 				"begin": "/\\*",
 				"end": "\\*/",
@@ -36,12 +56,19 @@
 					"name": "comment.block.documentation"
 				}]
 			},{
-				"contentName": "comment.line.br",
-				"begin": "^\\s*\\d{0,5}\\s*(\\brem\\b)",
-				"end": "(\n|$)",
-				"beginCaptures": {
-					"1":{
-						"name": "comment.line.br"
+				"match": "(?i)\\brem\\b.*",
+				"name": "comment.line.br"
+			},{
+				"name": "comment.line",
+				"match": "!(\\r?\\n|[^:\\r\\n].*?(?=!:|\\r?\\n))",
+				"captures": {
+					"1": {
+						"patterns": [
+							{
+								"name": "keyword.control.lexi.br",
+								"match": "(?i)#(include|define|select|case else|end select|case|autonumber)#"
+							}
+						]
 					}
 				}
 			}]
@@ -97,16 +124,11 @@
 			}]
 		},
 		"keywords": {
-			"patterns": [
-				{
-					"name": "keyword.operator.line_continuation",
-					"match": "!:"
-				},
+			"patterns": [				
 				{
 					"name": "keyword.control.lexi.br",
 					"match": "(?i)#(include|define|select|case else|end select|case|autonumber)#"
-				},
-				{
+				},{
 					"match": "(:=|\\+=|\\-=|\\*=|\\/=|=)",
 					"name": "keyword.operator.assignment.br"
 				},
@@ -127,21 +149,6 @@
 					"name": "keyword.operator.mathematical.br"
 				},
 				{
-					"match": "^ *?(\\d{0,5})(?: *)?([a-zA-Z_]\\w{0,29}:)(?= *[^ \r?\n])",
-					"captures": {
-						"1": {
-							"name":"linenumber.br"
-						},
-						"2": {
-							"name":"line-label.br"
-						}
-					}
-				},
-				{
-					"match": "^ *(\\d{1,5})",
-					"name": "linenumber.br"
-				},
-				{
 					"match": "\\b(?i:if|then|else|end if|for|next|do|while|loop|until|exit do)\\b",
 					"name": "keyword.control.br"
 				},
@@ -152,10 +159,6 @@
 				{
 					"match": "\\b(?i:CONV|DUPREC|EOF|EOL|ERROR|IOERR|LOCKED|NOKEY|NOREC|IGNORE|OFLOW|PAGEOFLOW|SOFLOW|ZDIV|TIMEOUT)\\b",
 					"name": "keyword.errorcondition.br"
-				},
-				{
-					"match": "\\b(?i:CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)\\b",
-					"name": "keyword.statement.br"
 				},
 				{
 					"match": "\\b(?i:COLLATE|OPTION)\\b",
@@ -180,7 +183,7 @@
 				"name": "entity.name.function.br"
 			},
 			{
-				"match": "(\\b(?i:Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)\\b)",
+				"match": "\\b(?i:Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)(?=[^\\w\\d$]|$)",
 				"name": "entity.name.function.br"
 			},
 			{
