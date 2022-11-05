@@ -166,7 +166,7 @@ export default class BrSourceDocument {
     return match?.index || text.length
   }
 
-  private static PARAM_SEARCH = /(?<delimiter>^|;|,)(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
+  private static PARAM_SEARCH = /(?<delimiter>^|;|,) *(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
   private parseFunctionFromSource(name: string, match: RegExpMatchArray): UserFunction | undefined {
     if (match.groups){
       const isLib: boolean = match.groups?.isLibrary ? true : false

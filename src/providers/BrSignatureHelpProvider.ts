@@ -47,6 +47,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
               sigInfo.parameters = params
               sigInfo.activeParameter = context.groups.params?.split(',').length - 1
               sigHelp.signatures.push(sigInfo)
+              return sigHelp
             }
           }
   
