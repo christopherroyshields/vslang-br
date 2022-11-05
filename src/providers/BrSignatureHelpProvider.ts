@@ -43,7 +43,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
                 }
               }
       
-              const sigInfo = new SignatureInformation(fn.name + generateFunctionSignature(fn), new MarkdownString(fn.documentation))
+              const sigInfo = new SignatureInformation(fn.name + fn.generateSignature(), new MarkdownString(fn.documentation))
               sigInfo.parameters = params
               sigInfo.activeParameter = context.groups.params?.split(',').length - 1
               sigHelp.signatures.push(sigInfo)
@@ -68,7 +68,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
                         }
                       }
               
-                      const sigInfo = new SignatureInformation(fn.name + generateFunctionSignature(fn))
+                      const sigInfo = new SignatureInformation(fn.name + fn.generateSignature())
                       sigInfo.parameters = params
                       sigInfo.activeParameter = context.groups.params?.split(',').length - 1
                       sigHelp.signatures.push(sigInfo)

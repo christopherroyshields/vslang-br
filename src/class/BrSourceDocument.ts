@@ -12,7 +12,6 @@ export default class BrSourceDocument {
 	/** relative path for library statemtents */
 	linkPath?: string
   lastDocComment: DocComment | null = null
-  static PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi
   static LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
 
 	constructor(text: string = "") {
@@ -167,6 +166,7 @@ export default class BrSourceDocument {
     return match?.index || text.length
   }
 
+  private static PARAM_SEARCH = /(?<delimiter>^|;|,)(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
   private parseFunctionFromSource(name: string, match: RegExpMatchArray): UserFunction | undefined {
     if (match.groups){
       const isLib: boolean = match.groups?.isLibrary ? true : false
@@ -183,10 +183,14 @@ export default class BrSourceDocument {
         for (const paramMatch of it) {
           if (paramMatch.groups && paramMatch.groups.name){
             
-            if (paramMatch.groups.name.trim() == "___"){
+            if (paramMatch.groups.name.trim() === "___"){
               break
             }
   
+            if (paramMatch.groups.delimiter ===";"){
+              isOptional = true
+            }
+
             const libParam: UserFunctionParameter = new UserFunctionParameter()
             libParam.name = paramMatch.groups.name
             libParam.isReference = paramMatch.groups.isReference ? true : false
@@ -214,10 +218,6 @@ export default class BrSourceDocument {
             }
   
             lib.params.push(libParam)
-            
-            if (!isOptional && paramMatch.groups.delimiter && paramMatch.groups.delimiter == ';'){
-              isOptional = true
-            }
           }
         }
       }
