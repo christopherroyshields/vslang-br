@@ -6,10 +6,11 @@ import { generateFunctionSignature, getFunctionByName } from '../completions/fun
 import BrFunction from '../interface/BrFunction';
 import { isComment } from "../util/common";
 import ProjectSourceDocument from '../class/ProjectSourceDocument';
+import { Project } from './Project';
 
 export default class BrHoverProvider implements HoverProvider {
-  configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>
-  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
+  configuredProjects: Map<WorkspaceFolder, Project>
+  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
     this.configuredProjects = configuredProjects
   }
   provideHover(doc: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover> {
@@ -38,7 +39,7 @@ export default class BrHoverProvider implements HoverProvider {
             if (workspaceFolder){
               const project = this.configuredProjects.get(workspaceFolder)
               if (project){
-                for (const [uri,lib] of project) {
+                for (const [uri,lib] of project.sourceFiles) {
                   for (const fn of lib.functions) {
                     if (fn.name.toLowerCase() === word.toLocaleLowerCase()){
                       const hover = this.createHoverFromFunction(fn)

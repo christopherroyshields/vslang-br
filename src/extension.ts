@@ -12,9 +12,11 @@ import BrSourceSymbolProvider from './providers/BrSymbolProvider';
 import ProjectSourceDocument from './class/ProjectSourceDocument';
 import BrSourceDocument from './class/BrSourceDocument';
 import { performance } from 'perf_hooks';
+import Layout from './class/Layout';
+import { Project } from './providers/Project';
 
 const SOURCE_GLOB = '**/*.{brs,wbs}'
-const ConfiguredProjects = new Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>()
+const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
 const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
 const hoverProvider = new BrHoverProvider(ConfiguredProjects)
@@ -29,10 +31,6 @@ export function activate(context: ExtensionContext) {
 	activateLexi(context)
 
 	activateNextPrev(context)
-
-	activateClient(context)
-
-	activateWorkspaceFolders()
 
 	const sel: DocumentSelector = {
 		language: "br"
@@ -51,6 +49,10 @@ export function activate(context: ExtensionContext) {
 	languages.registerCompletionItemProvider(sel, statementCompletionProvider)
 
 	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
+
+	activateClient(context)
+
+	activateWorkspaceFolders()
 
 	workspace.onDidChangeTextDocument((e)=>{
 		var startTime = performance.now()
@@ -112,15 +114,31 @@ async function updateLibraryFunctions(uri: Uri, workspaceFolder: WorkspaceFolder
 	}
 }
 
-async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables: Disposable[]): Promise<Map<string, ProjectSourceDocument>> {
-	const folderPattern = new RelativePattern(workspaceFolder, SOURCE_GLOB)
-	const project = new Map<string, ProjectSourceDocument>()
+async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables: Disposable[]): Promise<Project> {
+	const project: Project = {
+		sourceFiles: new Map<string, ProjectSourceDocument>(),
+		layouts: new Map<string, Layout>()
+	}
 
+	const searchPath = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
+
+	const layoutPath = workspace.getConfiguration('br', workspaceFolder).get("layoutPath", "filelay");
+	const layoutGlob = workspace.getConfiguration('br', workspaceFolder).get("br.layoutGlobPattern", "*.*");
+	const layoutFolderPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath, layoutPath), layoutGlob)
+	const layoutFiles = await workspace.findFiles(layoutFolderPattern)
+	for (const uri of layoutFiles) {
+		const layout = await readLayout(uri)
+		if (layout){
+			project.layouts.set(uri.toString(), layout)
+		}
+	}
+
+	const folderPattern = new RelativePattern(workspaceFolder, SOURCE_GLOB)
 	const sourceFiles = await workspace.findFiles(folderPattern)
 	for (const sourceUri of sourceFiles) {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
-			project.set(sourceUri.toString(), sourceLib)
+			project.sourceFiles.set(sourceUri.toString(), sourceLib)
 		}
 	}
 
@@ -128,24 +146,36 @@ async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables
 	codeWatcher.onDidChange(async (sourceUri: Uri) => {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
-			for (const [uri] of project) {
+			for (const [uri] of project.sourceFiles) {
 				if (uri === sourceUri.toString()){
-					project.set(sourceUri.toString(), sourceLib)
+					project.sourceFiles.set(sourceUri.toString(), sourceLib)
 				}
 			}
 		}
 	}, undefined, disposables)
 
 	codeWatcher.onDidDelete(async (sourceUri: Uri) => {
-		project.delete(sourceUri.toString())
+		project.sourceFiles.delete(sourceUri.toString())
 	}, undefined, disposables)
 
 	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
-			project.set(sourceUri.toString(), sourceLib)
+			project.sourceFiles.set(sourceUri.toString(), sourceLib)
 		}
 	}, undefined, disposables)
 
 	return project
+}
+
+async function readLayout(uri: Uri): Promise<Layout | undefined> {
+	try {
+		const layoutBuffer = await workspace.fs.readFile(uri)
+		if (layoutBuffer){
+			const layout = Layout.parse(layoutBuffer.toString())
+			return layout
+		}
+	} catch {
+		window.showWarningMessage(`Library source not found ${uri.fsPath}`)
+	}
 }

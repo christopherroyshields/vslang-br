@@ -4,12 +4,13 @@ import ConfiguredProject from "../class/ConfiguredProject";
 import ProjectSourceDocument from "../class/ProjectSourceDocument";
 import { getSearchPath } from "../util/common";
 import BaseCompletionProvider from "./BaseCompletionProvider";
+import { Project } from "./Project";
 
 /**
  * Library statement file path provider
  */
 export default class LibPathProvider extends BaseCompletionProvider {
-  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
+  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
     super(configuredProjects)
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): CompletionList<CompletionItem> {
@@ -23,7 +24,7 @@ export default class LibPathProvider extends BaseCompletionProvider {
         const project = this.configuredProjects.get(workspaceFolder)
         if (project){
           const searchPath = getSearchPath(workspaceFolder)
-          for (const [uri, lib] of project) {
+          for (const [uri, lib] of project.sourceFiles) {
             if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
               const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1))
               const libPath = path.join(parsedPath.dir, parsedPath.name)

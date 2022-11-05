@@ -2,12 +2,13 @@ import { CancellationToken, CompletionContext, CompletionItem, CompletionList, C
 import ConfiguredProject from "../class/ConfiguredProject";
 import ProjectSourceDocument from "../class/ProjectSourceDocument";
 import BaseCompletionProvider from "./BaseCompletionProvider";
+import { Project } from "./Project";
 
 /**
  * Library statement linkage list completion provider
  */
 export default class LibLinkListProvider extends BaseCompletionProvider {
-  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
+  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
     super(configuredProjects)
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): CompletionList<CompletionItem> {
@@ -23,7 +24,7 @@ export default class LibLinkListProvider extends BaseCompletionProvider {
         if (workspaceFolder){
           const project = this.configuredProjects.get(workspaceFolder)
           if (project){
-            for (const [uri,lib] of project) {
+            for (const [uri,lib] of project.sourceFiles) {
               if (lib.linkPath?.toLowerCase() == libPath.toLowerCase()){
                 for (const fn of lib.functions) {
                   if (fn.isLibrary){
