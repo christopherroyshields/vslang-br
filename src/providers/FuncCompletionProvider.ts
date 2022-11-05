@@ -4,8 +4,7 @@ import ConfiguredProject from "../class/ConfiguredProject";
 import BrSourceDocument from "../class/BrSourceDocument";
 import BaseCompletionProvider from "./BaseCompletionProvider";
 import ProjectSourceDocument from "../class/ProjectSourceDocument";
-import { VariableType } from "../types/VariableType";
-import { BrVariable } from "../class/BrVariable";
+import { TypeLabel } from "../util/common";
 
 /**
  * Library statement linkage list completion provider
@@ -66,20 +65,13 @@ import { BrVariable } from "../class/BrVariable";
     for (const [k,v] of source.variables){
       const label: CompletionItemLabel = {
         label: v.name.replace(/mat /i, ""),
-        detail: ` (${typeLabel.get(v.type)})`
+        detail: ` (${TypeLabel.get(v.type)})`
       }
       const completionItem = new CompletionItem(label, CompletionItemKind.Variable)
-      completionItem.detail = `(variable) ${v.name}: ${typeLabel.get(v.type)}`
+      completionItem.detail = `(variable) ${v.name}: ${TypeLabel.get(v.type)}`
       completionItems.push(completionItem)
     }
 
     return completionItems
   }
 }
-
-const typeLabel = new Map<VariableType, string>([
-  [VariableType.number, "Number"],
-  [VariableType.string, "String"],
-  [VariableType.numberarray, "Number Array"],
-  [VariableType.stringarray, "String Array"]
-])

@@ -15,7 +15,7 @@ export default class DocComment {
 
 	static parse(commentText: string): DocComment {
 		const docComment = new DocComment()
-		
+		commentText = commentText.substring(3,commentText.length - 2)
 		// freeform text at beginning
 		const textMatch = DocComment.textSearch.exec(commentText)
 		if (textMatch != null){

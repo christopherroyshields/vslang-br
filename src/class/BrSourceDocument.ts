@@ -11,6 +11,7 @@ export default class BrSourceDocument {
   labels: LineLabel[] = []
 	/** relative path for library statemtents */
 	linkPath?: string
+  lastDocComment: DocComment | null = null
   static PARAM_SEARCH = /(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*(?<delimiter>;|,)?/gi
   static LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
 
@@ -42,6 +43,10 @@ export default class BrSourceDocument {
           break
         }
         if (skipOrWord.groups?.skippable){
+          if (skipOrWord[0].substring(0,3)==="/**"){
+            matchEnd = skipOrWord.index 
+            this.processDocComment(skipOrWord[0], skipOrWord.index)
+          }
           if (skipOrWord[0].substring(0,1)==="!"){
             if (skipOrWord[0].substring(2,1)==="_"){
               matchEnd = this.processLineContinuation(text, skipOrWord.index)
@@ -62,12 +67,12 @@ export default class BrSourceDocument {
         }
         BrSourceDocument.SKIP_OR_WORD.lastIndex = matchEnd
       }
-      if (matchEnd > BrSourceDocument.VALID_LINE.lastIndex){
-        BrSourceDocument.VALID_LINE.lastIndex = matchEnd
-      } else {
-        throw new Error("Issue Parsing. Stopped to prevent infinite loop.")
-      }
+      BrSourceDocument.VALID_LINE.lastIndex = matchEnd
     }
+  }
+  
+  private processDocComment(text: string, index: number): void {
+    this.lastDocComment = DocComment.parse(text)
   }
 
   private processLabel({labelName, lpad}: { [key: string]: string}, index: number) {
@@ -104,7 +109,6 @@ export default class BrSourceDocument {
   }
 
   private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@]+)\))?(?<fnBody>\s*=.*|[\s\S]*?fnend)/gi
-  private lastDocComment: DocComment = new DocComment
   private processFunction(text: string, index: number): number {
     BrSourceDocument.DEF_FN.lastIndex = index
     const match = BrSourceDocument.DEF_FN.exec(text)
@@ -138,7 +142,7 @@ export default class BrSourceDocument {
     return index + match.length
   }
 
-  static FN_AND_KEYWORDS = [
+  private static FN_AND_KEYWORDS = [
     /^(Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)$/i,
     /^(BR_FileName\$|BRErr\$|CForm\$|Chr\$|Cnvrt\$|Date\$|Decrypt\$|Encrypt\$|Env\$|File\$|Help\$|Hex\$|KStat\$|Login_Name\$|LPad\$|LTrm\$|Lwrc\$|Max\$|Min\$|Msg\$|OS_FileName\$|Pic\$|Program\$|RPad\$|Rpt\$|RTrm\$|Session\$|SRep\$|Str\$|Time\$|Trim\$|UnHex\$|UprC\$|UserID\$|Variable\$|WBPlatform\$|WBVersion\$|WSID\$|Xlate\$)$/i,
     /^(if|then|else|end if|for|next|do|while|loop|until|exit do)$/i,
@@ -156,7 +160,7 @@ export default class BrSourceDocument {
     return false
   }
 
-  static COMMENT_END = /((?=\r?\n)|!:)/g
+  private static COMMENT_END = /((?=\r?\n)|!:)/g
   private processRegularComment(text: string, index: number): number {
     BrSourceDocument.COMMENT_END.lastIndex = index
     const match = BrSourceDocument.COMMENT_END.exec(text)
@@ -167,12 +171,6 @@ export default class BrSourceDocument {
     if (match.groups){
       const isLib: boolean = match.groups?.isLibrary ? true : false
       const lib: UserFunction = new UserFunction(match.groups.name, isLib)
-      
-      let fnDoc: DocComment | undefined
-      if (match.groups.comments) {
-        fnDoc = DocComment.parse(match.groups.comments)
-        lib.documentation = fnDoc.text
-      }
       
       if (match.groups.params){
         lib.params = []
@@ -211,8 +209,8 @@ export default class BrSourceDocument {
               }
             }
             
-            if (fnDoc?.params){
-              libParam.documentation = fnDoc.params.get(paramMatch.groups.name)
+            if (this.lastDocComment?.params){
+              libParam.documentation = this.lastDocComment.params.get(paramMatch.groups.name)
             }
   
             lib.params.push(libParam)
@@ -222,6 +220,12 @@ export default class BrSourceDocument {
             }
           }
         }
+      }
+      if (this.lastDocComment){
+        if (this.lastDocComment.text){
+          lib.documentation = this.lastDocComment.text
+        }
+        this.lastDocComment = null
       }
       return lib
     }

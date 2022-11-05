@@ -2,6 +2,7 @@ import { Hover, MarkdownString, Position, Range, TextDocument, Uri, workspace, W
 import ConfiguredProject from "../class/ConfiguredProject"
 import { generateFunctionSignature } from "../completions/functions"
 import BrFunction from "../interface/BrFunction"
+import { VariableType } from "../types/VariableType"
 
 export const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
@@ -42,4 +43,9 @@ export function getSearchPath(workspaceFolder: WorkspaceFolder): Uri {
 	}
 }
 
-
+export const TypeLabel = Object.freeze(new Map<VariableType, string>([
+  [VariableType.number, "Number"],
+  [VariableType.string, "String"],
+  [VariableType.numberarray, "Number Array"],
+  [VariableType.stringarray, "String Array"]
+]))
