@@ -1,4 +1,4 @@
-import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent } from 'vscode';
+import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent } from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
@@ -79,9 +79,20 @@ function activateWorkspaceFolders() {
 	if (workspace.workspaceFolders){
 		workspace.workspaceFolders.forEach(async (workspaceFolder: WorkspaceFolder) => {
 			const disposables: Disposable[] = []
-			const project = await startWatchingSource(workspaceFolder, disposables)
+			const project = await startWatchingFiles(workspaceFolder, disposables)
 			ConfiguredProjects.set(workspaceFolder, project)
 			disposablesMap.set(workspaceFolder, disposables)
+
+			workspace.onDidChangeConfiguration(async (e: ConfigurationChangeEvent) => {
+				if (e.affectsConfiguration("br", workspaceFolder)){
+					disposablesMap.get(workspaceFolder)?.forEach(d => d.dispose())	
+					const disposables: Disposable[] = []
+					const project = await startWatchingFiles(workspaceFolder, disposables)
+					ConfiguredProjects.set(workspaceFolder, project)
+					disposablesMap.set(workspaceFolder, disposables)
+				}
+			})
+		
 		})
 	}
 
@@ -89,7 +100,7 @@ function activateWorkspaceFolders() {
 		if (added) {
 			for (const workspaceFolder of added) {
 				const disposables: Disposable[] = []
-				const project = await startWatchingSource(workspaceFolder,  disposables)
+				const project = await startWatchingFiles(workspaceFolder,  disposables)
 				ConfiguredProjects.set(workspaceFolder, project)
 				disposablesMap.set(workspaceFolder, disposables)
 			};
@@ -114,7 +125,7 @@ async function updateLibraryFunctions(uri: Uri, workspaceFolder: WorkspaceFolder
 	}
 }
 
-async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables: Disposable[]): Promise<Project> {
+async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables: Disposable[]): Promise<Project> {
 	const project: Project = {
 		sourceFiles: new Map<string, ProjectSourceDocument>(),
 		layouts: new Map<string, Layout>()
@@ -122,8 +133,27 @@ async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables
 
 	const searchPath = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
 
+	await watchLayoutFiles(workspaceFolder, searchPath, project, disposables)
+	await watchSourceFiles(workspaceFolder, searchPath, project, disposables)
+
+	return project
+}
+
+async function readLayout(uri: Uri): Promise<Layout | undefined> {
+	try {
+		const layoutBuffer = await workspace.fs.readFile(uri)
+		if (layoutBuffer){
+			const layout = Layout.parse(layoutBuffer.toString())
+			return layout
+		}
+	} catch {
+		window.showWarningMessage(`Library source not found ${uri.fsPath}`)
+	}
+}
+
+async function watchLayoutFiles(workspaceFolder: WorkspaceFolder, searchPath: string, project: Project, disposables: Disposable[]) {
 	const layoutPath = workspace.getConfiguration('br', workspaceFolder).get("layoutPath", "filelay");
-	const layoutGlob = workspace.getConfiguration('br', workspaceFolder).get("br.layoutGlobPattern", "*.*");
+	const layoutGlob = workspace.getConfiguration('br', workspaceFolder).get("layoutGlobPattern", "*.*");
 	const layoutFolderPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath, layoutPath), layoutGlob)
 	const layoutFiles = await workspace.findFiles(layoutFolderPattern)
 	for (const uri of layoutFiles) {
@@ -133,8 +163,34 @@ async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables
 		}
 	}
 
-	const folderPattern = new RelativePattern(workspaceFolder, SOURCE_GLOB)
-	const sourceFiles = await workspace.findFiles(folderPattern)
+	const layoutWatcher = workspace.createFileSystemWatcher(layoutFolderPattern)
+	layoutWatcher.onDidChange(async (uri: Uri) => {
+		const layout = await readLayout(uri)
+		if (layout){
+			for (const [uri] of project.layouts) {
+				if (uri === uri.toString()){
+					project.layouts.set(uri.toString(), layout)
+				}
+			}
+		}
+	}, undefined, disposables)
+
+	layoutWatcher.onDidDelete(async (uri: Uri) => {
+		project.layouts.delete(uri.toString())
+	}, undefined, disposables)
+
+	layoutWatcher.onDidCreate(async (uri: Uri) => {
+		const sourceLib = await readLayout(uri)
+		if (sourceLib){
+			project.layouts.set(uri.toString(), sourceLib)
+		}
+	}, undefined, disposables)
+}
+
+async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: string, project: Project, disposables: Disposable[]) {
+	const sourceGlob = workspace.getConfiguration('br', workspaceFolder).get("sourceFileGlobPattern", "**/*.{brs,wbs}");
+	const sourceFileGlobPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath), sourceGlob)
+	const sourceFiles = await workspace.findFiles(sourceFileGlobPattern)
 	for (const sourceUri of sourceFiles) {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
@@ -142,7 +198,7 @@ async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables
 		}
 	}
 
-	const codeWatcher = workspace.createFileSystemWatcher(folderPattern)
+	const codeWatcher = workspace.createFileSystemWatcher(sourceFileGlobPattern)
 	codeWatcher.onDidChange(async (sourceUri: Uri) => {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){
@@ -164,18 +220,5 @@ async function startWatchingSource(workspaceFolder: WorkspaceFolder, disposables
 			project.sourceFiles.set(sourceUri.toString(), sourceLib)
 		}
 	}, undefined, disposables)
-
-	return project
 }
 
-async function readLayout(uri: Uri): Promise<Layout | undefined> {
-	try {
-		const layoutBuffer = await workspace.fs.readFile(uri)
-		if (layoutBuffer){
-			const layout = Layout.parse(layoutBuffer.toString())
-			return layout
-		}
-	} catch {
-		window.showWarningMessage(`Library source not found ${uri.fsPath}`)
-	}
-}
