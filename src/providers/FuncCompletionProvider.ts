@@ -1,16 +1,17 @@
 import path = require("path");
-import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabel, CompletionList, MarkdownString, Position, TextDocument, workspace, WorkspaceFolder } from "vscode";
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabel, CompletionList, MarkdownString, Position, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
 import ConfiguredProject from "../class/ConfiguredProject";
 import BrSourceDocument from "../class/BrSourceDocument";
 import BaseCompletionProvider from "./BaseCompletionProvider";
 import ProjectSourceDocument from "../class/ProjectSourceDocument";
 import { TypeLabel } from "../util/common";
+import { Project } from "./Project";
 
 /**
  * Library statement linkage list completion provider
  */
- export default class FuncCompletionProvider extends BaseCompletionProvider {
-  constructor(configuredProjects: Map<WorkspaceFolder, Map<string, ProjectSourceDocument>>) {
+export default class FuncCompletionProvider extends BaseCompletionProvider {
+  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
     super(configuredProjects)
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken): CompletionItem[] {
@@ -20,7 +21,7 @@ import { TypeLabel } from "../util/common";
     if (workspaceFolder){
       const project = this.configuredProjects.get(workspaceFolder)
       if (project){
-        for (const [uri, lib] of project) {
+        for (const [uri, lib] of project.sourceFiles) {
           if (uri !== doc.uri.toString()){
             for (const fn of lib.functions){
               if (fn.isLibrary){
@@ -36,6 +37,22 @@ import { TypeLabel } from "../util/common";
                 })
               }
             }
+          }
+        }
+
+        for (const [uri, layout] of project.layouts){
+          for (const subscript of layout.subscripts) {
+            const fileName = path.parse(Uri.parse(uri).fsPath).base
+            completionItems.push({
+              kind: CompletionItemKind.Variable,
+              label: {
+                label: layout.prefix + subscript.name.replace("$",""),
+                detail: ' (subscript)',
+                description: fileName
+              },
+              detail: `(subscript) ${subscript.name} ${subscript.format}`,
+              documentation: subscript.description
+            })
           }
         }
       }
