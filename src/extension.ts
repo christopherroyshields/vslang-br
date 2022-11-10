@@ -15,7 +15,6 @@ import { performance } from 'perf_hooks';
 import Layout from './class/Layout';
 import { Project } from './providers/Project';
 
-const SOURCE_GLOB = '**/*.{brs,wbs}'
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
 const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
@@ -50,25 +49,26 @@ export function activate(context: ExtensionContext) {
 
 	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
 
-	activateClient(context)
+	// activateClient(context)
 
 	activateWorkspaceFolders()
 
-	workspace.onDidChangeTextDocument((e)=>{
-		var startTime = performance.now()
+	// debug
+	// workspace.onDidChangeTextDocument((e)=>{
+	// 	var startTime = performance.now()
 
-		// const testdoc = new BrSourceDocument(e.document.getText())
-		const src = new BrSourceDocument(e.document.getText())
+	// 	// const testdoc = new BrSourceDocument(e.document.getText())
+	// 	const src = new BrSourceDocument(e.document.getText())
 				
-		var endTime = performance.now()
+	// 	var endTime = performance.now()
 		
-		console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
-		// console.log(testdoc.variables);
-	})
+	// 	console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
+	// 	// console.log(testdoc.variables);
+	// })
 }
 
 export function deactivate() {
-	deactivateClient();
+	// deactivateClient();
 }
 
 /**
