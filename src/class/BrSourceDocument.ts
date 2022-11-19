@@ -21,7 +21,7 @@ export default class BrSourceDocument {
 	}
 
   static VALID_LINE = /(?<lpad>(^|\r?\n) *)(?<lineNum>\d{1,5})? *(?:(?<labelName>[a-zA-Z_]\w*):(?= *[^ ]))?(?= *[^ \r?\n])/g
-  static SKIP_OR_WORD = /((?<skippable>".*?"|'.*?'|!_?|\/\*[\s\S]*?\*\/)|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n))/gi
+  static SKIP_OR_WORD = /((?<skippable>".*?"|'.*?'|!_?|rem\b.*|\/\*[\s\S]*?\*\/)|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n))/gi
   private parse(text: string){
     let validLineStart
     let lineCount = 0
@@ -133,9 +133,24 @@ export default class BrSourceDocument {
       return index + match.length
     }
 
+    let variableType: VariableType
+    if (match.substring(0,3).toLowerCase() === "mat"){
+      if (match.substring(match.length-1) === "$"){
+        variableType = VariableType.stringarray
+      } else {
+        variableType = VariableType.numberarray
+      }
+    } else {
+      if (match.substring(match.length-1) === "$"){
+        variableType = VariableType.string
+      } else {
+        variableType = VariableType.number
+      }
+    }
+
     const ref: BrVariable = {
       name: match,
-      type: VariableType.number
+      type: variableType
     }
     this.variables.set(match.toLowerCase(), ref)
     return index + match.length
