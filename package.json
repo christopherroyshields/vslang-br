@@ -51,7 +51,7 @@
           "order": 3,
           "scope": "resource",
           "type": "string",
-          "default": "*.*",
+          "default": "*",
           "description": "The glob pattern used to find project layouts."
         },
         "languageServer.maxNumberOfProblems": {
