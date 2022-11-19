@@ -2,9 +2,10 @@ import { CancellationToken, MarkdownString, ParameterInformation, Position, Prov
 import ConfiguredProject from "../class/ConfiguredProject";
 import BrSourceDocument from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionsByName } from "../completions/functions";
-import { FUNCTION_CALL_CONTEXT, STRING_LITERALS, stripBalancedFunctions } from "../util/common";
+import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_LITERALS, stripBalancedFunctions } from "../util/common";
 import ProjectSourceDocument from "../class/ProjectSourceDocument";
 import { Project } from "./Project";
+import { VariableType } from "../types/VariableType";
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -34,11 +35,20 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
           
           for (const fn of localLib.functions) {
             if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
+              const sigLabel = fn.name + fn.generateSignature()
+
               const params: ParameterInformation[] = []
               if (fn && fn.params){
                 for (const param of fn.params) {
+                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=,|\\)|$)`, 'g');
+                  regex.test(sigLabel);
+                  const idx = regex.lastIndex - param.name.length;
+                  const range: [number, number] = idx >= 0
+                    ? [idx, regex.lastIndex]
+                    : [0, 0];
+
                   params.push({
-                    label: param.name,
+                    label: range,
                     documentation: param.documentation
                   })
                 }

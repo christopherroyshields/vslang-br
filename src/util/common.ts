@@ -8,6 +8,13 @@ export const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|""
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
 export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
 
+/**
+ * Escapes regular expression characters in a given string
+ */
+export function escapeRegExpCharacters(value: string): string {
+	return value.replace(/[\\\{\}\*\+\?\|\^\$\.\[\]\(\)]/g, '\\$&');
+}
+
 export function isComment(cursorPosition: Position, doctext: string, doc: TextDocument): boolean {
 	let commentMatch: RegExpExecArray | null
 	while ((commentMatch = STRING_OR_COMMENT.exec(doctext)) !== null) {

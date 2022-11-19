@@ -3,6 +3,9 @@
   "displayName": "BR Language Extension",
   "description": "Language support for Business Rules!",
   "version": "0.0.1",
+  "repository": {
+    "url": "https://github.com/christopherroyshields/vslang-br"
+  },
   "engines": {
     "vscode": "^1.70.0"
   },
