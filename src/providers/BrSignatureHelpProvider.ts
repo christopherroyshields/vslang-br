@@ -2,7 +2,7 @@ import { CancellationToken, MarkdownString, ParameterInformation, Position, Prov
 import ConfiguredProject from "../class/ConfiguredProject";
 import BrSourceDocument from "../class/BrSourceDocument";
 import { generateFunctionSignature, getFunctionsByName } from "../completions/functions";
-import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_LITERALS, stripBalancedFunctions } from "../util/common";
+import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common";
 import ProjectSourceDocument from "../class/ProjectSourceDocument";
 import { Project } from "./Project";
 import { VariableType } from "../types/VariableType";
@@ -18,7 +18,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
     // strip functions with params
     if (preText){
       // remove literals first
-      preText = preText.replace(STRING_LITERALS, "")
+      preText = preText.replace(STRING_OR_COMMENT, "")
       preText = stripBalancedFunctions(preText)
       let context: RegExpExecArray | null = FUNCTION_CALL_CONTEXT.exec(preText)
       if (context && context.groups && !context.groups.isDef){
@@ -40,7 +40,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
               const params: ParameterInformation[] = []
               if (fn && fn.params){
                 for (const param of fn.params) {
-                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=,|\\)|$)`, 'g');
+                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$)`, 'g');
                   regex.test(sigLabel);
                   const idx = regex.lastIndex - param.name.length;
                   const range: [number, number] = idx >= 0
