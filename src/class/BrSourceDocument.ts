@@ -107,7 +107,7 @@ export default class BrSourceDocument {
     }
   }
 
-  private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@]+)\))?(?<fnBody>\s*=.*|[\s\S]*?fnend)/gi
+  private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@\[\]]+)\))?(?<fnBody>\s*=.*|[\s\S]*?fnend)/gi
   private processFunction(text: string, index: number): number {
     BrSourceDocument.DEF_FN.lastIndex = index
     const match = BrSourceDocument.DEF_FN.exec(text)
@@ -181,7 +181,7 @@ export default class BrSourceDocument {
     return match?.index || text.length
   }
 
-  private static PARAM_SEARCH = /(?<delimiter>^|;|,) *(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
+  private static PARAM_SEARCH = /(?<delimiter>^|;|,) *(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w\[\]]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
   private parseFunctionFromSource(name: string, match: RegExpMatchArray): UserFunction | undefined {
     if (match.groups){
       const isLib: boolean = match.groups?.isLibrary ? true : false

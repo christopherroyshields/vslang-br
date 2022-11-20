@@ -40,7 +40,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
               const params: ParameterInformation[] = []
               if (fn && fn.params){
                 for (const param of fn.params) {
-                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$)`, 'g');
+                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$|\])`, 'g');
                   regex.test(sigLabel);
                   const idx = regex.lastIndex - param.name.length;
                   const range: [number, number] = idx >= 0

@@ -7,6 +7,7 @@ import BrFunction from '../interface/BrFunction';
 import { isComment } from "../util/common";
 import ProjectSourceDocument from '../class/ProjectSourceDocument';
 import { Project } from './Project';
+import UserFunction from '../class/UserFunction';
 
 export default class BrHoverProvider implements HoverProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -28,7 +29,7 @@ export default class BrHoverProvider implements HoverProvider {
             const localSource = new BrSourceDocument(doc.getText())
             for (const fn of localSource.functions) {
               if (fn.name.toLowerCase() == word.toLocaleLowerCase()){
-                const hover = this.createHoverFromFunction(fn)
+                const hover = this.createHoverFromInternalFunction(fn)
                 hover.range = wordRange
                 return hover
               }
@@ -42,7 +43,7 @@ export default class BrHoverProvider implements HoverProvider {
                 for (const [uri,lib] of project.sourceFiles) {
                   for (const fn of lib.functions) {
                     if (fn.name.toLowerCase() === word.toLocaleLowerCase()){
-                      const hover = this.createHoverFromFunction(fn)
+                      const hover = this.createHoverFromInternalFunction(fn)
                       hover.range = wordRange
                       return hover
                     }
@@ -66,6 +67,25 @@ export default class BrHoverProvider implements HoverProvider {
     }
   
   }
+
+  createHoverFromInternalFunction(fn: UserFunction): Hover {
+    let markDownString = '```br\n' + fn.name + fn.generateSignature() + '\n```\n---'
+  
+    if (markDownString && fn.documentation){
+      markDownString += '\n' + fn.documentation
+    }
+  
+    fn.params?.forEach((param)=>{
+      if (param.documentation){
+        markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`
+      }
+    })
+  
+    let markup = new MarkdownString(markDownString)
+  
+    return new Hover(markup)
+  }
+
   createHoverFromFunction(fn: BrFunction): Hover {
 
     let markDownString = '```br\n' + fn.name + generateFunctionSignature(fn) + '\n```\n---'
