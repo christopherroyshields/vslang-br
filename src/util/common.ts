@@ -4,9 +4,8 @@ import { generateFunctionSignature } from "../completions/functions"
 import BrFunction from "../interface/BrFunction"
 import { VariableType } from "../types/VariableType"
 
-export const STRING_LITERALS = /(}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
-export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|}}.*?({{|$)|`.*?({{|$)|}}.*?(`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$)|`(?:[^\`]|``)*(`|b))/g
+export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))/g
 
 /**
  * Escapes regular expression characters in a given string

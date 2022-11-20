@@ -14,14 +14,17 @@
         ["(", ")"],
         ["\"", "\""],
         ["'", "'"],
-        ["`", "`"]
+        ["`", "`"],
+        ["/*", "*/"],
+        ["[", "]"]
     ],
     // symbols that can be used to surround a selection
     "surroundingPairs": [
         ["(", ")"],
         ["\"", "\""],
         ["'", "'"],
-        ["`", "`"]
+        ["`", "`"],
+        ["[", "]"]
     ],
     "indentationRules": {
         "increaseIndentPattern": "(do|def\\s+fn\\w+\\$?\\*?\\d*\\([a-z0-9 ,*&]*?\\)|then)\\s*$",
