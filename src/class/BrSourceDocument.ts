@@ -19,7 +19,7 @@ export default class BrSourceDocument {
 	}
 
   static VALID_LINE = /(?<lpad>(^|\r?\n) *)(?<lineNum>\d{1,5})? *(?:(?<labelName>[a-zA-Z_]\w*):(?= *[^ ]))?(?= *[^ \r?\n])/g
-  static SKIP_OR_WORD = /((?<skippable>".*?"|'.*?'|!_?|rem\b.*|\/\*[\s\S]*?\*\/)|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n))/gi
+  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n))/gi
   private parse(text: string){
     let validLineStart
     let lineCount = 0
