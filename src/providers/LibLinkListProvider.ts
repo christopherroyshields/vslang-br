@@ -25,7 +25,7 @@ export default class LibLinkListProvider extends BaseCompletionProvider {
           const project = this.configuredProjects.get(workspaceFolder)
           if (project){
             for (const [uri,lib] of project.sourceFiles) {
-              if (lib.linkPath?.toLowerCase() == libPath.toLowerCase()){
+              if (lib.linkPath?.toLowerCase() == libPath.toLowerCase().replace(/\.[^\\/.]+$/,"")){
                 for (const fn of lib.functions) {
                   if (fn.isLibrary){
                     if (match.groups.fnList){

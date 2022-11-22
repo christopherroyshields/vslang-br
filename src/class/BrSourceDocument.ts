@@ -9,8 +9,6 @@ export default class BrSourceDocument {
 	functions: UserFunction[] = []
   variables = new Map<string,BrVariable>()
   labels: LineLabel[] = []
-	/** relative path for library statemtents */
-	linkPath?: string
   lastDocComment: DocComment | null = null
   static LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
 
