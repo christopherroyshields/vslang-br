@@ -18,8 +18,8 @@ export default class BrSourceDocument {
     }
 	}
 
-  static VALID_LINE = /(?<lpad>(^|\r?\n) *)(?<lineNum>\d{1,5})? *(?:(?<labelName>[a-zA-Z_]\w*):(?= *[^ ]))?(?= *[^ \r?\n])/g
-  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n))/gi
+  static VALID_LINE = /(?<lpad>(^|\r?\n) *)(?<lineNum>\d{1,5})? *(?:(?<labelName>[a-zA-Z_]\w*):(?= *[^ ]))?(?= *[^ \r\n])/g
+  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n)|(?<unrecognized>[^ \r\n]))/gi
   private parse(text: string){
     let validLineStart
     let lineCount = 0
@@ -54,6 +54,8 @@ export default class BrSourceDocument {
           } else {
             matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
           }
+        } else if (skipOrWord.groups?.unrecognized) {
+          matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
         } else {
           if (lineStart){
             matchEnd = this.processStatement(skipOrWord[0], text, skipOrWord.index)
