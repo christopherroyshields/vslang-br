@@ -19,10 +19,13 @@
 	"repository": {
 		"comments": {
 			"patterns": [{
-					"match": "((?:^|\\r?\\n) *(\\d{1,5})? *(?:[a-zA-Z_]\\w*: *)?|!: *)(?i)(FORM) ([^!\\r\\n]*)",
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(FORM) ([^!\\r\\n]*)",
 					"captures": {
 						"1": {
 							"name": "linenumber.br"
+						},
+						"2": {
+							"name": "string.regexp.line-label.br"
 						},
 						"3": {
 							"name": "keyword.statement.br"
@@ -63,10 +66,13 @@
 						}
 					}
 				},{
-					"match": "((?:^|\\r?\\n) *(\\d{1,5})? *(?:[a-zA-Z_]\\w*: *)?|!: *)(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
 					"captures": {
 						"1": {
 							"name": "linenumber.br"
+						},
+						"2": {
+							"name": "string.regexp.line-label.br"
 						},
 						"3": {
 							"name": "keyword.statement.br"
@@ -74,13 +80,13 @@
 					}
 				},
 				{
-					"match": "(?:^|\\r?\\n) *(\\d{1,5})?([a-zA-Z_]\\w*:)(?! *(\\r?\\n|$))",
+					"match": "(?:^|\\r?\\n) *(\\d{1,5} *)?([a-zA-Z_]\\w*:)(?! *(\\r?\\n|$))",
 					"captures": {
 						"1": {
 							"name":"linenumber.br"
 						},
 						"2": {
-							"name":"line-label.br"
+							"name":"string.regexp.line-label.br"
 						}
 					}
 				},
