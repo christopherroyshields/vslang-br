@@ -97,8 +97,11 @@ export default class BrSourceDocument {
   
   private static STATEMENT_TEST = /^(MAT|CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)$/i
   private processStatement(statement: string, text: string, index: number): number {
-    if (statement.toLowerCase()=="def"){
+    if (statement.toLowerCase()==="def"){
       return this.processFunction(text, index)
+    }
+    if (statement.toLowerCase()==="form"){
+      return this.processFormStatement(text, index+4)
     }
     if (BrSourceDocument.STATEMENT_TEST.test(statement)){
       return index + statement.length
@@ -107,7 +110,28 @@ export default class BrSourceDocument {
     }
   }
 
-  private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@\[\]]+)\))?(?<fnBody>\s*=.*|[\s\S]*?fnend)/gi
+  private static FORM_VAR_OR_END = /(?:(?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))|(?<pic>pic\(.*?\))|(?<var>[a-z][\w\d]*) *\*|(?<end>\r?\n|$|!))/gi
+  private processFormStatement(text: string, index: number): number {
+    BrSourceDocument.FORM_VAR_OR_END.lastIndex = index
+    let match: RegExpExecArray | null
+    let end = index
+    while ((match = BrSourceDocument.FORM_VAR_OR_END.exec(text)) !== null) {
+      if (match?.groups?.skippable || match?.groups?.pic){
+        end = BrSourceDocument.FORM_VAR_OR_END.lastIndex
+      } else if (match?.groups?.end !== undefined){
+        end = match.index
+        break
+      } else if (match?.groups?.var){
+        this.variables.set(match.groups.var.toLocaleLowerCase(), {
+          name: match.groups.var,
+          type: VariableType.number
+        })
+      }
+    }
+    return end
+  }
+
+  private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@\[\]]+)\))?(?<fnBody>\s*=.*|[\s\S]*?(fnend|end def))/gi
   private processFunction(text: string, index: number): number {
     BrSourceDocument.DEF_FN.lastIndex = index
     const match = BrSourceDocument.DEF_FN.exec(text)
