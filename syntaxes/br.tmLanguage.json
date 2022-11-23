@@ -18,7 +18,51 @@
 	],
 	"repository": {
 		"comments": {
-			"patterns": [				{
+			"patterns": [{
+					"match": "((?:^|\\r?\\n) *(\\d{1,5})? *(?:[a-zA-Z_]\\w*: *)?|!: *)(?i)(FORM) ([^!\\r\\n]*)",
+					"captures": {
+						"1": {
+							"name": "linenumber.br"
+						},
+						"3": {
+							"name": "keyword.statement.br"
+						},
+						"4": {
+							"patterns": [{
+								"match": "\\b(?i)(PIC)\\((.*?)\\)",
+								"captures": {
+									"1": {
+										"name": "keyword.other"
+									},
+									"2": {
+										"patterns": [{
+											"name": "constant.other.character-class.regexp",
+											"match": "(?i)(Z|#|\\$|\\*|\\+|-|\\^|B|CR|DR|DB|D|,|\\.)"
+										},{
+											"name": "string",
+											"match": "\\S"
+										}]
+									}
+								}
+							},{
+								"name": "keyword.other",
+								"match": "\\b(?i)(B|BL|BH|C|CC|CR|D|DH|DL|DT|G|GF|GZ|L|N|NZ|P|PD|PIC|SKIP|S|V|X|ZD)\\b"
+							},{
+								"match": "\\b\\d+(\\.\\d+)?\\b",
+								"name": "constant.numeric.br"
+							},{
+								"match": "\\b(\\w[\\w\\d]*) *\\*",
+								"captures": {
+									"1": {
+										"name": "variable.numeric.br"		
+									}
+								}
+							},{
+								"include": "#strings"
+							}]
+						}
+					}
+				},{
 					"match": "((?:^|\\r?\\n) *(\\d{1,5})? *(?:[a-zA-Z_]\\w*: *)?|!: *)(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
 					"captures": {
 						"1": {
