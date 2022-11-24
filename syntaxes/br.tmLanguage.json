@@ -66,7 +66,7 @@
 						}
 					}
 				},{
-					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END DEF|END|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(if|else|end if|for|next|do while|do until|loop|exit do|do)(?!:)\\b",
 					"captures": {
 						"1": {
 							"name": "linenumber.br"
@@ -75,6 +75,22 @@
 							"name": "string.regexp.line-label.br"
 						},
 						"3": {
+							"name": "keyword.control.br"
+						}
+					}
+				},{
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *|(then +|else +))(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END DEF|END IF|END|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
+					"captures": {
+						"1": {
+							"name": "linenumber.br"
+						},
+						"2": {
+							"name": "string.regexp.line-label.br"
+						},
+						"3": {
+							"name": "keyword.control.br"
+						},
+						"4": {
 							"name": "keyword.statement.br"
 						}
 					}

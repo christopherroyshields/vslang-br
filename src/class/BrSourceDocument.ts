@@ -62,8 +62,11 @@ export default class BrSourceDocument {
             lineStart = false
           } else {
             matchEnd = this.processWord(skipOrWord[0], text, skipOrWord.index)
+            if (skipOrWord[0].toLowerCase()==="then" || skipOrWord[0].toLowerCase()==="else"){
+              lineStart = true
+            }
           }
-        }
+      }
         BrSourceDocument.SKIP_OR_WORD.lastIndex = matchEnd
       }
       BrSourceDocument.VALID_LINE.lastIndex = matchEnd
