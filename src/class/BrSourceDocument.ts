@@ -5,13 +5,22 @@ import UserFunctionParameter from "./UserFunctionParameter"
 import { BrVariable } from "./BrVariable";
 import { LineLabel } from "./LineLabel";
 
+type DimVariable = {
+  name: string,
+  type: VariableType
+  position: {
+    start: number,
+    end: number
+  }
+}
+
 export default class BrSourceDocument {
 	functions: UserFunction[] = []
   variables = new Map<string,BrVariable>()
   labels: LineLabel[] = []
   lastDocComment: DocComment | null = null
   static LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
-
+  dims: DimVariable[] = []
 	constructor(text: string = "") {
     if (text){
       this.parse(text)
@@ -66,7 +75,7 @@ export default class BrSourceDocument {
               lineStart = true
             }
           }
-      }
+        }
         BrSourceDocument.SKIP_OR_WORD.lastIndex = matchEnd
       }
       BrSourceDocument.VALID_LINE.lastIndex = matchEnd
@@ -100,6 +109,9 @@ export default class BrSourceDocument {
   
   private static STATEMENT_TEST = /^(MAT|CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)$/i
   private processStatement(statement: string, text: string, index: number): number {
+    if (statement.toLowerCase()==="dim"){
+      return this.processDim(text, index+3)
+    }
     if (statement.toLowerCase()==="def"){
       return this.processFunction(text, index)
     }
@@ -111,6 +123,49 @@ export default class BrSourceDocument {
     } else {
       return this.processWord(statement, text, index)
     }
+  }
+  
+  private static DIM_VAR = /(?:(?<name>[a-zA-Z]\w*(?<isString>\$)?)(?<isArray> *\()?|(?<end>\r?\n|$))/gd
+  private processDim(text: string, index: number): number {
+    BrSourceDocument.DIM_VAR.lastIndex = index
+    let match: RegExpExecArray | null
+    let end = index
+    while ((match = BrSourceDocument.DIM_VAR.exec(text)) !== null) {
+      if (match?.groups?.end){
+        end = match.index
+        break
+      } else {
+        let varType: VariableType
+        if (match.groups?.isArray){
+          if (match.groups.isString){
+            varType = VariableType.stringarray
+          } else {
+            varType = VariableType.numberarray
+          }
+        } else {
+          if (match.groups?.isString){
+            varType = VariableType.string
+          } else {
+            varType = VariableType.number
+          }
+        }
+        let name = ""
+        if (match.groups?.name){
+          name = match.groups?.name
+        }
+        const dim: DimVariable = {
+          name: name,
+          type: varType,
+          position: {
+            start: match.index,
+            end: match.index + name.length
+          }
+        }
+        
+        this.dims.push(dim)
+      }
+    }
+    return end
   }
 
   private static FORM_VAR_OR_END = /(?:(?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))|(?<pic>pic\(.*?\))|(?<var>[a-z][\w\d]*) *\*|(?<end>\r?\n|$|!))/gi
