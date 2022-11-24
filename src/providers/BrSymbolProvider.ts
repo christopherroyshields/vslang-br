@@ -10,6 +10,12 @@ export default class BrSourceSymbolProvider implements DocumentSymbolProvider {
 
     const brSource = new BrSourceDocument(doc.getText())
 
+    for (const dim of brSource.dims) {
+      const labelRange = new Range(doc.positionAt(dim.position.start),doc.positionAt(dim.position.end))
+      const symbolInfo = new DocumentSymbol(dim.name, 'dim', SymbolKind.Variable, labelRange, labelRange)
+      symbolInfoList.push(symbolInfo)
+    }
+
     for (const label of brSource.labels) {
       const labelRange = new Range(doc.positionAt(label.offset.start),doc.positionAt(label.offset.end))
       const symbolInfo = new DocumentSymbol(label.name + ':', 'label', SymbolKind.Null, labelRange, labelRange)
