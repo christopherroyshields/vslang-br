@@ -1,12 +1,5 @@
 import { CompletionItem, MarkdownString } from "vscode";
-
-interface Statement {
-  name: string,
-  description?: string,
-  documentation?: string,
-  docUrl?: string,
-  example?: string
-}
+import { Statement } from "./interface/Statement";
 
 export const Statements: Statement[] = [
   {
