@@ -3,3 +3,4 @@ node_modules
 wbserver.dat
 *.$$$
 out
+.vscode-test/
