@@ -103,7 +103,7 @@ function activateWorkspaceFolders() {
 				const project = await startWatchingFiles(workspaceFolder,  disposables)
 				ConfiguredProjects.set(workspaceFolder, project)
 				disposablesMap.set(workspaceFolder, disposables)
-			};
+			}
 		}
 		if (removed){
 			for (const workspaceFolder of removed) {

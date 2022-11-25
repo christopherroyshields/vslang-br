@@ -1,13 +1,11 @@
-import { MarkdownString, workspace, WorkspaceFolder } from 'vscode';
-import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode";
-import ConfiguredProject from '../class/ConfiguredProject';
-import BrSourceDocument from "../class/BrSourceDocument";
-import { generateFunctionSignature, getFunctionByName } from '../completions/functions';
-import BrFunction from '../interface/BrFunction';
-import { isComment } from "../util/common";
-import ProjectSourceDocument from '../class/ProjectSourceDocument';
-import { Project } from './Project';
-import UserFunction from '../class/UserFunction';
+import { MarkdownString, workspace, WorkspaceFolder } from 'vscode'
+import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode"
+import BrSourceDocument from "../class/BrSourceDocument"
+import { generateFunctionSignature, getFunctionByName } from '../completions/functions'
+import BrFunction from '../interface/BrFunction'
+import { isComment } from "../util/common"
+import { Project } from './Project'
+import UserFunction from '../class/UserFunction'
 
 export default class BrHoverProvider implements HoverProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -19,7 +17,7 @@ export default class BrHoverProvider implements HoverProvider {
     if (isComment(position, doctext, doc)){
       return			
     } else {
-      const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/);
+      const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/)
       if (wordRange){
         const word = doc.getText(wordRange)
         if (word){
@@ -81,7 +79,7 @@ export default class BrHoverProvider implements HoverProvider {
       }
     })
   
-    let markup = new MarkdownString(markDownString)
+    const markup = new MarkdownString(markDownString)
   
     return new Hover(markup)
   }
@@ -100,7 +98,7 @@ export default class BrHoverProvider implements HoverProvider {
       }
     })
   
-    let markup = new MarkdownString(markDownString)
+    const markup = new MarkdownString(markDownString)
   
     return new Hover(markup)
   }

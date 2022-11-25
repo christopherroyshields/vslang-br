@@ -17,7 +17,7 @@ export default class Layout {
   keys: LayoutKey[] = []
   subscripts: Subscript[]
   recordLength: number
-  constructor(path: string, prefix: string, version: number = 0, keys=[], subscripts=[], recordLength=0){
+  constructor(path: string, prefix: string, version = 0, keys=[], subscripts=[], recordLength=0){
     this.path = path
     this.prefix = prefix
     this.version = version
@@ -44,7 +44,7 @@ export default class Layout {
         } else {
           // console.log(lines[i]);
           if (lines[i].trim()!=='') {
-            var detailLine = lines[i].split(",")
+            const detailLine = lines[i].split(",")
             // Strip out the dollar sign.
             if (detailLine.length>1){
               layout.subscripts.push({
@@ -67,7 +67,7 @@ export default class Layout {
         } else if (lines[i].includes("====")) {
           headerDone=true
         } else {
-          var keyLine = lines[i].split(",")
+          const keyLine = lines[i].split(",")
           if (!keyLine[1]){
             console.log("Bad Layout Header Line:"+lines[i])
           } else {

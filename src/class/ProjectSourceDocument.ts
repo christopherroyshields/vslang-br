@@ -1,12 +1,12 @@
 import path = require("path");
-import { Uri, workspace, WorkspaceFolder } from "vscode";
-import { getSearchPath } from "../util/common";
-import BrSourceDocument from "./BrSourceDocument";
+import { Uri, workspace, WorkspaceFolder } from "vscode"
+import { getSearchPath } from "../util/common"
+import BrSourceDocument from "./BrSourceDocument"
 
 export default class ProjectSourceDocument extends BrSourceDocument {
   uri: Uri
   workspaceFolder: WorkspaceFolder
-  linkPath: string;
+  linkPath: string
 
   constructor(text: string, uri: Uri, workspaceFolder: WorkspaceFolder) {
     super(text)

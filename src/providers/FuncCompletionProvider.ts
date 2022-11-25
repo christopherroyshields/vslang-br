@@ -1,11 +1,9 @@
 import path = require("path");
-import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabel, CompletionList, MarkdownString, Position, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode";
-import ConfiguredProject from "../class/ConfiguredProject";
-import BrSourceDocument from "../class/BrSourceDocument";
-import BaseCompletionProvider from "./BaseCompletionProvider";
-import ProjectSourceDocument from "../class/ProjectSourceDocument";
-import { TypeLabel } from "../util/common";
-import { Project } from "./Project";
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabel, CompletionList, MarkdownString, Position, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
+import BrSourceDocument from "../class/BrSourceDocument"
+import BaseCompletionProvider from "./BaseCompletionProvider"
+import { TypeLabel } from "../util/common"
+import { Project } from "./Project"
 
 /**
  * Library statement linkage list completion provider

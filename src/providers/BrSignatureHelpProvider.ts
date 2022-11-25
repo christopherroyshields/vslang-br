@@ -1,11 +1,11 @@
-import { CancellationToken, MarkdownString, ParameterInformation, Position, ProviderResult, Range, SignatureHelp, SignatureHelpContext, SignatureHelpProvider, SignatureInformation, TextDocument, workspace, WorkspaceFolder } from "vscode";
-import ConfiguredProject from "../class/ConfiguredProject";
-import BrSourceDocument from "../class/BrSourceDocument";
-import { generateFunctionSignature, getFunctionsByName } from "../completions/functions";
-import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common";
-import ProjectSourceDocument from "../class/ProjectSourceDocument";
-import { Project } from "./Project";
-import { VariableType } from "../types/VariableType";
+import { CancellationToken, MarkdownString, ParameterInformation, Position, ProviderResult, Range, SignatureHelp, SignatureHelpContext, SignatureHelpProvider, SignatureInformation, TextDocument, workspace, WorkspaceFolder } from "vscode"
+import ConfiguredProject from "../class/ConfiguredProject"
+import BrSourceDocument from "../class/BrSourceDocument"
+import { generateFunctionSignature, getFunctionsByName } from "../completions/functions"
+import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common"
+import ProjectSourceDocument from "../class/ProjectSourceDocument"
+import { Project } from "./Project"
+import { VariableType } from "../types/VariableType"
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -20,7 +20,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
       // remove literals first
       preText = preText.replace(STRING_OR_COMMENT, "")
       preText = stripBalancedFunctions(preText)
-      let context: RegExpExecArray | null = FUNCTION_CALL_CONTEXT.exec(preText)
+      const context: RegExpExecArray | null = FUNCTION_CALL_CONTEXT.exec(preText)
       if (context && context.groups && !context.groups.isDef){
   
         const sigHelp: SignatureHelp = {
@@ -40,12 +40,12 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
               const params: ParameterInformation[] = []
               if (fn && fn.params){
                 for (const param of fn.params) {
-                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$|\])`, 'g');
-                  regex.test(sigLabel);
-                  const idx = regex.lastIndex - param.name.length;
+                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$|])`, 'g')
+                  regex.test(sigLabel)
+                  const idx = regex.lastIndex - param.name.length
                   const range: [number, number] = idx >= 0
                     ? [idx, regex.lastIndex]
-                    : [0, 0];
+                    : [0, 0]
 
                   params.push({
                     label: range,
@@ -72,7 +72,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
                       const params: ParameterInformation[] = []
                       if (fn && fn.params){
                         for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
-                          const el = fn.params[paramIndex];
+                          const el = fn.params[paramIndex]
                           params.push({
                             label: el.name,
                             documentation: el.documentation
@@ -94,10 +94,10 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
           const internalFunctions = getFunctionsByName(context.groups.name)
           if (internalFunctions){
             for (const fn of internalFunctions) {
-              let params: ParameterInformation[] = []
+              const params: ParameterInformation[] = []
               if (fn && fn.params){
                 for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
-                  let el = fn.params[paramIndex];
+                  const el = fn.params[paramIndex]
                   params.push({
                     label: el.name,
                     documentation: el.documentation

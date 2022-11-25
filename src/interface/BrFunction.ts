@@ -1,4 +1,4 @@
-import FunctionParameter from "./FunctionParameter";
+import FunctionParameter from "./FunctionParameter"
 
 export default interface BrFunction {
   name: string,

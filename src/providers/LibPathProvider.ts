@@ -1,10 +1,8 @@
 import path = require("path");
-import { CancellationToken, CompletionContext, CompletionItem, CompletionItemLabel, CompletionList, CompletionTriggerKind, Position, Range, TextDocument, workspace, WorkspaceFolder } from "vscode";
-import ConfiguredProject from "../class/ConfiguredProject";
-import ProjectSourceDocument from "../class/ProjectSourceDocument";
-import { getSearchPath } from "../util/common";
-import BaseCompletionProvider from "./BaseCompletionProvider";
-import { Project } from "./Project";
+import { CancellationToken, CompletionContext, CompletionItem, CompletionItemLabel, CompletionList, CompletionTriggerKind, Position, Range, TextDocument, workspace, WorkspaceFolder } from "vscode"
+import { getSearchPath } from "../util/common"
+import BaseCompletionProvider from "./BaseCompletionProvider"
+import { Project } from "./Project"
 
 /**
  * Library statement file path provider
@@ -14,9 +12,9 @@ export default class LibPathProvider extends BaseCompletionProvider {
     super(configuredProjects)
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): CompletionList<CompletionItem> {
-    const completionItems: CompletionList<CompletionItem> = new CompletionList();
+    const completionItems: CompletionList<CompletionItem> = new CompletionList()
 
-    const line = doc.getText(new Range(doc.lineAt(position).range.start, position));
+    const line = doc.getText(new Range(doc.lineAt(position).range.start, position))
     const ISLIBRARY_LITERAL = /library\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')$/gi
     if (ISLIBRARY_LITERAL.test(line)){
       const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)

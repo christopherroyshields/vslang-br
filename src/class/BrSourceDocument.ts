@@ -2,8 +2,8 @@ import { VariableType } from "../types/VariableType"
 import DocComment from "./DocComment"
 import UserFunction from "./UserFunction"
 import UserFunctionParameter from "./UserFunctionParameter"
-import { BrVariable } from "./BrVariable";
-import { LineLabel } from "./LineLabel";
+import { BrVariable } from "./BrVariable"
+import { LineLabel } from "./LineLabel"
 
 type DimVariable = {
   name: string,
@@ -21,14 +21,14 @@ export default class BrSourceDocument {
   lastDocComment: DocComment | null = null
   static LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
   dims: DimVariable[] = []
-	constructor(text: string = "") {
+	constructor(text = "") {
     if (text){
       this.parse(text)
     }
 	}
 
   static VALID_LINE = /(?<lpad>(^|\r?\n) *)(?<lineNum>\d{1,5})? *(?:(?<labelName>[a-zA-Z_]\w*):(?= *[^ ]))?(?= *[^ \r\n])/g
-  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n)|(?<unrecognized>[^ \r\n]))/gi
+  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n)|(?<unrecognized>[^ \r\n]))/gi
   private parse(text: string){
     let validLineStart
     let lineCount = 0
@@ -168,7 +168,7 @@ export default class BrSourceDocument {
     return end
   }
 
-  private static FORM_VAR_OR_END = /(?:(?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))|(?<pic>pic\(.*?\))|(?<var>[a-z][\w\d]*) *\*|(?<end>\r?\n|$|!))/gi
+  private static FORM_VAR_OR_END = /(?:(?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<pic>pic\(.*?\))|(?<var>[a-z][\w\d]*) *\*|(?<end>\r?\n|$|!))/gi
   private processFormStatement(text: string, index: number): number {
     BrSourceDocument.FORM_VAR_OR_END.lastIndex = index
     let match: RegExpExecArray | null
@@ -189,7 +189,7 @@ export default class BrSourceDocument {
     return end
   }
 
-  private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@\[\]]+)\))?(?<fnBody>\s*=.*|[\s\S]*?(fnend|end def))/gi
+  private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@[\]]+)\))?(?<fnBody>\s*=.*|[\s\S]*?(fnend|end def))/gi
   private processFunction(text: string, index: number): number {
     BrSourceDocument.DEF_FN.lastIndex = index
     const match = BrSourceDocument.DEF_FN.exec(text)
@@ -263,7 +263,7 @@ export default class BrSourceDocument {
     return match?.index || text.length
   }
 
-  private static PARAM_SEARCH = /(?<delimiter>^|;|,) *(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w\[\]]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
+  private static PARAM_SEARCH = /(?<delimiter>^|;|,) *(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w[\]]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
   private parseFunctionFromSource(name: string, match: RegExpMatchArray): UserFunction | undefined {
     if (match.groups){
       const isLib: boolean = match.groups?.isLibrary ? true : false

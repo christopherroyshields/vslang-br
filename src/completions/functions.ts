@@ -8,15 +8,15 @@ import { VariableType } from "../types/VariableType"
  * @param fn Function to generate full function call
  */
 export function generateFunctionSignature(fn: BrFunction): string {
-  let sig: string = ''
+  let sig = ''
   if (fn.params?.length) {
     sig += '('
     for (let paramindex = 0; paramindex < fn.params.length; paramindex++) {
       if (paramindex > 0) {
         sig += ','
       }
-      const element = fn.params[paramindex];
-      sig += element.name;
+      const element = fn.params[paramindex]
+      sig += element.name
     }
     sig += ')'
   }
@@ -25,7 +25,7 @@ export function generateFunctionSignature(fn: BrFunction): string {
 
 export function getFunctionByName(name: string): BrFunction | undefined {
   for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
-    const fn = stringFunctions[fnIndex];
+    const fn = stringFunctions[fnIndex]
     if (fn.name.toLowerCase() === name.toLowerCase()) {
       return fn
     }
@@ -37,7 +37,7 @@ export function getFunctionsByName(name: string): BrFunction[] | undefined {
   const fnMatches: BrFunction[] = []
 
   for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
-    const fn = stringFunctions[fnIndex];
+    const fn = stringFunctions[fnIndex]
     if (fn.name.toLowerCase() === name.toLowerCase()) {
       fnMatches.push(fn)
     }

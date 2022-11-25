@@ -10,10 +10,10 @@ export function activateNextPrev(context: vscode.ExtensionContext) {
 			editor.selection = new vscode.Selection(cursorWordRange.start, cursorWordRange.end)
 			const selectedText: string = editor.document.getText(editor.selection)
 			const followingText: string = editor.document.getText(editor.selection.with(editor.selection.end, editor.document.lineAt(editor.document.lineCount-1).range.end))
-			const newSearch: RegExp = new RegExp(`(?<![\\w])${selectedText.replace("$","\\$")}(?![\\w]|\\$)`, 'i')
+			const newSearch = new RegExp(`(?<![\\w])${selectedText.replace("$","\\$")}(?![\\w]|\\$)`, 'i')
 			const nextMatchIndex: number = followingText.search(newSearch)
 			if (nextMatchIndex >= 0){
-				let matchOffset = editor.document.offsetAt(editor.selection.end) + nextMatchIndex
+				const matchOffset = editor.document.offsetAt(editor.selection.end) + nextMatchIndex
 				editor.selection = new vscode.Selection(editor.document.positionAt(matchOffset), editor.document.positionAt(matchOffset+selectedText.length))
 			}
 			editor.revealRange(editor.selection, vscode.TextEditorRevealType.Default)

@@ -5,7 +5,7 @@ class InternalFunction implements BrFunction {
   generateSignature(): string {
     throw new Error("Method not implemented.")
   }
-  name: string = ''
+  name = ''
   description?: string
   documentation?: string
   params?: FunctionParameter[]

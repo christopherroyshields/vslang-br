@@ -8,8 +8,7 @@ const AutoCompileState: Map<string, boolean> = new Map();
 
 export function activateLexi(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('vslang-br.compile', () => {
-		var activeFilename: string | undefined = vscode.window.activeTextEditor?.document.fileName;
-		
+		const activeFilename: string | undefined = vscode.window.activeTextEditor?.document.fileName;
 		if (activeFilename){
 			compileBrProgram(activeFilename);
 		}
@@ -21,7 +20,7 @@ export function activateLexi(context: vscode.ExtensionContext) {
 	autoCompileStatusBarItem.text = 'Auto-Compile Off';
 	context.subscriptions.push(autoCompileStatusBarItem);
 
-	let editor = vscode.window.activeTextEditor;
+	const editor = vscode.window.activeTextEditor;
 	if (editor && editor.document.languageId === "br"){
 		autoCompileStatusBarItem.show();
 	}
@@ -97,7 +96,7 @@ function compileBrProgram(activeFilename: string) {
 }
 
 function toggleAutoCompile() {
-	var editor = vscode.window.activeTextEditor;
+	const editor = vscode.window.activeTextEditor;
 	if (editor) {
 		if (AutoCompileState.get(editor.document.fileName) === undefined){
 			AutoCompileState.set(editor.document.fileName, true);

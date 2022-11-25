@@ -1,8 +1,8 @@
 export default class DocComment {
 	text?: string
 	params: Map<string, string> = new Map<string,string>()
-	static textSearch: RegExp = /^[\s\S]*?(?=@|$)/
-	static paramSearch: RegExp = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi
+	static textSearch = /^[\s\S]*?(?=@|$)/
+	static paramSearch = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi
 
 	/**
 	 * Function removes leading asterisk from comment lines

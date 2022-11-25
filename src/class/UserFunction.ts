@@ -35,7 +35,7 @@ import UserFunctionParameter from "./UserFunctionParameter"
     }
     if (this.params){
       for (let paramIndex = 0; paramIndex < this.params.length; paramIndex++) {
-        const param = this.params[paramIndex];
+        const param = this.params[paramIndex]
         if (param.documentation){
           if (paramIndex || docs){
             docs += "\\"+EOL
@@ -47,26 +47,26 @@ import UserFunctionParameter from "./UserFunctionParameter"
     return docs
   }
   generateSignature() : string {
-    let sig: string = ''
+    let sig = ''
     if (this.params ?. length) {
       sig += '('
       for (let paramindex = 0; paramindex < this.params.length; paramindex++) {
         if (paramindex > 0) {
           sig += ','
         }
-        const element = this.params[paramindex];
+        const element = this.params[paramindex]
         let name = ''
         if (element.isReference) {
           name += '&'
         }
-        name += element.name;
+        name += element.name
         if (element.length) {
           name += '*' + element.length.toString()
         }
         if (element.isOptional) {
           name = '[' + name + ']'
         }
-        sig += name;
+        sig += name
       }
       sig += ')'
     }

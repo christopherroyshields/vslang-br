@@ -5,20 +5,20 @@ import BrFunction from "../interface/BrFunction"
 import { VariableType } from "../types/VariableType"
 
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
-export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|\"(?:[^\"]|"")*(\"|$)|'(?:[^\']|'')*('|$))/g
+export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))/g
 
 /**
  * Escapes regular expression characters in a given string
  */
 export function escapeRegExpCharacters(value: string): string {
-	return value.replace(/[\\\{\}\*\+\?\|\^\$\.\[\]\(\)]/g, '\\$&');
+	return value.replace(/[\\{}*+?|^$.[\]()]/g, '\\$&')
 }
 
 export function isComment(cursorPosition: Position, doctext: string, doc: TextDocument): boolean {
 	let commentMatch: RegExpExecArray | null
 	while ((commentMatch = STRING_OR_COMMENT.exec(doctext)) !== null) {
-		let startOffset = commentMatch.index
-		let endOffset = commentMatch.index + commentMatch[0].length
+		const startOffset = commentMatch.index
+		const endOffset = commentMatch.index + commentMatch[0].length
 		if (doc.offsetAt(cursorPosition) < startOffset){
 			break
 		}
@@ -41,7 +41,7 @@ export function stripBalancedFunctions(line: string){
 }
 
 export function getSearchPath(workspaceFolder: WorkspaceFolder): Uri {
-	const searchPath: string = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
+	const searchPath: string = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "")
 	if (searchPath){
 		return Uri.joinPath(workspaceFolder.uri, searchPath.replace("\\","/"))
 	} else {
