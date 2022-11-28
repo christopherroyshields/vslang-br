@@ -34,13 +34,18 @@ export default class Layout {
     // Read all subscripts
     let headerDone = false
     for (let i = 1; i < lines.length; i++) {
-      if (headerDone){
+      if (lines[i].toLowerCase().includes("recl=")) {
+        layout.recordLength=parseInt(lines[i].toLowerCase().replace("recl=",""))
+        i++
+        headerDone=true
+      } else if (lines[i].includes("====")) {
+        headerDone=true
+      } else if (lines[i].trim().charAt(0)==="!") {
+        // A comment line, ignore it
+      } else if (headerDone){
         if (lines[i].toLowerCase().includes("#eof#")) {
           // a #EOF# line ends the layout
           i = lines.length
-        } else if (lines[i].trim().charAt(0)==="!") {
-          // A comment line, ignore it
-
         } else {
           // console.log(lines[i]);
           if (lines[i].trim()!=='') {
@@ -60,22 +65,14 @@ export default class Layout {
         }
       } else {
         //parse Header
-        if (lines[i].toLowerCase().includes("recl=")) {
-          layout.recordLength=parseInt(lines[i].toLowerCase().replace("recl=",""))
-          i++
-          headerDone=true
-        } else if (lines[i].includes("====")) {
-          headerDone=true
+        const keyLine = lines[i].split(",")
+        if (!keyLine[1]){
+          console.log("Bad Layout Header Line:"+lines[i])
         } else {
-          const keyLine = lines[i].split(",")
-          if (!keyLine[1]){
-            console.log("Bad Layout Header Line:"+lines[i])
-          } else {
-            layout.keys.push({
-              path: keyLine[0],
-              keyFields: keyLine[1].split("/")
-            })
-          }
+          layout.keys.push({
+            path: keyLine[0],
+            keyFields: keyLine[1].split("/")
+          })
         }
       }
     }

@@ -14,6 +14,7 @@ import BrSourceDocument from './class/BrSourceDocument';
 import { performance } from 'perf_hooks';
 import Layout from './class/Layout';
 import { Project } from './providers/Project';
+import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -24,6 +25,7 @@ const libPathProvider = new LibPathProvider(ConfiguredProjects)
 const funcCompletionProvider = new FuncCompletionProvider(ConfiguredProjects)
 const statementCompletionProvider = new StatementCompletionProvider(ConfiguredProjects)
 const brSourceSymbolProvider = new BrSourceSymbolProvider()
+const layoutSemanticTokenProvider = new LayoutSemanticTokenProvider()
 
 export function activate(context: ExtensionContext) {
 	
@@ -31,6 +33,11 @@ export function activate(context: ExtensionContext) {
 
 	activateNextPrev(context)
 
+	languages.registerDocumentSemanticTokensProvider({
+		language: "lay",
+		scheme: "file"
+	}, layoutSemanticTokenProvider, LayoutLegend)
+	
 	const sel: DocumentSelector = {
 		language: "br"
 	}
