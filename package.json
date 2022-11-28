@@ -17,6 +17,14 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "semanticTokenScopes": [
+      {
+        "language": "lay",
+        "scopes": {
+          "invalid": ["invalid"]
+        }
+      }
+    ],
     "jsonValidation": [
       {
         "fileMatch": "br-project.json",
