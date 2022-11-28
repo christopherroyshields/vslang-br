@@ -61,7 +61,7 @@ export default class FuncCompletionProvider extends BaseCompletionProvider {
     if (currentWordRange){
       const start = doc.offsetAt(currentWordRange.start)
       const end = doc.offsetAt(currentWordRange.end)
-      docText = docText.substring(0, start) + "@".repeat(end - start) + docText.substring(end)
+      docText = docText.substring(0, start) + " ".repeat(end - start) + docText.substring(end)
     }
     
     const source = new BrSourceDocument(docText)
@@ -79,7 +79,7 @@ export default class FuncCompletionProvider extends BaseCompletionProvider {
 
     for (const [k,v] of source.variables){
       const label: CompletionItemLabel = {
-        label: v.name.replace(/mat /i, ""),
+        label: v.name.replace(/mat[ \t]*/i, ""),
         detail: ` (${TypeLabel.get(v.type)})`
       }
       const completionItem = new CompletionItem(label, CompletionItemKind.Variable)

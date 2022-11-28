@@ -6,14 +6,14 @@ const modifiers = ['deprecated']
 
 export const LayoutLegend = new SemanticTokensLegend(tokenTypes, modifiers);
 
-const PATH_LINE = /(?<path>.*?)(?:,(?<prefix>.*?))?(?:, *(?<version>\d*))?$/d
+const PATH_LINE = /(?<path>.*?)(?:,(?<prefix>.*?))?(?:,[ \t]*(?<version>\d*))?$/d
 const KEY_LINE = /(?<path>.*?)(?:,(?<keys>.*?))?$/d
-const KEY_PARAM = /(?<=, *|\/)(?<param>.*?)(?=\/|$)/gd
+const KEY_PARAM = /(?<=,[ \t]*|\/)(?<param>.*?)(?=\/|$)/gd
 
 const RECL = /(?<keyword>recl)=(?<recl>\d+)/gd
 const SEP = /^====+/g
 
-const FIELD_VAR = /(?<name>.*?)(?:,(?<desc>.*?))?(?:,(?:(?<spec> *(?<valid_spec>BH|BL|B|CC|CR|C|DH|DL|DT|D|GF|GZ|G|L|NZ|N|PIC|PD|P|SKIP|S|V|X|ZD)| *(?<invalid>\w+))?(?<len> *\d*.?\d*)? *))?(?:,(?<comment>.*?))?$/gid
+const FIELD_VAR = /(?<name>.*?)(?:,(?<desc>.*?))?(?:,(?:(?<spec>[ \t]*(?<valid_spec>BH|BL|B|CC|CR|C|DH|DL|DT|D|GF|GZ|G|L|NZ|N|PIC|PD|P|SKIP|S|V|X|ZD)|[ \t]*(?<invalid>\w+))?(?<len>[ \t]*\d*.?\d*)?[ \t]*))?(?:,(?<comment>.*?))?$/gid
 const EOF = /#eof#/gi
 
 export default class LayoutSemanticTokenProvider implements DocumentSemanticTokensProvider {
