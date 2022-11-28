@@ -24,7 +24,9 @@ export default class LayoutSemanticTokenProvider implements DocumentSemanticToke
 
     for (let i = 0; i < doc.lineCount; i++) {
       const line = doc.lineAt(i);
-      if (eof || EOF.test(line.text)){
+      if (line.text.trim().length === 0){
+        // skip
+      } else if (eof || EOF.test(line.text)){
         eof=true
         if (line.text){
           builder.push(line.range, "comment")
@@ -94,7 +96,7 @@ export default class LayoutSemanticTokenProvider implements DocumentSemanticToke
           if (indices.groups.valid_spec){
             builder.push(new Range(i, indices.groups.valid_spec[0], i, indices.groups.valid_spec[1]), "keyword")
           } else if (indices.groups.invalid){
-            builder.push(new Range(i, indices.groups.invalid[0], i, indices.groups.invalid[1]), "keyword", ["deprecated"])
+            builder.push(new Range(i, indices.groups.invalid[0], i, indices.groups.invalid[1]), "invalid")
           }
 
           if (indices.groups.len){
