@@ -181,6 +181,18 @@
           ".wbs"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "lay",
+        "aliases": [
+          "Fileio Layout"
+        ],
+        "extensions": [
+          ".lay"
+        ],
+        "filenamePatterns": [
+          "**/filelay/*"
+        ]
       }
     ],
     "grammars": [
@@ -210,7 +222,7 @@
     "eslint": "^8.20.0",
     "glob": "^8.0.3",
     "mocha": "^10.0.0",
-    "typescript": "^4.7.4"
+    "typescript": "^4.8.0"
   },
   "dependencies": {
     "vscode-languageclient": "^8.0.2",
