@@ -12,18 +12,9 @@ This extension provides language support for the Business Rules! programming lan
 - function completions
 - function hover information
 - JSDoc style function documentation
-
-TODO:
-- symbol highlight
-- debugging
 - statement and variable completions
+- symbol highlight
 
 ## Extension Settings
 
 TBD
-
-## Release Notes
-
-### 1.0.0
-
-Initial release of extension
