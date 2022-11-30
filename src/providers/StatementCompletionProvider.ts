@@ -2,7 +2,7 @@ import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionList, MarkdownString, Position, TextDocument, workspace, WorkspaceFolder } from "vscode"
 import ConfiguredProject from "../class/ConfiguredProject"
 import BrSourceDocument from "../class/BrSourceDocument"
-import { Statements } from "../statements"
+import { Statements } from "../completions/statements"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "./Project"
@@ -26,12 +26,14 @@ export default class StatementCompletionProvider extends BaseCompletionProvider 
           description: 'statement'
         },
         detail: s.description,
-        documentation: md,
         kind: CompletionItemKind.Keyword
       }
       if (s.documentation) md.appendMarkdown(s.documentation)
       if (s.docUrl) md.appendMarkdown(` [docs...](${s.docUrl})`)
       if (s.example) md.appendCodeblock(s.example) 
+      if (md.value.length>0){
+        item.documentation = md
+      }
       return item
     })
   }
