@@ -66,7 +66,7 @@
 						}
 					}
 				},{
-					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(if|else|end if|for|next|do while|do until|loop|exit do|do)(?!:)\\b",
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(if|else|end if|for|next|do while|do until|loop|exit do|do|goto|gosub|return)(?!:)\\b",
 					"captures": {
 						"1": {
 							"name": "linenumber.br"
@@ -79,7 +79,7 @@
 						}
 					}
 				},{
-					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *|(then +|else +))(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END DEF|END IF|END|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *|(?i)(then +|else +))(?i)(CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END DEF|END IF|END|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT(\\s+FIELDS)?|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT(\\s+FIELDS)?|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT(\\s+FIELDS)?|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)(?!:)\\b",
 					"captures": {
 						"1": {
 							"name": "linenumber.br"
@@ -215,11 +215,11 @@
 					"name": "keyword.operator.mathematical.br"
 				},
 				{
-					"match": "\\b(?i:if|then|else|end if|for|next|do|while|loop|until|exit do)\\b",
+					"match": "\\b(?i:if|then|else|end if|for|next|do|while|loop|until|exit do|goto|gosub)\\b",
 					"name": "keyword.control.br"
 				},
 				{
-					"match": "\\b(?i:ALTERNATE|ATTR|BASE|BORDER|DISPLAY|DROP|EVENT|EXTERNAL|FILES|INTERNAL|INVP|KEYED|NATIVE|NOFILES|NOKEY|NONE|OUTIN|OUTPUT|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING|WAIT)\\b",
+					"match": "\\b(?i:ALTERNATE|ATTR|BASE|BORDER|DISPLAY|DROP|EVENT|EXTERNAL|FIELDS|FILES|INTERNAL|INVP|KEYED|NATIVE|NOFILES|NOKEY|NONE|OUTIN|OUTPUT|REC(?==)|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING|WAIT)\\b",
 					"name": "keyword.other.br"
 				},
 				{

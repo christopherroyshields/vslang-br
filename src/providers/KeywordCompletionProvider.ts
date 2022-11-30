@@ -1,8 +1,6 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionList, MarkdownString, Position, TextDocument, workspace, WorkspaceFolder } from "vscode"
-import ConfiguredProject from "../class/ConfiguredProject"
-import BrSourceDocument from "../class/BrSourceDocument"
-import { Statements } from "../completions/statements"
+import { Keywords } from "../completions/keywords"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "./Project"
@@ -10,7 +8,7 @@ import { Project } from "./Project"
 /**
  * Library statement linkage list completion provider
  */
-export default class StatementCompletionProvider extends BaseCompletionProvider {
+export default class KeywordCompletionProvider extends BaseCompletionProvider {
   constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
     super(configuredProjects)
   }
@@ -18,12 +16,12 @@ export default class StatementCompletionProvider extends BaseCompletionProvider 
     const word = doc.getText(doc.getWordRangeAtPosition(position))
     const isLower = !/[A-Z]/.test(word)
     
-    return Statements.map((s)=>{
+    return Keywords.map((s)=>{
       const md = new MarkdownString()
       const item: CompletionItem = {
         label: {
           label: isLower ? s.name.toLocaleLowerCase() : s.name,
-          description: 'statement'
+          description: 'keyword'
         },
         detail: s.description,
         kind: CompletionItemKind.Keyword

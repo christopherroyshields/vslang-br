@@ -4,6 +4,7 @@ import BrSourceDocument from "../class/BrSourceDocument"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import { TypeLabel } from "../util/common"
 import { Project } from "./Project"
+import { InternalFunctions } from "../completions/functions";
 
 /**
  * Library statement linkage list completion provider
@@ -64,6 +65,18 @@ export default class FuncCompletionProvider extends BaseCompletionProvider {
       docText = docText.substring(0, start) + " ".repeat(end - start) + docText.substring(end)
     }
     
+    for (const fn of InternalFunctions) {
+      completionItems.push({
+        kind: CompletionItemKind.Function,
+        label: {
+          label: fn.name,
+          detail: `(internal function)`
+        },
+        detail: `(internal function) ${fn.name}${fn.generateSignature()}`,
+        documentation: new MarkdownString(fn.getAllDocs())
+      })
+    }    
+
     const source = new BrSourceDocument(docText)
     for (const fn of source.functions) {
       completionItems.push({

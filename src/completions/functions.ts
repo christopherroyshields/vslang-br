@@ -1,43 +1,24 @@
 import { EOL } from "os"
 import { CompletionItem, CompletionItemKind, InsertTextFormat } from "vscode-languageserver"
+import InternalFunction from "../class/InternalFunction"
 import BrFunction from "../interface/BrFunction"
 import { VariableType } from "../types/VariableType"
 
-/**
- * Function to generate example function call for display purposes
- * @param fn Function to generate full function call
- */
-export function generateFunctionSignature(fn: BrFunction): string {
-  let sig = ''
-  if (fn.params?.length) {
-    sig += '('
-    for (let paramindex = 0; paramindex < fn.params.length; paramindex++) {
-      if (paramindex > 0) {
-        sig += ','
-      }
-      const element = fn.params[paramindex]
-      sig += element.name
-    }
-    sig += ')'
-  }
-  return sig
-}
-
-export function getFunctionByName(name: string): BrFunction | undefined {
-  for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
-    const fn = stringFunctions[fnIndex]
+export function getFunctionByName(name: string): InternalFunction | undefined {
+  for (let fnIndex = 0; fnIndex < InternalFunctions.length; fnIndex++) {
+    const fn = InternalFunctions[fnIndex]
     if (fn.name.toLowerCase() === name.toLowerCase()) {
       return fn
     }
   }
 }
 
-export function getFunctionsByName(name: string): BrFunction[] | undefined {
+export function getFunctionsByName(name: string): InternalFunction[] | undefined {
 
-  const fnMatches: BrFunction[] = []
+  const fnMatches: InternalFunction[] = []
 
-  for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
-    const fn = stringFunctions[fnIndex]
+  for (let fnIndex = 0; fnIndex < InternalFunctions.length; fnIndex++) {
+    const fn = InternalFunctions[fnIndex]
     if (fn.name.toLowerCase() === name.toLowerCase()) {
       fnMatches.push(fn)
     }
@@ -46,7 +27,8 @@ export function getFunctionsByName(name: string): BrFunction[] | undefined {
   return fnMatches.length ? fnMatches : undefined
 }
 
-export const stringFunctions: BrFunction[] = [
+
+export const InternalFunctions: InternalFunction[] = InternalFunction.factory([
   {
     name: "BR_FileName$",
     documentation: "Returns the BR Filename version of the specified OS filename (reversing out your Drive statements).",
@@ -95,7 +77,8 @@ export const stringFunctions: BrFunction[] = [
       {
         name: "<days>"
       }, {
-        name: "[<format$>]",
+        name: "<format$>",
+        isOptional: true,
         documentation: ""
       }
     ]
@@ -568,7 +551,7 @@ export const stringFunctions: BrFunction[] = [
       "Similar to CmdKey, but returns more information, particularly about how a field is exited.",
     params: [
       {
-        name: "<value>",
+        name: "[<value>]",
       },
     ],
   },
@@ -988,7 +971,7 @@ name: '<X>'
         name: "MAT <array name>",
       },
       {
-        name: "[MAT] <delimiter$>",
+        name: "[<delimiter$>|MAT <delimiter$>]",
       },
       {
         name: "[<quote-type:trim>]",
@@ -1064,4 +1047,4 @@ name: '<X>'
       },
     ],
   },
-]
+])

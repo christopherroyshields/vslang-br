@@ -1,11 +1,12 @@
 import { MarkdownString, workspace, WorkspaceFolder } from 'vscode'
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode"
 import BrSourceDocument from "../class/BrSourceDocument"
-import { generateFunctionSignature, getFunctionByName } from '../completions/functions'
+import { getFunctionByName } from '../completions/functions'
 import BrFunction from '../interface/BrFunction'
 import { isComment } from "../util/common"
 import { Project } from './Project'
 import UserFunction from '../class/UserFunction'
+import InternalFunction from '../class/InternalFunction'
 
 export default class BrHoverProvider implements HoverProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -84,9 +85,9 @@ export default class BrHoverProvider implements HoverProvider {
     return new Hover(markup)
   }
 
-  createHoverFromFunction(fn: BrFunction): Hover {
+  createHoverFromFunction(fn: InternalFunction): Hover {
 
-    let markDownString = '```br\n' + fn.name + generateFunctionSignature(fn) + '\n```\n---'
+    let markDownString = '```br\n' + fn.name + fn.generateSignature() + '\n```\n---'
   
     if (markDownString && fn.documentation){
       markDownString += '\n' + fn.documentation
