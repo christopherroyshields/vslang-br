@@ -181,7 +181,7 @@ export const Statements: Statement[] = [
     docUrl: "http://www.brwiki.com/index.php?search=Open"
   },
   {
-    name: "Paus",
+    name: "Pause",
     description: "Pause",
     documentation: "Pauses program execution allows the programmer to interact with the program in the Command Console.",
     docUrl: "http://brwiki2.brulescorp.com/index.php?title=Pause"

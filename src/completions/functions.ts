@@ -1,5 +1,6 @@
 import { EOL } from "os"
 import { CompletionItem, CompletionItemKind, InsertTextFormat } from "vscode-languageserver"
+import InternalFunction from "../class/InternalFunction"
 import BrFunction from "../interface/BrFunction"
 import { VariableType } from "../types/VariableType"
 
@@ -24,8 +25,8 @@ export function generateFunctionSignature(fn: BrFunction): string {
 }
 
 export function getFunctionByName(name: string): BrFunction | undefined {
-  for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
-    const fn = stringFunctions[fnIndex]
+  for (let fnIndex = 0; fnIndex < InternalFunctions.length; fnIndex++) {
+    const fn = InternalFunctions[fnIndex]
     if (fn.name.toLowerCase() === name.toLowerCase()) {
       return fn
     }
@@ -36,8 +37,8 @@ export function getFunctionsByName(name: string): BrFunction[] | undefined {
 
   const fnMatches: BrFunction[] = []
 
-  for (let fnIndex = 0; fnIndex < stringFunctions.length; fnIndex++) {
-    const fn = stringFunctions[fnIndex]
+  for (let fnIndex = 0; fnIndex < InternalFunctions.length; fnIndex++) {
+    const fn = InternalFunctions[fnIndex]
     if (fn.name.toLowerCase() === name.toLowerCase()) {
       fnMatches.push(fn)
     }
@@ -46,7 +47,8 @@ export function getFunctionsByName(name: string): BrFunction[] | undefined {
   return fnMatches.length ? fnMatches : undefined
 }
 
-export const stringFunctions: BrFunction[] = [
+
+export const InternalFunctions: InternalFunction[] = InternalFunction.factory([
   {
     name: "BR_FileName$",
     documentation: "Returns the BR Filename version of the specified OS filename (reversing out your Drive statements).",
@@ -95,7 +97,8 @@ export const stringFunctions: BrFunction[] = [
       {
         name: "<days>"
       }, {
-        name: "[<format$>]",
+        name: "<format$>",
+        isOptional: true,
         documentation: ""
       }
     ]
@@ -1064,4 +1067,4 @@ name: '<X>'
       },
     ],
   },
-]
+])

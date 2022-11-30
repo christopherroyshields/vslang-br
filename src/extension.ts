@@ -15,6 +15,7 @@ import { performance } from 'perf_hooks';
 import Layout from './class/Layout';
 import { Project } from './providers/Project';
 import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
+import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -24,6 +25,7 @@ const libLinkListProvider = new LibLinkListProvider(ConfiguredProjects)
 const libPathProvider = new LibPathProvider(ConfiguredProjects)
 const funcCompletionProvider = new FuncCompletionProvider(ConfiguredProjects)
 const statementCompletionProvider = new StatementCompletionProvider(ConfiguredProjects)
+const keywordCompletionProvider = new KeywordCompletionProvider(ConfiguredProjects)
 const brSourceSymbolProvider = new BrSourceSymbolProvider()
 const layoutSemanticTokenProvider = new LayoutSemanticTokenProvider()
 
@@ -53,6 +55,8 @@ export function activate(context: ExtensionContext) {
 	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
 
 	languages.registerCompletionItemProvider(sel, statementCompletionProvider)
+
+	languages.registerCompletionItemProvider(sel, keywordCompletionProvider)
 
 	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
 
