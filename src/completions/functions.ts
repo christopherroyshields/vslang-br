@@ -568,7 +568,7 @@ export const stringFunctions: BrFunction[] = [
       "Similar to CmdKey, but returns more information, particularly about how a field is exited.",
     params: [
       {
-        name: "<value>",
+        name: "[<value>]",
       },
     ],
   },
