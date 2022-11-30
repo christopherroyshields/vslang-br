@@ -1,7 +1,18 @@
-import { CompletionItem, MarkdownString } from "vscode";
-import { Statement } from "./interface/Statement";
+import { Statement } from "../interface/Statement";
 
 export const Statements: Statement[] = [
+  {
+    name: "do"
+  },
+  {
+    name: "loop"
+  },
+  {
+    name: "if"
+  },
+  {
+    name: "end if"
+  },
   {
     name: "def",
     description: "Def Statement",
