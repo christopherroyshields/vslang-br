@@ -4,7 +4,7 @@ import BrSourceDocument from "../class/BrSourceDocument"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import { TypeLabel } from "../util/common"
 import { Project } from "./Project"
-import { generateFunctionSignature, InternalFunctions } from "../completions/functions";
+import { InternalFunctions } from "../completions/functions";
 
 /**
  * Library statement linkage list completion provider

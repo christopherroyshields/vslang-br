@@ -38,7 +38,8 @@ export default class InternalFunction implements BrFunction {
     }
     return sig
   }
-	public getAllDocs(): string | undefined {
+	
+  public getAllDocs(): string | undefined {
     let docs: string | undefined
     if (this.documentation){
       docs = this.documentation + "\\"+EOL
@@ -56,6 +57,7 @@ export default class InternalFunction implements BrFunction {
     }
     return docs
   }
+
   public static factory(fnList: BrFunction[]): InternalFunction[] {
     return fnList.map((fn)=>{
       return new InternalFunction(fn.name, fn.description, fn.documentation, fn.params)

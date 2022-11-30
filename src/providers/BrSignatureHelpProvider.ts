@@ -1,7 +1,7 @@
 import { CancellationToken, MarkdownString, ParameterInformation, Position, ProviderResult, Range, SignatureHelp, SignatureHelpContext, SignatureHelpProvider, SignatureInformation, TextDocument, workspace, WorkspaceFolder } from "vscode"
 import ConfiguredProject from "../class/ConfiguredProject"
 import BrSourceDocument from "../class/BrSourceDocument"
-import { generateFunctionSignature, getFunctionsByName } from "../completions/functions"
+import { getFunctionsByName } from "../completions/functions"
 import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "./Project"
@@ -106,7 +106,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
               }
         
               sigHelp.signatures.push({
-                label: fn.name + generateFunctionSignature(fn),
+                label: fn.name + fn.generateSignature(),
                 parameters: params,
                 activeParameter: context.groups.params?.split(',').length - 1
               })
