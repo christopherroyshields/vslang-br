@@ -169,7 +169,7 @@ export default class BrSourceDocument {
     return end
   }
 
-  private static FORM_VAR_OR_END = /(?:(?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<pic>pic\(.*?\))|(?<var>[a-z][\w\d]*) *\*|(?<end>\r?\n|$|!))/gi
+  private static FORM_VAR_OR_END = /(?:(?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<pic>pic\(.*?\))|(?<var>[a-z][\w\d]*) *\*|(?<=\b[a-z]+\s+)(?<lenvar>[a-z_]\w+\b)|(?<end>\r?\n|$|!))/gi
   private processFormStatement(text: string, index: number): number {
     BrSourceDocument.FORM_VAR_OR_END.lastIndex = index
     let match: RegExpExecArray | null
@@ -180,7 +180,12 @@ export default class BrSourceDocument {
       } else if (match?.groups?.end !== undefined){
         end = match.index
         break
-      } else if (match?.groups?.var){
+      } else if (match?.groups?.lenvar){
+        this.variables.set(match.groups.lenvar.toLocaleLowerCase(), {
+          name: match.groups.lenvar,
+          type: VariableType.number
+        })
+      }else if (match?.groups?.var){
         this.variables.set(match.groups.var.toLocaleLowerCase(), {
           name: match.groups.var,
           type: VariableType.number
