@@ -2,7 +2,7 @@ import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemLabel, CompletionList, CompletionTriggerKind, Position, Range, TextDocument, workspace, WorkspaceFolder } from "vscode"
 import { getSearchPath } from "../util/common"
 import BaseCompletionProvider from "./BaseCompletionProvider"
-import { Project } from "./Project"
+import { Project } from "../class/Project"
 
 /**
  * Library statement file path provider

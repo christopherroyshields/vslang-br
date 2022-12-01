@@ -3,7 +3,7 @@ import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKin
 import BrSourceDocument from "../class/BrSourceDocument"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import { TypeLabel } from "../util/common"
-import { Project } from "./Project"
+import { Project } from "../class/Project"
 import { InternalFunctions } from "../completions/functions";
 
 /**

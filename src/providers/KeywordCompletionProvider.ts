@@ -3,7 +3,7 @@ import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKin
 import { Keywords } from "../completions/keywords"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
-import { Project } from "./Project"
+import { Project } from "../class/Project"
 
 /**
  * Library statement linkage list completion provider

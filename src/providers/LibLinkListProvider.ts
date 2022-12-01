@@ -2,7 +2,7 @@ import { CancellationToken, CompletionContext, CompletionItem, CompletionList, C
 import ConfiguredProject from "../class/ConfiguredProject"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import BaseCompletionProvider from "./BaseCompletionProvider"
-import { Project } from "./Project"
+import { Project } from "../class/Project"
 
 /**
  * Library statement linkage list completion provider

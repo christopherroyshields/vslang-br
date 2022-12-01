@@ -1,7 +1,7 @@
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemProvider, CompletionList, Position, ProviderResult, TextDocument, WorkspaceFolder } from "vscode"
 import ConfiguredProject from "../class/ConfiguredProject"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
-import { Project } from "./Project"
+import { Project } from "../class/Project"
 
 export default class BaseCompletionProvider implements CompletionItemProvider {
   configuredProjects: Map<WorkspaceFolder, Project>

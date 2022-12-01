@@ -5,7 +5,7 @@ import BrSourceDocument from "../class/BrSourceDocument"
 import { Statements } from "../completions/statements"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
-import { Project } from "./Project"
+import { Project } from "../class/Project"
 
 /**
  * Library statement linkage list completion provider

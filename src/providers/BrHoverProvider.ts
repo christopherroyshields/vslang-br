@@ -4,7 +4,7 @@ import BrSourceDocument from "../class/BrSourceDocument"
 import { getFunctionByName } from '../completions/functions'
 import BrFunction from '../interface/BrFunction'
 import { isComment } from "../util/common"
-import { Project } from './Project'
+import { Project } from '../class/Project'
 import UserFunction from '../class/UserFunction'
 import InternalFunction from '../class/InternalFunction'
 

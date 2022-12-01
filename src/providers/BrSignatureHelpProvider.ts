@@ -4,7 +4,7 @@ import BrSourceDocument from "../class/BrSourceDocument"
 import { getFunctionsByName } from "../completions/functions"
 import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
-import { Project } from "./Project"
+import { Project } from "../class/Project"
 import { VariableType } from "../types/VariableType"
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
