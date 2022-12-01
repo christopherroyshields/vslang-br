@@ -1,5 +1,5 @@
 import { DocumentSemanticTokensProvider, Position, ProviderResult, Range, SemanticTokens, SemanticTokensBuilder, SemanticTokensLegend, TextDocument } from "vscode";
-import { RegExpMatchArrayWithIndices } from "./RegExpMatchArrayWithIndices";
+import { RegExpExecArrayWithIndices } from "./RegExpMatchArrayWithIndices";
 
 const tokenTypes = ['string', 'number', "keyword", "operator", "comment", "variable", "invalid"];
 const modifiers = ['deprecated']
@@ -40,7 +40,7 @@ export default class LayoutSemanticTokenProvider implements DocumentSemanticToke
         RECL.lastIndex = 0
         const match = RECL.exec(line.text)
         if (match){
-          const indices = (match as RegExpMatchArrayWithIndices).indices
+          const indices = (match as RegExpExecArrayWithIndices).indices
           if (indices.groups.keyword){
             builder.push(new Range(i,indices.groups.keyword[0],i,indices.groups.keyword[1]), "keyword")
           }
@@ -53,7 +53,7 @@ export default class LayoutSemanticTokenProvider implements DocumentSemanticToke
         const match = PATH_LINE.exec(line.text)
         if (match){
           pathLine=true
-          const indices = (match as RegExpMatchArrayWithIndices).indices
+          const indices = (match as RegExpExecArrayWithIndices).indices
           if (indices.groups.path){
             builder.push(new Range(i,indices.groups.path[0],i,indices.groups.path[1]), "string")
           }
@@ -67,14 +67,14 @@ export default class LayoutSemanticTokenProvider implements DocumentSemanticToke
       } else if (pathLine && !headerDone){
         const match = KEY_LINE.exec(line.text)
         if (match){
-          const indices = (match as RegExpMatchArrayWithIndices).indices
+          const indices = (match as RegExpExecArrayWithIndices).indices
           if (indices.groups.path){
             builder.push(new Range(i,indices.groups.path[0],i,indices.groups.path[1]), "string")
           }
 
           let keymatch: RegExpExecArray | null
           while ((keymatch = KEY_PARAM.exec(line.text)) !== null) {
-            const indices = (keymatch as RegExpMatchArrayWithIndices).indices
+            const indices = (keymatch as RegExpExecArrayWithIndices).indices
             if (indices.groups.param){
               builder.push(new Range(i,indices.groups.param[0],i,indices.groups.param[1]), "variable")
             }
@@ -84,7 +84,7 @@ export default class LayoutSemanticTokenProvider implements DocumentSemanticToke
         FIELD_VAR.lastIndex=0
         const match = FIELD_VAR.exec(line.text)
         if (match){
-          const indices = (match as RegExpMatchArrayWithIndices).indices
+          const indices = (match as RegExpExecArrayWithIndices).indices
           if (indices.groups.name){
             builder.push(new Range(i, indices.groups.name[0], i, indices.groups.name[1]), "variable")
           }

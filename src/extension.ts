@@ -13,7 +13,7 @@ import ProjectSourceDocument from './class/ProjectSourceDocument';
 import BrSourceDocument from './class/BrSourceDocument';
 import { performance } from 'perf_hooks';
 import Layout from './class/Layout';
-import { Project } from './providers/Project';
+import { Project } from './class/Project';
 import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
 import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
 

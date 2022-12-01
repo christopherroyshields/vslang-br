@@ -4,6 +4,7 @@ import UserFunction from "./UserFunction"
 import UserFunctionParameter from "./UserFunctionParameter"
 import { BrVariable } from "./BrVariable"
 import { LineLabel } from "./LineLabel"
+import { RegExpExecArrayWithIndices } from "../providers/RegExpMatchArrayWithIndices"
 
 type DimVariable = {
   name: string,
@@ -27,24 +28,24 @@ export default class BrSourceDocument {
     }
 	}
 
-  static VALID_LINE = /(?<lpad>(^|\r?\n) *)(?<lineNum>\d{1,5})? *(?:(?<labelName>[a-zA-Z_]\w*):(?= *[^ ]))?(?= *[^ \r\n])/g
-  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n)|(?<unrecognized>[^ \r\n]))/gi
+  static VALID_LINE = /(?<=(?:^|\n))(?: *\d+ +)?(?: *(?<labelName>\w+:))?(?= *\S)/gd
+  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n))/gi
   private parse(text: string){
     text = text.replace("\t"," ")
     let validLineStart
     let lineCount = 0
-    while ((validLineStart = BrSourceDocument.VALID_LINE.exec(text)) !== null) {
+    while ((validLineStart = BrSourceDocument.VALID_LINE.exec(text) as RegExpExecArrayWithIndices) !== null) {
       lineCount+=1
       let lineStart = true
       let matchEnd = BrSourceDocument.VALID_LINE.lastIndex
       BrSourceDocument.SKIP_OR_WORD.lastIndex = matchEnd
 
       if (validLineStart.groups?.labelName){
-        this.processLabel(validLineStart.groups, validLineStart.index)
+        this.processLabel(validLineStart.groups.labelName, validLineStart.indices.groups.labelName)
       }
 
-      let skipOrWord: RegExpExecArray | null
-      while ((skipOrWord = BrSourceDocument.SKIP_OR_WORD.exec(text)) !== null) {
+      let skipOrWord: RegExpExecArrayWithIndices | null
+      while ((skipOrWord = BrSourceDocument.SKIP_OR_WORD.exec(text) as RegExpExecArrayWithIndices) !== null) {
         if (skipOrWord.groups?.end){
           matchEnd = skipOrWord.index
           break
@@ -87,12 +88,12 @@ export default class BrSourceDocument {
     this.lastDocComment = DocComment.parse(text)
   }
 
-  private processLabel({labelName, lpad}: { [key: string]: string}, index: number) {
+  private processLabel(name: string, indices: [number,number]) {
     this.labels.push({
-      name: labelName,
+      name: name,
       offset: {
-        start: index + lpad.length,
-        end: index + lpad.length + labelName.length
+        start: indices[0],
+        end: indices[1]
       }
     })
   }
