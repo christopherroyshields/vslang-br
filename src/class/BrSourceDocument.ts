@@ -29,7 +29,7 @@ export default class BrSourceDocument {
 	}
 
   static VALID_LINE = /(?<=(?:^|\n))(?: *\d+ +)?(?: *(?<labelName>\w+:))?(?= *\S)/gd
-  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n|$))/gi
+  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n|$))/gi
   private parse(text: string){
     text = text.replace("\t"," ")
     let validLineStart
@@ -55,18 +55,17 @@ export default class BrSourceDocument {
             matchEnd = skipOrWord.index 
             this.processDocComment(skipOrWord[0], skipOrWord.index)
           }
-          if (skipOrWord[0].substring(0,1)==="!"){
-            if (skipOrWord[0].substring(2,1)==="_"){
-              matchEnd = this.processLineContinuation(text, skipOrWord.index)
-            } else {
-              matchEnd = this.processRegularComment(text, skipOrWord.index)
-              break
-            }
+          if (skipOrWord.groups.skippable==="!:"){
+            lineStart = true
+            matchEnd += 2
+          } else if (skipOrWord[0].substring(0,2)==="!_"){
+            matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
+          } else if (skipOrWord[0].substring(0,1)==="!"){
+            matchEnd = this.processRegularComment(text, skipOrWord.index)
+            break
           } else {
             matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
           }
-        } else if (skipOrWord.groups?.unrecognized) {
-          matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
         } else {
           if (lineStart){
             matchEnd = this.processStatement(skipOrWord[0], text, skipOrWord.index)
