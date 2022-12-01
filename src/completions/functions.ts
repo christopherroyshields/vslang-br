@@ -133,9 +133,13 @@ export const InternalFunctions: InternalFunction[] = InternalFunction.factory([
     documentation: "Displays the requested Help Topic from the HelpFile specified by the HELPDFLT config specification.",
     params: [
       {
-        name: "<topic>"
+        name: "\"<topic>,[<filename>]\"",
+        documentation: "Name of the help topic to be displayed and optional help filename."
+
       }, {
-        name: "[<filename>]"
+        name: "<mark>",
+        isOptional: true,
+        documentation: "Optional number that indicates which part of the topic text to display first. It correlates to a caret (^) character in the text. If mark is specified as 3, the text located after the third caret in the topic text will be displayed on the screen first, although the operator still will be able to review all text associated with the topic."
       }
     ]
   }, {
