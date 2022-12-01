@@ -29,7 +29,7 @@ export default class BrSourceDocument {
 	}
 
   static VALID_LINE = /(?<=(?:^|\n))(?: *\d+ +)?(?: *(?<labelName>\w+:))?(?= *\S)/gd
-  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n))/gi
+  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n|$))/gi
   private parse(text: string){
     text = text.replace("\t"," ")
     let validLineStart
@@ -46,7 +46,7 @@ export default class BrSourceDocument {
 
       let skipOrWord: RegExpExecArrayWithIndices | null
       while ((skipOrWord = BrSourceDocument.SKIP_OR_WORD.exec(text) as RegExpExecArrayWithIndices) !== null) {
-        if (skipOrWord.groups?.end){
+        if (skipOrWord.groups?.end !== undefined){
           matchEnd = skipOrWord.index
           break
         }
