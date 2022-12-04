@@ -15,6 +15,19 @@ type DimVariable = {
   }
 }
 
+enum ExpressionType {
+  String,
+  Numeric,
+  StringArray,
+  NumberArray,
+  Empty
+}
+
+type Expression = {
+  type?: ExpressionType,
+  pos: [number, number]
+}
+
 export default class BrSourceDocument {
 	functions: UserFunction[] = []
   variables = new Map<string,BrVariable>()
@@ -119,6 +132,9 @@ export default class BrSourceDocument {
     if (statement.toLowerCase()==="form"){
       return this.processFormStatement(text, index+4)
     }
+    if (statement.toLowerCase()==="print"){
+      return this.parsePrint(text, index)
+    }
     if (BrSourceDocument.STATEMENT_TEST.test(statement)){
       return index + statement.length
     } else {
@@ -212,6 +228,117 @@ export default class BrSourceDocument {
     }
   }
 
+  private static PRINT_CHANNEL = /(?:(?<filenum> +#)|(?<using> +using)|)/gid
+  private parsePrint(text: string, index: number): number {
+    BrSourceDocument.PRINT_CHANNEL.lastIndex = index + 5
+    const match = BrSourceDocument.PRINT_CHANNEL.exec(text) as RegExpExecArrayWithIndices
+    if (match.groups){
+      if (match.groups.filenum){
+        const filenumExpression = this.parseExpression(text, match.indices.groups.filenum[1])
+        index = filenumExpression.pos[1]
+        console.log(text.substring(...filenumExpression.pos))
+      }
+    }
+    return BrSourceDocument.PRINT_CHANNEL.lastIndex
+  }
+
+  private static EXPRESSION_ELEMENT = /(?: *(?:(?<string>(}}|`)[^`]*?(?:{{|`)|"(?:[^"]|"")*"|'(?:[^']|'')*')|(?<number>[\d.]+)|(?<reference>(?<isArray>mat *)?(?<name>\w+(?<isString>\$)?)(?<hasParams> *\()?)|(?<operator><|>|<>|<=|>=|~=|==|:=|\+=|-=|\*=|\/=|=|\+|-|\*|\/|&)|(?<expression>\())|(?<end>))/gid
+  private parseExpression(text: string, index: number): Expression {
+    const expression: Expression = {
+      pos: [index, index]
+    }
+
+    BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = index
+    let match: RegExpExecArrayWithIndices | null
+    while ((match = BrSourceDocument.EXPRESSION_ELEMENT.exec(text) as RegExpExecArrayWithIndices) !== null) {
+      if (match.groups){
+        const indices = match.indices.groups
+        if (indices.end !== undefined){
+          expression.type ??= ExpressionType.Empty
+          expression.pos[1] = indices.end[1]
+          break
+        }
+        if (indices.string){
+          expression.type ??= ExpressionType.String
+          expression.pos[1] = indices.string[1]
+        }
+        if (indices.number){
+          expression.type ??= ExpressionType.Numeric
+          expression.pos[1] = indices.number[1]
+        }
+        if (indices.operator){
+          expression.type ??= ExpressionType.Numeric
+          expression.pos[1] = indices.operator[1]
+        }
+        if (indices.expression){
+          const subExpression = this.parseSubExpression(text, indices.expression[1])
+          expression.type ??= subExpression.type
+          expression.pos[1] = subExpression.pos[1]
+          BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = subExpression.pos[1]
+        }
+
+        if (indices.reference){
+          if (indices.hasParams && this.isFunction(match.groups.name)){
+            BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = this.parseFunctionParams(text, indices.reference[1])
+          }
+        }
+      }
+    }
+
+    return expression
+  }
+
+  private static PARAM_SEP = / *(?:(?<sep>,)|(?<end>\)|))/gd
+  parseFunctionParams(text: string, index: number): number {
+    const param = this.parseExpression(text, index)
+    let end = param.pos[1]
+    let match: RegExpExecArrayWithIndices | null
+    BrSourceDocument.PARAM_SEP.lastIndex = param.pos[1]
+    while ((match = BrSourceDocument.PARAM_SEP.exec(text) as RegExpExecArrayWithIndices) !== null){
+      if (match.groups){
+        const indices = match.indices.groups
+        if (indices.end){
+          end = indices.end[1]
+          break
+        }
+        if (indices.sep){
+          const param = this.parseExpression(text, indices.sep[1])
+          BrSourceDocument.PARAM_SEP.lastIndex = param.pos[1]
+        }
+      }
+    }
+    return end
+  }
+
+  private static FN_LIST = [
+    /^(Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)$/i,
+    /^(BR_FileName\$|BRErr\$|CForm\$|Chr\$|Cnvrt\$|Date\$|Decrypt\$|Encrypt\$|Env\$|File\$|Help\$|Hex\$|KStat\$|Login_Name\$|LPad\$|LTrm\$|Lwrc\$|Max\$|Min\$|Msg\$|OS_FileName\$|Pic\$|Program\$|RPad\$|Rpt\$|RTrm\$|Session\$|SRep\$|Str\$|Time\$|Trim\$|UnHex\$|UprC\$|UserID\$|Variable\$|WBPlatform\$|WBVersion\$|WSID\$|Xlate\$)$/i,
+  ]
+
+  isFunction(name: string): boolean {
+    if (name.substring(0,1)==="fn"){
+      return true
+    }
+    for (const reg of BrSourceDocument.FN_LIST) {
+      if (reg.test(name)){
+        return true
+      }
+    }
+    return false
+  }
+  
+  private static CLOSE_PAREN = /( *(?<closed>\))|)/gd
+  parseSubExpression(text: string, index: number): Expression {
+    const subExpression = this.parseExpression(text, index)
+    BrSourceDocument.CLOSE_PAREN.lastIndex = subExpression.pos[1]
+    const closeMatch = BrSourceDocument.CLOSE_PAREN.exec(text) as RegExpExecArrayWithIndices
+    if (closeMatch.groups?.closed){
+      subExpression.pos[1] = BrSourceDocument.CLOSE_PAREN.lastIndex
+    }
+    subExpression.pos[0]=index
+    return subExpression
+  }
+
   private processWord(match: string, text: string, index: number): number {
     if (match.substring(0,2).toLowerCase() == "fn") {
       return index + match.length
@@ -245,8 +372,7 @@ export default class BrSourceDocument {
   }
 
   private static FN_AND_KEYWORDS = [
-    /^(Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)$/i,
-    /^(BR_FileName\$|BRErr\$|CForm\$|Chr\$|Cnvrt\$|Date\$|Decrypt\$|Encrypt\$|Env\$|File\$|Help\$|Hex\$|KStat\$|Login_Name\$|LPad\$|LTrm\$|Lwrc\$|Max\$|Min\$|Msg\$|OS_FileName\$|Pic\$|Program\$|RPad\$|Rpt\$|RTrm\$|Session\$|SRep\$|Str\$|Time\$|Trim\$|UnHex\$|UprC\$|UserID\$|Variable\$|WBPlatform\$|WBVersion\$|WSID\$|Xlate\$)$/i,
+    ...this.FN_LIST,
     /^(if|then|else|end if|for|next|do|while|loop|until|exit do)$/i,
     /^(and|or)$/i,
     /^(ALTERNATE|ATTR|BASE|BORDER|DROP|EVENT|EXTERNAL|FILES|FIELDS|GOTO|GOSUB|INTERNAL|INVP|KEYED|NATIVE|NOFILES|NOKEY|NONE|OUTIN|OUTPUT|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING)$/i,
