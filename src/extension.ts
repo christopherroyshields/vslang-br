@@ -16,6 +16,7 @@ import Layout from './class/Layout';
 import { Project } from './class/Project';
 import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
 import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
+import { integer } from 'vscode-languageclient';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -65,17 +66,23 @@ export function activate(context: ExtensionContext) {
 	activateWorkspaceFolders()
 
 	// debug
-	// workspace.onDidChangeTextDocument((e)=>{
-	// 	var startTime = performance.now()
+	const avg: integer[] = []
+	const average = (avg: integer[]) => avg.reduce((a: integer, b: integer) => a + b) / avg.length;
+	// console.log(average([1,2,3,4,5]));
+	workspace.onDidChangeTextDocument((e)=>{
+		const startTime = performance.now()
 
-	// 	// const testdoc = new BrSourceDocument(e.document.getText())
-	// 	const src = new BrSourceDocument(e.document.getText())
+		// const testdoc = new BrSourceDocument(e.document.getText())
+		// const src = new BrSourceDocument(e.document.getText())
 				
-	// 	var endTime = performance.now()
+		const endTime = performance.now()
+
+		avg.push(endTime - startTime)
 		
-	// 	console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
-	// 	// console.log(testdoc.variables);
-	// })
+		// console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
+		// console.log(`Average ${average(avg)} milliseconds`)
+		// console.log(testdoc.variables);
+	})
 }
 
 export function deactivate() {
@@ -125,14 +132,15 @@ function activateWorkspaceFolders() {
 }
 
 async function updateLibraryFunctions(uri: Uri, workspaceFolder: WorkspaceFolder): Promise<ProjectSourceDocument | undefined> {
+	let libText: Uint8Array | null = null
 	try {
-		const libText = await workspace.fs.readFile(uri)
-		if (libText){
-			const newDoc = new ProjectSourceDocument(libText.toString(), uri, workspaceFolder)
-			return newDoc
-		}
-	} catch {
-		window.showWarningMessage(`Library source not found ${uri.fsPath}`)
+		libText = await workspace.fs.readFile(uri)
+	} catch (err){
+		window.showWarningMessage(`Cannot read library file ${uri.fsPath}`)
+	}
+	if (libText){
+		const newDoc = new ProjectSourceDocument(libText.toString(), uri, workspaceFolder)
+		return newDoc
 	}
 }
 

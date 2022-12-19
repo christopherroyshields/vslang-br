@@ -28,6 +28,25 @@ type Expression = {
   pos: [number, number]
 }
 
+interface ReferenceMatch {
+  groups: {
+    name: string,
+    isArray: string | undefined,
+    isString: string | undefined,
+    hasParams: string | undefined
+  },
+  indices: {
+    groups: {
+      name: [number, number] | undefined,
+      isArray: [number, number] | undefined,
+      isString: [number, number] | undefined,
+      hasParams: [number, number] | undefined
+    }
+  }
+}
+
+type ReferenceRange = Expression[]
+
 export default class BrSourceDocument {
 	functions: UserFunction[] = []
   variables = new Map<string,BrVariable>()
@@ -42,7 +61,7 @@ export default class BrSourceDocument {
 	}
 
   static VALID_LINE = /(?<=(?:^|\n))(?: *\d+ +)?(?: *(?<labelName>\w+:))?(?= *\S)/gd
-  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(mat +)?[a-z_]\w*\$?|(?<end>\r?\n|$))/gi
+  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<reference>(?<isArray>mat *)?(?<name>\w+(?<isString>\$)?)(?<hasParams> *\()?)|(?<end>\r?\n|$))/gid
   private parse(text: string){
     text = text.replace("\t"," ")
     let validLineStart
@@ -64,29 +83,36 @@ export default class BrSourceDocument {
           break
         }
         if (skipOrWord.groups?.skippable){
-          if (skipOrWord[0].substring(0,3)==="/**"){
+          const skippable = skipOrWord.groups.skippable
+          if (skippable.substring(0,3)==="/**"){
             matchEnd = skipOrWord.index 
-            this.processDocComment(skipOrWord[0], skipOrWord.index)
+            this.processDocComment(skipOrWord.groups.skippable, skipOrWord.index)
           }
           if (skipOrWord.groups.skippable==="!:"){
             lineStart = true
             matchEnd += 2
-          } else if (skipOrWord[0].substring(0,2)==="!_"){
+          } else if (skippable.substring(0,2)==="!_"){
             matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
-          } else if (skipOrWord[0].substring(0,1)==="!"){
+          } else if (skippable.substring(0,1)==="!"){
             matchEnd = this.processRegularComment(text, skipOrWord.index)
             break
           } else {
             matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
           }
-        } else {
-          if (lineStart){
-            matchEnd = this.processStatement(skipOrWord[0], text, skipOrWord.index)
+        } else if (skipOrWord.groups?.reference){
+          const word = skipOrWord.groups.name
+          if (lineStart && this.isStatement(word)){
+            matchEnd = this.processStatement(word, text, skipOrWord.index)
             lineStart = false
           } else {
-            matchEnd = this.processWord(skipOrWord[0], text, skipOrWord.index)
-            if (skipOrWord[0].toLowerCase()==="then" || skipOrWord[0].toLowerCase()==="else"){
-              lineStart = true
+            const indices = skipOrWord.indices.groups
+            if (this.isKeyword(word)){
+              matchEnd = indices.reference[1]
+              if (word==="then" || word==="else"){
+                lineStart = true
+              }
+            } else {
+              matchEnd = this.parseReference(skipOrWord, indices, text)
             }
           }
         }
@@ -94,6 +120,11 @@ export default class BrSourceDocument {
       }
       BrSourceDocument.VALID_LINE.lastIndex = matchEnd
     }
+  }
+
+  private static STATEMENT_TEST = /^(mat|chain|close|continue|data|def|delete|dim|display|end|end def|execute|exit|fields|fnend|form|gosub|goto|input|key|let|library|linput|menu|menu text|menu data|menu status|on error|on fkey|on|open|option|pause|print|using|border|randomize|read|reread|restore|retry|return|rewrite|rinput|scr_freeze|scr_thaw|select|stop|write|trace|use)$/
+  private isStatement(word: string): boolean {
+    return BrSourceDocument.STATEMENT_TEST.test(word.toLowerCase())
   }
   
   private processDocComment(text: string, index: number): void {
@@ -121,24 +152,18 @@ export default class BrSourceDocument {
     }
   }
   
-  private static STATEMENT_TEST = /^(MAT|CHAIN|CLOSE|CONTINUE|DATA|DEF|DELETE|DIM|DISPLAY|END|END DEF|EXECUTE|EXIT|FIELDS|FNEND|FORM|GOSUB|GOTO|INPUT|KEY|LET|LIBRARY|LINPUT|MENU|MENU TEXT|MENU DATA|MENU STATUS|ON ERROR|ON FKEY|ON|OPEN|OPTION|PAUSE|PRINT|USING|BORDER|RANDOMIZE|READ|REREAD|RESTORE|RETRY|RETURN|REWRITE|RINPUT|SCR_FREEZE|SCR_THAW|SELECT|STOP|WRITE|TRACE|USE)$/i
   private processStatement(statement: string, text: string, index: number): number {
-    if (statement.toLowerCase()==="dim"){
-      return this.processDim(text, index+3)
-    }
-    if (statement.toLowerCase()==="def"){
-      return this.processFunction(text, index)
-    }
-    if (statement.toLowerCase()==="form"){
-      return this.processFormStatement(text, index+4)
-    }
-    if (statement.toLowerCase()==="print"){
-      return this.parsePrint(text, index)
-    }
-    if (BrSourceDocument.STATEMENT_TEST.test(statement)){
-      return index + statement.length
-    } else {
-      return this.processWord(statement, text, index)
+    switch (statement) {
+      case "dim":
+        return this.processDim(text, index+3)
+      case "def":
+        return this.processFunction(text, index)
+      case "form":
+        return this.processFormStatement(text, index+4)
+      case "print":
+        return this.parsePrint(text, index)
+      default:
+        return index + statement.length
     }
   }
   
@@ -148,7 +173,7 @@ export default class BrSourceDocument {
     let match: RegExpExecArray | null
     let end = index
     while ((match = BrSourceDocument.DIM_VAR.exec(text)) !== null) {
-      if (match?.groups?.end){
+      if (match?.groups?.end !== undefined){
         end = match.index
         break
       } else {
@@ -278,14 +303,80 @@ export default class BrSourceDocument {
         }
 
         if (indices.reference){
-          if (indices.hasParams && this.isFunction(match.groups.name)){
-            BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = this.parseFunctionParams(text, indices.reference[1])
-          }
+          BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = this.parseReference(match, indices, text)
         }
       }
     }
 
     return expression
+  }
+
+  private parseReference(match: RegExpExecArrayWithIndices, indices: { [key: string]: [number, number] }, text: string): number {
+    let index = indices.reference[1]
+    if (match.groups){
+      if (this.isFunction(match.groups.name)) {
+        if (indices.hasParams) {
+          index = this.parseFunctionParams(text, indices.reference[1])
+        }
+      } else {
+        const isString: boolean = (match.groups.isString !== undefined)
+        const isArray: boolean = (match.groups.isArray !== undefined)
+        const refName = match.groups.name
+        if (indices.hasParams) {
+          index = this.parseReferenceWithRange(refName, isArray, isString, text, indices.reference[1])
+        } else {
+          this.variables.set(refName.toLowerCase(), {
+            name: refName,
+            type: BrSourceDocument.GetVarType(isString, isArray)
+          })
+        }
+      }
+    }
+    return index
+  }
+
+  private static GetVarType(isString: boolean, isArray: boolean): VariableType {
+    if (isArray){
+      return isString ? VariableType.stringarray : VariableType.numberarray
+    } else {
+      return isString ? VariableType.string : VariableType.number
+    }
+  }
+
+  private static RANGE_SEP = / *(?:(?<sep>:)|(?<end>\)|))/gd
+  parseReferenceWithRange(name: string, isArray: boolean, isString: boolean, text: string, index: number): number {
+    const refRange: ReferenceRange = []
+    const param = this.parseExpression(text, index)
+    refRange.push(param)
+    let end = param.pos[1]
+    let match: RegExpExecArrayWithIndices | null
+    BrSourceDocument.RANGE_SEP.lastIndex = param.pos[1]
+    while ((match = BrSourceDocument.RANGE_SEP.exec(text) as RegExpExecArrayWithIndices) !== null){
+      if (match.groups){
+        const indices = match.indices.groups
+        if (indices.end){
+          end = indices.end[1]
+          break
+        }
+        if (indices.sep){
+          const param = this.parseExpression(text, indices.sep[1])
+          refRange.push(param)
+          BrSourceDocument.RANGE_SEP.lastIndex = param.pos[1]
+        }
+      }
+    }
+
+    // if only only one paramter than treat as array element
+    if (refRange.length === 1){
+      isArray = true
+    }
+
+    this.variables.set(name.toLowerCase(), {
+      name: name,
+      type: BrSourceDocument.GetVarType(isString, isArray)
+    })
+
+    return end
   }
 
   private static PARAM_SEP = / *(?:(?<sep>,)|(?<end>\)|))/gd
@@ -372,16 +463,15 @@ export default class BrSourceDocument {
   }
 
   private static FN_AND_KEYWORDS = [
-    ...this.FN_LIST,
-    /^(if|then|else|end if|for|next|do|while|loop|until|exit do)$/i,
-    /^(and|or)$/i,
-    /^(ALTERNATE|ATTR|BASE|BORDER|DROP|EVENT|EXTERNAL|FILES|FIELDS|GOTO|GOSUB|INTERNAL|INVP|KEYED|NATIVE|NOFILES|NOKEY|NONE|OUTIN|OUTPUT|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING)$/i,
-    /^(CONV|DUPREC|EOF|EOL|ERROR|IOERR|LOCKED|NOKEY|NOREC|IGNORE|OFLOW|PAGEOFLOW|SOFLOW|ZDIV|TIMEOUT|WAIT)$/i
+    /^(if|then|else|end if|for|next|do|while|loop|until|exit do)$/,
+    /^(and|or)$/,
+    /^(alternateattr|base|border|drop|event|external|files|fields|goto|gosub|internal|invp|keyed|native|nofiles|nokey|none|outin|output|relative|release|reserve|resume|retain|search|select|sequential|shift|to|use|using)$/,
+    /^(conv|duprec|eof|eol|error|ioerr|locked|nokey|norec|ignore|oflow|pageoflow|soflow|zdiv|timeout|wait)$/
   ]
 
-  private isKeyword(match: string): boolean {
+  private isKeyword(word: string): boolean {
     for (const reg of BrSourceDocument.FN_AND_KEYWORDS) {
-      if (reg.test(match)){
+      if (reg.test(word)){
         return true
       }
     }

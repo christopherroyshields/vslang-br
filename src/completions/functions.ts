@@ -125,7 +125,8 @@ export const InternalFunctions: InternalFunction[] = InternalFunction.factory([
     documentation: "Returns the file name of the file specified.",
     params: [
       {
-        name: "<Number>"
+        name: "<Number>",
+        documentation: "The file number."
       }
     ]
   }, {
@@ -147,15 +148,29 @@ export const InternalFunctions: InternalFunction[] = InternalFunction.factory([
     documentation: "Converts the given string to Hexidecimal.",
     params: [
       {
-        name: "<string>"
+        name: "<string>",
+        documentation: "The string to convert."
       }
     ]
   }, {
     name: "KStat$",
-    documentation: "Returns keystrokes from the keyboard buffer.",
+    documentation: "When used without parameters, the `KStat$` internal function will return any keystrokes entered that were not already processed. When used with the numeric parameter, KSTAT$ causes Business Rules! to wait for input of the number of keystrokes specified."
+    + "\n### Example:"
+    + "\n```br"
+    + "\n10 LET X$ = KSTAT$(1)"
+    + "\n20 PRINT UNHEX$(X$)"
+    + "\n30 GOTO 10"
+    + "\n```",
     params: [
       {
-        name: "[<Integer>]"
+        name: "<numeric expression>",
+        documentation: "number of keystrokes",
+        isOptional: true
+      },
+      {
+        name: "<seconds>",
+        documentation: "Seconds to wait.",
+        isOptional: true
       }
     ]
   }, {
