@@ -61,7 +61,7 @@ export default class BrSourceDocument {
 	}
 
   static VALID_LINE = /(?<=(?:^|\n))(?: *\d+ +)?(?: *(?<labelName>\w+:))?(?= *\S)/gd
-  static SKIP_OR_WORD = /((?<skippable>\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<reference>(?<isArray>mat *)?(?<name>\w+(?<isString>\$)?)(?<hasParams> *\()?)|(?<end>\r?\n|$))/gid
+  static SKIP_OR_WORD = /((?<skippable>(?<docComment>\/\*\*[\s\S]+?\*\/)|\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<reference>(?<isArray>mat *)?(?<name>\w+(?<isString>\$)?)(?<hasParams> *\()?)|(?<end>\r?\n|$))/gid
   private parse(text: string){
     text = text.replace("\t"," ")
     let validLineStart
@@ -84,11 +84,9 @@ export default class BrSourceDocument {
         }
         if (skipOrWord.groups?.skippable){
           const skippable = skipOrWord.groups.skippable
-          if (skippable.substring(0,3)==="/**"){
-            matchEnd = skipOrWord.index 
-            this.processDocComment(skipOrWord.groups.skippable, skipOrWord.index)
-          }
-          if (skipOrWord.groups.skippable==="!:"){
+          if (skipOrWord.groups.docComment){
+            this.processDocComment(skipOrWord.groups.skippable)
+          } else if (skipOrWord.groups.skippable==="!:"){
             lineStart = true
             matchEnd += 2
           } else if (skippable.substring(0,2)==="!_"){
@@ -127,7 +125,7 @@ export default class BrSourceDocument {
     return BrSourceDocument.STATEMENT_TEST.test(word.toLowerCase())
   }
   
-  private processDocComment(text: string, index: number): void {
+  private processDocComment(text: string): void {
     this.lastDocComment = DocComment.parse(text)
   }
 
@@ -261,7 +259,9 @@ export default class BrSourceDocument {
       if (match.groups.filenum){
         const filenumExpression = this.parseExpression(text, match.indices.groups.filenum[1])
         index = filenumExpression.pos[1]
-        console.log(text.substring(...filenumExpression.pos))
+      } else if (match.groups.using){
+        const filenumExpression = this.parseExpression(text, match.indices.groups.using[1])
+        index = filenumExpression.pos[1]
       }
     }
     return BrSourceDocument.PRINT_CHANNEL.lastIndex
