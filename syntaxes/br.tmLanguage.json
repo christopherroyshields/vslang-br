@@ -222,15 +222,15 @@
 					"name": "keyword.control.br"
 				},
 				{
-					"match": "\\b(?i:ALTERNATE|ATTR|BASE|BORDER|DISPLAY|DROP|EVENT|EXTERNAL|FIELDS|FILES|INTERNAL|INVP|KEYED|NATIVE|NOFILES|NOKEY|NONE|OUTIN|OUTPUT|REC(?==)|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING|WAIT)\\b",
+					"match": "\\b(?i:ALTERNATE|ATTR|BASE|BORDER|DISPLAY|DROP|EVENT|EXTERNAL|FIELDS|FILES|INPUT|INTERNAL|INVP|KEYED|NATIVE|NOFILES|NOKEY|NONE|OUTIN|OUTPUT|REC(?==)|RELATIVE|RELEASE|RESERVE|RESUME|RETAIN|SEARCH|SELECT|SEQUENTIAL|SHIFT|TO|USE|USING|WAIT)\\b(?!\\$)",
 					"name": "keyword.other.br"
 				},
 				{
-					"match": "\\b(?i:CONV|DUPREC|EOF|EOL|ERROR|IOERR|LOCKED|NOKEY|NOREC|IGNORE|OFLOW|PAGEOFLOW|SOFLOW|ZDIV|TIMEOUT)\\b",
+					"match": "\\b(?i:CONV|DUPREC|EOF|EOL|ERROR|IOERR|LOCKED|NOKEY|NOREC|IGNORE|OFLOW|PAGEOFLOW|SOFLOW|ZDIV|TIMEOUT)\\b(?!\\$)",
 					"name": "keyword.errorcondition.br"
 				},
 				{
-					"match": "\\b(?i:COLLATE|OPTION)\\b",
+					"match": "\\b(?i:COLLATE|OPTION)\\b(?!\\$)",
 					"name": "keyword.option.br"
 				},
 				{
@@ -252,7 +252,7 @@
 				"name": "entity.name.function.br"
 			},
 			{
-				"match": "\\b(?i:Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)(?=[^\\w\\d$]|$)",
+				"match": "\\b(?i:Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)\\b(?!\\$)",
 				"name": "entity.name.function.br"
 			},
 			{
