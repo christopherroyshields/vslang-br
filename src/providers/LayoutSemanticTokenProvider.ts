@@ -8,7 +8,7 @@ export const LayoutLegend = new SemanticTokensLegend(tokenTypes, modifiers);
 
 const PATH_LINE = /(?<path>.*?)(?:,(?<prefix>.*?))?(?:,[ \t]*(?<version>\d*))?$/d
 const KEY_LINE = /(?<path>.*?)(?:,(?<keys>.*?))?$/d
-const KEY_PARAM = /(?<=,[ \t]*|\/)(?<param>.*?)(?=\/|$)/gd
+const KEY_PARAM = /(?<=,[ \t]*|\/)(?<param>\w+?)(?=\/|$)/gd
 
 const RECL = /(?<keyword>recl)=(?<recl>\d+)/gd
 const SEP = /^====+/g
