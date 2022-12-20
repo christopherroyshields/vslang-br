@@ -5,47 +5,9 @@ import UserFunctionParameter from "./UserFunctionParameter"
 import { BrVariable } from "./BrVariable"
 import { LineLabel } from "./LineLabel"
 import { RegExpExecArrayWithIndices } from "../providers/RegExpMatchArrayWithIndices"
-
-type DimVariable = {
-  name: string,
-  type: VariableType
-  position: {
-    start: number,
-    end: number
-  }
-}
-
-enum ExpressionType {
-  String,
-  Numeric,
-  StringArray,
-  NumberArray,
-  Empty
-}
-
-type Expression = {
-  type?: ExpressionType,
-  pos: [number, number]
-}
-
-interface ReferenceMatch {
-  groups: {
-    name: string,
-    isArray: string | undefined,
-    isString: string | undefined,
-    hasParams: string | undefined
-  },
-  indices: {
-    groups: {
-      name: [number, number] | undefined,
-      isArray: [number, number] | undefined,
-      isString: [number, number] | undefined,
-      hasParams: [number, number] | undefined
-    }
-  }
-}
-
-type ReferenceRange = Expression[]
+import { DimVariable } from "./DimVariable"
+import { ExpressionType } from "./ExpressionType"
+import { Expression } from "./Expression"
 
 export default class BrSourceDocument {
 	functions: UserFunction[] = []
@@ -346,9 +308,9 @@ export default class BrSourceDocument {
 
   private static RANGE_SEP = / *(?:(?<sep>:)|(?<end>\)|))/gd
   parseReferenceWithRange(name: string, isArray: boolean, isString: boolean, text: string, index: number): number {
-    const refRange: ReferenceRange = []
+    const referenceRange: Expression[] = []
     const param = this.parseExpression(text, index)
-    refRange.push(param)
+    referenceRange.push(param)
     let end = param.pos[1]
     let match: RegExpExecArrayWithIndices | null
     BrSourceDocument.RANGE_SEP.lastIndex = param.pos[1]
@@ -361,14 +323,14 @@ export default class BrSourceDocument {
         }
         if (indices.sep){
           const param = this.parseExpression(text, indices.sep[1])
-          refRange.push(param)
+          referenceRange.push(param)
           BrSourceDocument.RANGE_SEP.lastIndex = param.pos[1]
         }
       }
     }
 
     // if only only one paramter than treat as array element
-    if (refRange.length === 1){
+    if (referenceRange.length === 1){
       isArray = true
     }
 
