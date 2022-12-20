@@ -355,12 +355,13 @@ export default class BrSourceDocument {
   }
 
   private static FN_LIST = [
-    /^(Abs|AIdx|Atn|Bell|Ceil|CmdKey|Cnt|Code|CoS|CurCol|CurFld|CurPos|CurRow|CurTab|CurWindow|Date|Days|Debug_Str|DIdx|Err|Exists|Exp|File|FileNum|FKey|FP|FreeSp|Inf|Int|IP|KLn|KPs|KRec|Len|Line|Lines|LineSPP|Log|LRec|Mat2Str|Max|Min|Mod|Msg|MsgBox|NewPage|Next|NxtCol|Nxtfld|NxtRow|Ord|Pi|Pos|Printer_List|ProcIn|Rec|Rem|RLn|Rnd|Round|Serial|SetEnv|Sgn|Sin|Sleep|Sqr|Srch|Str2Mat|Sum|Tab|Tan|Timer|UDim|Val|Version)$/i,
-    /^(BR_FileName\$|BRErr\$|CForm\$|Chr\$|Cnvrt\$|Date\$|Decrypt\$|Encrypt\$|Env\$|File\$|Help\$|Hex\$|KStat\$|Login_Name\$|LPad\$|LTrm\$|Lwrc\$|Max\$|Min\$|Msg\$|OS_FileName\$|Pic\$|Program\$|RPad\$|Rpt\$|RTrm\$|Session\$|SRep\$|Str\$|Time\$|Trim\$|UnHex\$|UprC\$|UserID\$|Variable\$|WBPlatform\$|WBVersion\$|WSID\$|Xlate\$)$/i,
+    /^(abs|aidx|atn|bell|ceil|cmdkey|cnt|code|cos|curcol|curfld|curpos|currow|curtab|curwindow|date|days|debug_str|didx|err|exists|exp|file|filenum|fkey|fp|freesp|inf|int|ip|kln|kps|krec|len|line|lines|linespp|log|lrec|mat2str|max|min|mod|msg|msgbox|newpage|next|nxtcol|nxtfld|nxtrow|ord|pi|pos|printer_list|procin|rec|rem|rln|rnd|round|serial|setenv|sgn|sin|sleep|sqr|srch|str2mat|sum|tab|tan|timer|udim|val|version)$/i,
+    /^(br_filename\$|brerr\$|cform\$|chr\$|cnvrt\$|date\$|decrypt\$|encrypt\$|env\$|file\$|help\$|hex\$|kstat\$|login_name\$|lpad\$|ltrm\$|lwrc\$|max\$|min\$|msg\$|os_filename\$|pic\$|program\$|rpad\$|rpt\$|rtrm\$|session\$|srep\$|str\$|time\$|trim\$|unhex\$|uprc\$|userid\$|variable\$|wbplatform\$|wbversion\$|wsid\$|xlate\$)$/i,
   ]
 
   isFunction(name: string): boolean {
-    if (name.substring(0,1)==="fn"){
+    name = name.toLowerCase()
+    if (name.substring(0,2)==="fn"){
       return true
     }
     for (const reg of BrSourceDocument.FN_LIST) {
