@@ -16,19 +16,20 @@ export default class BrSourceDocument {
   lastDocComment: DocComment | null = null
   static LINE_CONTINUATIONS = /\s*!_.*(\r\n|\n)\s*/g
   dims: DimVariable[] = []
+  private text = ""
 	constructor(text = "") {
-    if (text){
-      this.parse(text)
+    this.text = text.replace("\t"," ")
+    if (this.text){
+      this.parse()
     }
 	}
 
   static VALID_LINE = /(?<=(?:^|\n))(?: *\d+ +)?(?: *(?<labelName>\w+:))?(?= *\S)/gd
   static SKIP_OR_WORD = /((?<skippable>(?<docComment>\/\*\*[\s\S]+?\*\/)|\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<reference>(?<isArray>mat *)?(?<name>[a-z]\w*(?<isString>\$)?)(?<hasParams> *\()?)|(?<end>\r?\n|$))/gid
-  private parse(text: string){
-    text = text.replace("\t"," ")
+  private parse(){
     let validLineStart
     let lineCount = 0
-    while ((validLineStart = BrSourceDocument.VALID_LINE.exec(text) as RegExpExecArrayWithIndices) !== null) {
+    while ((validLineStart = BrSourceDocument.VALID_LINE.exec(this.text) as RegExpExecArrayWithIndices) !== null) {
       lineCount+=1
       let lineStart = true
       let matchEnd = BrSourceDocument.VALID_LINE.lastIndex
@@ -39,7 +40,7 @@ export default class BrSourceDocument {
       }
 
       let skipOrWord: RegExpExecArrayWithIndices | null
-      while ((skipOrWord = BrSourceDocument.SKIP_OR_WORD.exec(text) as RegExpExecArrayWithIndices) !== null) {
+      while ((skipOrWord = BrSourceDocument.SKIP_OR_WORD.exec(this.text) as RegExpExecArrayWithIndices) !== null) {
         if (skipOrWord.groups?.end !== undefined){
           matchEnd = skipOrWord.index
           break
@@ -55,7 +56,7 @@ export default class BrSourceDocument {
           } else if (skippable.substring(0,2)==="!_"){
             matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
           } else if (skippable.substring(0,1)==="!"){
-            matchEnd = this.processRegularComment(text, skipOrWord.index)
+            matchEnd = this.processRegularComment(skipOrWord.index)
             break
           } else {
             matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
@@ -63,7 +64,7 @@ export default class BrSourceDocument {
         } else if (skipOrWord.groups?.reference){
           const word = skipOrWord.groups.name
           if (lineStart && this.isStatement(word)){
-            matchEnd = this.processStatement(word, text, skipOrWord.index)
+            matchEnd = this.processStatement(word, skipOrWord.index)
             lineStart = false
           } else {
             const indices = skipOrWord.indices.groups
@@ -73,7 +74,7 @@ export default class BrSourceDocument {
                 lineStart = true
               }
             } else {
-              matchEnd = this.parseReference(skipOrWord, indices, text)
+              matchEnd = this.parseReference(skipOrWord, indices)
             }
           }
         }
@@ -102,38 +103,27 @@ export default class BrSourceDocument {
     })
   }
 
-  static CONTINUATION_END = /\r?\n/g
-  private processLineContinuation(text: string, index: number): number {
-    BrSourceDocument.CONTINUATION_END.lastIndex = index
-    const match = BrSourceDocument.CONTINUATION_END.exec(text)
-    if (match){
-      return BrSourceDocument.CONTINUATION_END.lastIndex
-    } else {
-      return index + text.length
-    }
-  }
-  
-  private processStatement(statement: string, text: string, index: number): number {
+  private processStatement(statement: string, index: number): number {
     switch (statement) {
       case "dim":
-        return this.processDim(text, index+3)
+        return this.processDim(index+3)
       case "def":
-        return this.processFunction(text, index)
+        return this.processFunction(index)
       case "form":
-        return this.processFormStatement(text, index+4)
+        return this.processFormStatement(index+4)
       case "print":
-        return this.parsePrint(text, index)
+        return this.parsePrint(index)
       default:
         return index + statement.length
     }
   }
   
   private static DIM_VAR = /(?:(?<name>[a-zA-Z]\w*(?<isString>\$)?)(?<isArray> *\()?|(?<end>\r?\n|$))/gd
-  private processDim(text: string, index: number): number {
+  private processDim(index: number): number {
     BrSourceDocument.DIM_VAR.lastIndex = index
     let match: RegExpExecArray | null
     let end = index
-    while ((match = BrSourceDocument.DIM_VAR.exec(text)) !== null) {
+    while ((match = BrSourceDocument.DIM_VAR.exec(this.text)) !== null) {
       if (match?.groups?.end !== undefined){
         end = match.index
         break
@@ -172,11 +162,11 @@ export default class BrSourceDocument {
   }
 
   private static FORM_VAR_OR_END = /(?:(?<skippable>\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<pic>pic\(.*?\))|(?<var>[a-z][\w\d]*) *\*|(?<=\b[a-z]+\s+)(?<lenvar>[a-z_]\w+\b)|(?<end>\r?\n|$|!))/gi
-  private processFormStatement(text: string, index: number): number {
+  private processFormStatement(index: number): number {
     BrSourceDocument.FORM_VAR_OR_END.lastIndex = index
     let match: RegExpExecArray | null
     let end = index
-    while ((match = BrSourceDocument.FORM_VAR_OR_END.exec(text)) !== null) {
+    while ((match = BrSourceDocument.FORM_VAR_OR_END.exec(this.text)) !== null) {
       if (match?.groups?.skippable || match?.groups?.pic){
         end = BrSourceDocument.FORM_VAR_OR_END.lastIndex
       } else if (match?.groups?.end !== undefined){
@@ -198,9 +188,9 @@ export default class BrSourceDocument {
   }
 
   private static DEF_FN = /def\s+(?:(?<isLibrary>lib\w*)\s+)?(?<name>\w*\$?) *(\* *\d+ *)?(?:\((?<params>[!&\w$, ;*\r\n\t@[\]]+)\))?(?<fnBody>\s*=.*|[\s\S]*?(fnend|end def))/gi
-  private processFunction(text: string, index: number): number {
+  private processFunction(index: number): number {
     BrSourceDocument.DEF_FN.lastIndex = index
-    const match = BrSourceDocument.DEF_FN.exec(text)
+    const match = BrSourceDocument.DEF_FN.exec(this.text)
     if (match?.groups?.name){
       const fn = this.parseFunctionFromSource(match.groups.name, match)
       if (fn){
@@ -215,15 +205,15 @@ export default class BrSourceDocument {
   }
 
   private static PRINT_CHANNEL = /(?:(?<filenum> +#)|(?<using> +using)|)/gid
-  private parsePrint(text: string, index: number): number {
+  private parsePrint(index: number): number {
     BrSourceDocument.PRINT_CHANNEL.lastIndex = index + 5
-    const match = BrSourceDocument.PRINT_CHANNEL.exec(text) as RegExpExecArrayWithIndices
+    const match = BrSourceDocument.PRINT_CHANNEL.exec(this.text) as RegExpExecArrayWithIndices
     if (match.groups){
       if (match.groups.filenum){
-        const filenumExpression = this.parseExpression(text, match.indices.groups.filenum[1])
+        const filenumExpression = this.parseExpression(match.indices.groups.filenum[1])
         index = filenumExpression.pos[1]
       } else if (match.groups.using){
-        const filenumExpression = this.parseExpression(text, match.indices.groups.using[1])
+        const filenumExpression = this.parseExpression(match.indices.groups.using[1])
         index = filenumExpression.pos[1]
       }
     }
@@ -231,14 +221,14 @@ export default class BrSourceDocument {
   }
 
   private static EXPRESSION_ELEMENT = /(?: *(?:(?<string>(}}|`)[^`]*?(?:{{|`)|"(?:[^"]|"")*"|'(?:[^']|'')*')|(?<number>[\d.]+)|(?<reference>(?<isArray>mat *)?(?<name>\w+(?<isString>\$)?)(?<hasParams> *\()?)|(?<operator><|>|<>|<=|>=|~=|==|:=|\+=|-=|\*=|\/=|=|\+|-|\*|\/|&)|(?<expression>\())|(?<end>))/gid
-  private parseExpression(text: string, index: number): Expression {
+  private parseExpression(index: number): Expression {
     const expression: Expression = {
       pos: [index, index]
     }
 
     BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = index
     let match: RegExpExecArrayWithIndices | null
-    while ((match = BrSourceDocument.EXPRESSION_ELEMENT.exec(text) as RegExpExecArrayWithIndices) !== null) {
+    while ((match = BrSourceDocument.EXPRESSION_ELEMENT.exec(this.text) as RegExpExecArrayWithIndices) !== null) {
       if (match.groups){
         const indices = match.indices.groups
         if (indices.end !== undefined){
@@ -259,14 +249,14 @@ export default class BrSourceDocument {
           expression.pos[1] = indices.operator[1]
         }
         if (indices.expression){
-          const subExpression = this.parseSubExpression(text, indices.expression[1])
+          const subExpression = this.parseSubExpression(indices.expression[1])
           expression.type ??= subExpression.type
           expression.pos[1] = subExpression.pos[1]
           BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = subExpression.pos[1]
         }
 
         if (indices.reference){
-          BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = this.parseReference(match, indices, text)
+          BrSourceDocument.EXPRESSION_ELEMENT.lastIndex = this.parseReference(match, indices)
         }
       }
     }
@@ -274,19 +264,19 @@ export default class BrSourceDocument {
     return expression
   }
 
-  private parseReference(match: RegExpExecArrayWithIndices, indices: { [key: string]: [number, number] }, text: string): number {
+  private parseReference(match: RegExpExecArrayWithIndices, indices: { [key: string]: [number, number] }): number {
     let index = indices.reference[1]
     if (match.groups){
       if (this.isFunction(match.groups.name)) {
         if (indices.hasParams) {
-          index = this.parseFunctionParams(text, indices.reference[1])
+          index = this.parseFunctionParams(indices.reference[1])
         }
       } else {
         const isString: boolean = (match.groups.isString !== undefined)
         const isArray: boolean = (match.groups.isArray !== undefined)
         const refName = match.groups.name
         if (indices.hasParams) {
-          index = this.parseReferenceWithRange(refName, isArray, isString, text, indices.reference[1])
+          index = this.parseReferenceWithRange(refName, isArray, isString, indices.reference[1])
         } else {
           this.variables.set(refName.toLowerCase(), {
             name: refName,
@@ -307,14 +297,14 @@ export default class BrSourceDocument {
   }
 
   private static RANGE_SEP = / *(?:(?<sep>:)|(?<end>\)|))/gd
-  parseReferenceWithRange(name: string, isArray: boolean, isString: boolean, text: string, index: number): number {
+  parseReferenceWithRange(name: string, isArray: boolean, isString: boolean, index: number): number {
     const referenceRange: Expression[] = []
-    const param = this.parseExpression(text, index)
+    const param = this.parseExpression(index)
     referenceRange.push(param)
     let end = param.pos[1]
     let match: RegExpExecArrayWithIndices | null
     BrSourceDocument.RANGE_SEP.lastIndex = param.pos[1]
-    while ((match = BrSourceDocument.RANGE_SEP.exec(text) as RegExpExecArrayWithIndices) !== null){
+    while ((match = BrSourceDocument.RANGE_SEP.exec(this.text) as RegExpExecArrayWithIndices) !== null){
       if (match.groups){
         const indices = match.indices.groups
         if (indices.end){
@@ -322,7 +312,7 @@ export default class BrSourceDocument {
           break
         }
         if (indices.sep){
-          const param = this.parseExpression(text, indices.sep[1])
+          const param = this.parseExpression(indices.sep[1])
           referenceRange.push(param)
           BrSourceDocument.RANGE_SEP.lastIndex = param.pos[1]
         }
@@ -343,12 +333,12 @@ export default class BrSourceDocument {
   }
 
   private static PARAM_SEP = / *(?:(?<sep>,)|(?<end>\)|))/gd
-  parseFunctionParams(text: string, index: number): number {
-    const param = this.parseExpression(text, index)
+  parseFunctionParams(index: number): number {
+    const param = this.parseExpression(index)
     let end = param.pos[1]
     let match: RegExpExecArrayWithIndices | null
     BrSourceDocument.PARAM_SEP.lastIndex = param.pos[1]
-    while ((match = BrSourceDocument.PARAM_SEP.exec(text) as RegExpExecArrayWithIndices) !== null){
+    while ((match = BrSourceDocument.PARAM_SEP.exec(this.text) as RegExpExecArrayWithIndices) !== null){
       if (match.groups){
         const indices = match.indices.groups
         if (indices.end){
@@ -356,7 +346,7 @@ export default class BrSourceDocument {
           break
         }
         if (indices.sep){
-          const param = this.parseExpression(text, indices.sep[1])
+          const param = this.parseExpression(indices.sep[1])
           BrSourceDocument.PARAM_SEP.lastIndex = param.pos[1]
         }
       }
@@ -382,10 +372,10 @@ export default class BrSourceDocument {
   }
   
   private static CLOSE_PAREN = /( *(?<closed>\))|)/gd
-  parseSubExpression(text: string, index: number): Expression {
-    const subExpression = this.parseExpression(text, index)
+  parseSubExpression(index: number): Expression {
+    const subExpression = this.parseExpression(index)
     BrSourceDocument.CLOSE_PAREN.lastIndex = subExpression.pos[1]
-    const closeMatch = BrSourceDocument.CLOSE_PAREN.exec(text) as RegExpExecArrayWithIndices
+    const closeMatch = BrSourceDocument.CLOSE_PAREN.exec(this.text) as RegExpExecArrayWithIndices
     if (closeMatch.groups?.closed){
       subExpression.pos[1] = BrSourceDocument.CLOSE_PAREN.lastIndex
     }
@@ -442,10 +432,10 @@ export default class BrSourceDocument {
   }
 
   private static COMMENT_END = /((?=\r?\n)|!:)/g
-  private processRegularComment(text: string, index: number): number {
+  private processRegularComment(index: number): number {
     BrSourceDocument.COMMENT_END.lastIndex = index
-    const match = BrSourceDocument.COMMENT_END.exec(text)
-    return match?.index || text.length
+    const match = BrSourceDocument.COMMENT_END.exec(this.text)
+    return match?.index || this.text.length
   }
 
   private static PARAM_SEARCH = /(?<delimiter>^|;|,) *(?<isReference>&\s*)?(?<name>(?<isArray>mat\s+)?[\w[\]]+(?<isString>\$)?)(?:\s*)(?:\*\s*(?<length>\d+))?\s*/gi
