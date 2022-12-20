@@ -23,7 +23,7 @@ export default class BrSourceDocument {
 	}
 
   static VALID_LINE = /(?<=(?:^|\n))(?: *\d+ +)?(?: *(?<labelName>\w+:))?(?= *\S)/gd
-  static SKIP_OR_WORD = /((?<skippable>(?<docComment>\/\*\*[\s\S]+?\*\/)|\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<reference>(?<isArray>mat *)?(?<name>\w+(?<isString>\$)?)(?<hasParams> *\()?)|(?<end>\r?\n|$))/gid
+  static SKIP_OR_WORD = /((?<skippable>(?<docComment>\/\*\*[\s\S]+?\*\/)|\/\*[\s\S]*?\*\/|!:|!_.*\r?\n|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))|(?<reference>(?<isArray>mat *)?(?<name>[a-z]\w*(?<isString>\$)?)(?<hasParams> *\()?)|(?<end>\r?\n|$))/gid
   private parse(text: string){
     text = text.replace("\t"," ")
     let validLineStart
@@ -425,15 +425,15 @@ export default class BrSourceDocument {
     return index + match.length
   }
 
-  private static FN_AND_KEYWORDS = [
-    /^(if|then|else|end if|for|next|do|while|loop|until|exit do)$/,
+  private static KEYWORDS = [
+    /^(if|then|else|end|for|next|do|while|loop|until|exit)$/,
     /^(and|or)$/,
     /^(alternateattr|base|border|drop|event|external|files|fields|goto|gosub|internal|invp|keyed|native|nofiles|nokey|none|outin|output|relative|release|reserve|resume|retain|search|select|sequential|shift|to|use|using)$/,
     /^(conv|duprec|eof|eol|error|ioerr|locked|nokey|norec|ignore|oflow|pageoflow|soflow|zdiv|timeout|wait)$/
   ]
 
   private isKeyword(word: string): boolean {
-    for (const reg of BrSourceDocument.FN_AND_KEYWORDS) {
+    for (const reg of BrSourceDocument.KEYWORDS) {
       if (reg.test(word)){
         return true
       }
