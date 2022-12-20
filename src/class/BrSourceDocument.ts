@@ -85,6 +85,7 @@ export default class BrSourceDocument {
         if (skipOrWord.groups?.skippable){
           const skippable = skipOrWord.groups.skippable
           if (skipOrWord.groups.docComment){
+            matchEnd = BrSourceDocument.SKIP_OR_WORD.lastIndex
             this.processDocComment(skipOrWord.groups.skippable)
           } else if (skipOrWord.groups.skippable==="!:"){
             lineStart = true
