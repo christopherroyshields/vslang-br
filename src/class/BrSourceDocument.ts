@@ -132,7 +132,7 @@ export default class BrSourceDocument {
     let match: RegExpExecArray | null
     let end = index
     while ((match = BrSourceDocument.DIM_VAR.exec(text)) !== null) {
-      if (match?.groups?.end){
+      if (match?.groups?.end !== undefined){
         end = match.index
         break
       } else {
