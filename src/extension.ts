@@ -16,35 +16,7 @@ import Layout from './class/Layout';
 import { Project } from './class/Project';
 import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
 import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
-
-import Parser = require('web-tree-sitter');
-import path = require('path');
-Parser.init().then(() => {
-	const parser = new Parser;
-	Parser.Language.load(path.resolve(__dirname, "..", 'tree-sitter-br.wasm')).then(
-		(br) => {
-			parser.setLanguage(br)
-			const code = 
-			`print mat foo, mat bar
-			print mat foo$, mat bar$, baz$(1)
-			print a,b,c
-			print a$,b$,c$`
-			;
-			
-			const refQuery = 
-			`(number_array_name) @number_arrays
-			(string_array_name) @string_arrays
-			(number_name) @numeric
-			(string_name) @string`
-			;
-			
-			const tree = parser.parse(code);
-			const query = new Parser.Query();
-
-			// const matches = query.matches(tree.rootNode);
-		}
-	);
-});
+import { activateParser } from './parser';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -105,6 +77,8 @@ export function activate(context: ExtensionContext) {
 	// 	console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
 	// 	// console.log(testdoc.variables);
 	// })
+
+	activateParser(context)
 }
 
 export function deactivate() {
