@@ -1,6 +1,9 @@
 import Parser = require('web-tree-sitter');
 import path = require('path');
 import { Diagnostic, DiagnosticCollection, DiagnosticRelatedInformation, DiagnosticSeverity, ExtensionContext, languages, Location, Position, Range, TextDocument, window } from 'vscode';
+import { performance } from 'perf_hooks';
+
+const trees = new Map<string, Parser.Tree>()
 
 export async function activateParser(context: ExtensionContext) {
 	Parser.init().then(() => {
@@ -28,7 +31,7 @@ export async function activateParser(context: ExtensionContext) {
 				// const matches = query.matches(tree.rootNode);
 				// console.dir(matches);
 
-				const collection = languages.createDiagnosticCollection('test');
+				const collection = languages.createDiagnosticCollection('Syntax');
 				if (window.activeTextEditor) {
 					updateDiagnostics(window.activeTextEditor.document, collection, parser, br);
 				}
@@ -44,7 +47,21 @@ export async function activateParser(context: ExtensionContext) {
 
 function updateDiagnostics(document: TextDocument, collection: DiagnosticCollection, parser: Parser, br: Parser.Language): void {
 
-  const tree = parser.parse(document.getText());
+	let tree: Parser.Tree
+	if (trees.has(document.uri.toString())){
+		const startTime = performance.now()
+		tree = parser.parse(document.getText(), trees.get(document.uri.toString()));
+		const endTime = performance.now()
+		console.log(`Reparse: ${endTime - startTime} milliseconds`)
+	} else {
+		const startTime = performance.now()
+		tree = parser.parse(document.getText());
+		const endTime = performance.now()
+		console.log(`Parse: ${endTime - startTime} milliseconds`)
+	}
+
+	trees.set(document.uri.toString(), tree)
+
   const errorQuery = br.query('(ERROR) @error')
   const errors = errorQuery.matches(tree.rootNode);
   const diagnostics: Diagnostic[] = []
