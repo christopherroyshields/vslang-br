@@ -19,6 +19,18 @@
 	"repository": {
 		"comments": {
 			"patterns": [{
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(DATA) ([^!\\r\\n]*)",
+					"captures": {
+						"4": {
+							"patterns": [
+								{
+									"match": "(?<=^([^\"]|\"[^\"]*\")*)\\w(?<!\\d)[\\w'-]*",
+									"name": "string.unquoted"
+								}
+							]
+						}
+					}
+				},{
 					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(FORM) ([^!\\r\\n]*)",
 					"captures": {
 						"1": {
