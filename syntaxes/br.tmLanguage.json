@@ -17,15 +17,38 @@
 		}
 	],
 	"repository": {
+		"numbers": {
+			"patterns": [
+				{
+					"match": "[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?",
+					"name": "constant.numeric"
+				},
+				{
+					"match": "(?<=^([^\"]|\"[^\"]*\")*)\\w(?<!\\d)[\\w'-]*",
+					"name": "string.unquoted"
+				}
+]
+		},
 		"comments": {
 			"patterns": [{
 					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(DATA) ([^!\\r\\n]*)",
 					"captures": {
+						"1": {
+							"name": "linenumber.br"
+						},
+						"2": {
+							"name": "string.regexp.line-label.br"
+						},
+						"3": {
+							"name": "keyword.statement.br"
+						},
 						"4": {
 							"patterns": [
 								{
-									"match": "(?<=^([^\"]|\"[^\"]*\")*)\\w(?<!\\d)[\\w'-]*",
-									"name": "string.unquoted"
+									"include": "#numbers"
+								},
+								{
+									"include": "#strings"
 								}
 							]
 						}
@@ -186,7 +209,6 @@
 				"begin": "`",
 				"end": "`",
 				"patterns": [
-					{ "include": "#commands" },
 					{
 						"begin": "{{",
 						"end": "}}",
