@@ -1,71 +1,68 @@
 import Parser = require('web-tree-sitter');
 import path = require('path');
-import { Diagnostic, DiagnosticCollection, DiagnosticRelatedInformation, DiagnosticSeverity, ExtensionContext, languages, Location, Position, Range, TextDocument, window } from 'vscode';
+import { Diagnostic, DiagnosticCollection, DiagnosticRelatedInformation, DiagnosticSeverity, ExtensionContext, languages, Location, Position, Range, TextDocument, Uri, window, workspace } from 'vscode';
 import { performance } from 'perf_hooks';
+import { log } from 'console';
 
 const trees = new Map<string, Parser.Tree>()
 
 export async function activateParser(context: ExtensionContext) {
-	Parser.init().then(() => {
-		const parser = new Parser;
-		Parser.Language.load(path.resolve(__dirname, "..", 'tree-sitter-br.wasm')).then(
-			(br) => {
-				parser.setLanguage(br)
-				// const code = 
-				// `print mat foo, mat bar
-				// print mat foo$, mat bar$, baz$(1)
-				// print a,b,c
-				// print a$,b$,c$`
-				// ;
-				
-				// const refQuery = 
-				// `(number_array_name) @number_arrays
-				// (string_array_name) @string_arrays
-				// (number_name) @numeric
-				// (string_name) @string`
-				// ;
-				
-				// const tree = parser.parse(code);
-				// const query = br.query(refQuery);
 	
-				// const matches = query.matches(tree.rootNode);
-				// console.dir(matches);
+	await Parser.init();
+	const br = await Parser.Language.load(path.resolve(__dirname, "..", 'tree-sitter-br.wasm'))
+	const parser = new Parser()
+	parser.setLanguage(br)
 
-				const collection = languages.createDiagnosticCollection('Syntax');
-				if (window.activeTextEditor) {
-					updateDiagnostics(window.activeTextEditor.document, collection, parser, br);
-				}
-				context.subscriptions.push(window.onDidChangeActiveTextEditor(editor => {
-					if (editor) {
-						updateDiagnostics(editor.document, collection, parser, br);
-					}
-				}));
+	const collection = languages.createDiagnosticCollection('Syntax');
+
+	const sourceFiles = await workspace.findFiles("**/*.brs");
+	console.log(`Found ${sourceFiles.length} files`);
+	for (const sourceUri of sourceFiles) {
+		try {
+			const buffer = await workspace.fs.readFile(sourceUri);
+			if (buffer){
+				const text = buffer.toString();
+				// parser.delete();
+				updateDiagnostics(text, sourceUri, collection, parser, br);
 			}
-		);
-	});
+		} catch (error) {
+			console.log(`error reading ${sourceUri.path}`)
+			console.error(error);
+		}
+	}
+	console.log(`Finished reading`);
+	// if (window.activeTextEditor) {
+	// 	updateDiagnostics(window.activeTextEditor.document, collection, parser, br);
+	// }
+	context.subscriptions.push(window.onDidChangeActiveTextEditor(editor => {
+		if (editor) {
+			updateDiagnostics(editor.document.getText(), editor.document.uri, collection, parser, br);
+		}
+	}));
 }
 
-function updateDiagnostics(document: TextDocument, collection: DiagnosticCollection, parser: Parser, br: Parser.Language): void {
+function updateDiagnostics(document: string, uri: Uri, collection: DiagnosticCollection, parser: Parser, br: Parser.Language): void {
 
-	let tree: Parser.Tree
-	if (trees.has(document.uri.toString())){
+	// let tree: Parser.Tree
+	// if (trees.has(document.uri.toString())){
+	// 	const startTime = performance.now()
+	// 	tree = parser.parse(document.getText(), trees.get(document.uri.toString()));
+	// 	const endTime = performance.now()
+	// 	console.log(`Reparse: ${endTime - startTime} milliseconds`)
+	// } else {
 		const startTime = performance.now()
-		tree = parser.parse(document.getText(), trees.get(document.uri.toString()));
-		const endTime = performance.now()
-		console.log(`Reparse: ${endTime - startTime} milliseconds`)
-	} else {
-		const startTime = performance.now()
-		tree = parser.parse(document.getText());
+		const tree = parser.parse(document);
 		const endTime = performance.now()
 		console.log(`Parse: ${endTime - startTime} milliseconds`)
-	}
+		// console.log(`Parse: ${endTime - startTime} milliseconds`)
+	// }
 
-	trees.set(document.uri.toString(), tree)
+	// trees.set(document.uri.toString(), tree)
 
   const errorQuery = br.query('(ERROR) @error')
   const errors = errorQuery.matches(tree.rootNode);
   const diagnostics: Diagnostic[] = []
-  collection.clear();
+  // collection.clear();
   for (const error of errors) {
     for (const capture of error.captures) {
       diagnostics.push({
@@ -81,7 +78,11 @@ function updateDiagnostics(document: TextDocument, collection: DiagnosticCollect
     }
   }
   
-  collection.set(document.uri, diagnostics);
+	if (diagnostics.length){
+		collection.set(uri, diagnostics);
+	}
+
+	tree.delete()
 
   // if (document && path.basename(document.uri.fsPath) === 'sample-demo.rs') {
 	// 	collection.set(document.uri, [{
