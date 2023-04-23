@@ -36,12 +36,11 @@ export default class BrParser implements Disposable {
 	}
 
 	updateTree(document: TextDocument){
-		const oldTree = this.trees.get(document.uri.toString())
 		const startTime = performance.now()
-		this.parser.reset()
-		const tree = this.parser.parse(document.getText(),oldTree);
+		const tree = this.parser.parse(document.getText());
 		const endTime = performance.now()
 		console.log(`Parse: ${endTime - startTime} milliseconds`)
+
 		this.trees.set(document.uri.toString(), tree)
 	}
 }

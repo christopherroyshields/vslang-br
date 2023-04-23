@@ -10,7 +10,8 @@ export function updateDiagnostics(document: TextDocument, diagnosticCollection: 
 function getDiagnostics(document: TextDocument, parser: BrParser): Diagnostic[] {
 
   const errorQuery = parser.br.query('(ERROR) @error')
-  const errors = errorQuery.matches(parser.getTree(document).rootNode);
+  const tree = parser.getTree(document)
+  const errors = errorQuery.matches(tree.rootNode);
   const diagnostics: Diagnostic[] = []
   // collection.clear();
   for (const error of errors) {
