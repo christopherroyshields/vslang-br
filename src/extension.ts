@@ -102,8 +102,7 @@ async function startDiagnostics(context: ExtensionContext){
 		updateDiagnostics(document, diagnosticCollection, parser);
 	}
 
-	const debounceTime = workspace.getConfiguration('br').get("diagnosticsDelay", 500);
-	const fn = debounce(func, debounceTime)
+	const fn = debounce(func)
 
 	context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
 		const document  = e.document;

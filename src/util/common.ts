@@ -5,13 +5,13 @@ export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-
 export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))/g
 
 export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
-  func: F,
-  waitFor: number,
+  func: F
 ): (...args: Parameters<F>) => void {
   let timeout: NodeJS.Timeout;
   return (...args: Parameters<F>): void => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), waitFor);
+		const debounceTime = workspace.getConfiguration('br').get("diagnosticsDelay", 500);
+		clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), debounceTime);
   };
 }
 
