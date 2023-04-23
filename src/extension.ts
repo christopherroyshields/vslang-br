@@ -16,7 +16,8 @@ import Layout from './class/Layout';
 import { Project } from './class/Project';
 import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
 import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
-import { activateParser } from './parser';
+import BrParser from './parser';
+import { updateDiagnostics } from './class/BrDiagnostics';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -30,7 +31,7 @@ const keywordCompletionProvider = new KeywordCompletionProvider(ConfiguredProjec
 const brSourceSymbolProvider = new BrSourceSymbolProvider()
 const layoutSemanticTokenProvider = new LayoutSemanticTokenProvider()
 
-export function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext) {
 	
 	activateLexi(context)
 
@@ -78,7 +79,43 @@ export function activate(context: ExtensionContext) {
 	// 	// console.log(testdoc.variables);
 	// })
 
-	activateParser(context)
+	await startDiagnostics(context);
+
+}
+
+async function startDiagnostics(context: ExtensionContext){
+	const diagnosticCollection  = languages.createDiagnosticCollection('br');
+	context.subscriptions.push(diagnosticCollection)
+
+	const parser = new BrParser()
+	context.subscriptions.push(parser)
+	await parser.activate(context)
+
+	if (window.activeTextEditor && window.activeTextEditor.document.languageId == "br"){
+		const editor = window.activeTextEditor
+		updateDiagnostics(editor.document, diagnosticCollection, parser);
+	}
+
+	context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
+		const document  = e.document;
+		parser.updateTree(document);
+		updateDiagnostics(document, diagnosticCollection, parser);
+	}))
+
+	context.subscriptions.push(window.onDidChangeActiveTextEditor(editor => {
+		if (editor) {
+			updateDiagnostics(editor.document, diagnosticCollection, parser);
+		}
+	}));
+
+	// context.subscriptions.push(workspace.onDidOpenTextDocument(document => {
+	// 	updateDiagnostics(document, diagnosticCollection, parser);
+	// }))
+
+	context.subscriptions.push(workspace.onDidCloseTextDocument(document => {
+		diagnosticCollection.delete(document.uri)
+	}))
+
 }
 
 export function deactivate() {
