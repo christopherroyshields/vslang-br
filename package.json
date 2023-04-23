@@ -22,7 +22,9 @@
       {
         "language": "lay",
         "scopes": {
-          "invalid": ["invalid"]
+          "invalid": [
+            "invalid"
+          ]
         }
       }
     ],
@@ -228,14 +230,19 @@
     "@typescript-eslint/eslint-plugin": "^5.31.0",
     "@typescript-eslint/parser": "^5.31.0",
     "@vscode/test-electron": "^2.1.5",
+    "electron": "^19.1.9",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^8.20.0",
     "glob": "^8.0.3",
     "mocha": "^10.0.0",
     "typescript": "^4.8.0"
   },
   "dependencies": {
+    "tree-sitter": "^0.20.1",
+    "tree-sitter-br": "file:../tree-sitter/tree-sitter-br",
     "vscode-languageclient": "^8.0.2",
     "vscode-languageserver": "^8.0.2",
-    "vscode-languageserver-textdocument": "^1.0.7"
+    "vscode-languageserver-textdocument": "^1.0.7",
+    "web-tree-sitter": "^0.20.8"
   }
 }

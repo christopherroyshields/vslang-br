@@ -17,8 +17,43 @@
 		}
 	],
 	"repository": {
+		"numbers": {
+			"patterns": [
+				{
+					"match": "[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?",
+					"name": "constant.numeric"
+				},
+				{
+					"match": "(?<=^([^\"]|\"[^\"]*\")*)\\w(?<!\\d)[\\w'-]*",
+					"name": "string.unquoted"
+				}
+]
+		},
 		"comments": {
 			"patterns": [{
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(DATA) ([^!\\r\\n]*)",
+					"captures": {
+						"1": {
+							"name": "linenumber.br"
+						},
+						"2": {
+							"name": "string.regexp.line-label.br"
+						},
+						"3": {
+							"name": "keyword.statement.br"
+						},
+						"4": {
+							"patterns": [
+								{
+									"include": "#numbers"
+								},
+								{
+									"include": "#strings"
+								}
+							]
+						}
+					}
+				},{
 					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(FORM) ([^!\\r\\n]*)",
 					"captures": {
 						"1": {
@@ -150,31 +185,16 @@
 			"patterns": [{
 				"name": "string.quoted.double",
 				"begin": "\"",
-				"end": "(\"\"|[^\"])*(\"|\\n)",
-				"endCaptures": {
-					"0": {
-						"patterns": [{
-							"include": "#commands"
-						}]
-					}
-				}
+				"end": "(\"\"|[^\"])*(\"|\\n)"
 				},{
 				"name": "string.quoted.single",
 				"begin": "'",
-				"end": "(''|[^'])*'",
-				"endCaptures": {
-					"0": {
-						"patterns": [{
-							"include": "#commands"
-						}]
-					}
-				}
+				"end": "(''|[^'])*'"
 			},{
 				"name": "string.interpolated",
 				"begin": "`",
 				"end": "`",
 				"patterns": [
-					{ "include": "#commands" },
 					{
 						"begin": "{{",
 						"end": "}}",
