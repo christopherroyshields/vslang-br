@@ -1,4 +1,4 @@
-import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent } from 'vscode';
+import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument } from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
@@ -18,6 +18,7 @@ import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSem
 import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
 import BrParser from './parser';
 import { updateDiagnostics } from './class/BrDiagnostics';
+import { debounce } from './util/common';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -96,11 +97,18 @@ async function startDiagnostics(context: ExtensionContext){
 		updateDiagnostics(editor.document, diagnosticCollection, parser);
 	}
 
+	const func = (document: TextDocument) => {
+		parser.updateTree(document);
+		updateDiagnostics(document, diagnosticCollection, parser);
+	}
+
+	const debounceTime = workspace.getConfiguration('br').get("diagnosticsDelay", 500);
+	const fn = debounce(func, debounceTime)
+
 	context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
 		const document  = e.document;
 		if (document.languageId === "br"){
-			parser.updateTree(document);
-			updateDiagnostics(document, diagnosticCollection, parser);
+			fn(document)
 		}
 	}))
 

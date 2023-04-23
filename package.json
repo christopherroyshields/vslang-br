@@ -42,52 +42,39 @@
     "configuration": {
       "title": "Business Rules!",
       "properties": {
-        "br.searchPath": {
+        "br.diagnosticsDelay": {
           "order": 0,
+          "scope": "application",
+          "type": "integer",
+          "default": 500
+        },
+        "br.searchPath": {
+          "order": 1,
           "scope": "resource",
           "type": "string",
           "default": "",
           "description": "Subdirectory on workspace folder to calculate relative paths to libraries and data files. If blank uses workspace folder."
         },
         "br.sourceFileGlobPattern": {
-          "order": 1,
+          "order": 2,
           "scope": "resource",
           "type": "string",
           "default": "**/*.{brs,wbs}",
           "description": "The glob pattern used to find BR source code files.  Used to watch file changes in the background."
         },
         "br.layoutPath": {
-          "order": 2,
+          "order": 3,
           "scope": "resource",
           "type": "string",
           "default": "filelay",
           "description": "The path relative to the workspace folder + searchpath where file layouts are stored."
         },
         "br.layoutGlobPattern": {
-          "order": 3,
+          "order": 4,
           "scope": "resource",
           "type": "string",
           "default": "*",
           "description": "The glob pattern used to find project layouts."
-        },
-        "languageServer.maxNumberOfProblems": {
-          "order": 4,
-          "scope": "resource",
-          "type": "number",
-          "default": 100,
-          "description": "Controls the maximum number of problems produced by the server."
-        },
-        "languageServer.trace.server": {
-          "order": 5,
-          "scope": "window",
-          "type": "string",
-          "enum": [
-            "off",
-            "messages",
-            "verbose"
-          ],
-          "default": "off",
-          "description": "Traces the communication between VS Code and the language server."
         }
       }
     },
