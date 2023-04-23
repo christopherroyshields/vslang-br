@@ -1,8 +1,8 @@
 import Parser = require('web-tree-sitter');
+
 import path = require('path');
-import { Diagnostic, DiagnosticCollection, DiagnosticRelatedInformation, DiagnosticSeverity, ExtensionContext, languages, Location, Position, Range, TextDocument, Uri, window, workspace } from 'vscode';
+import { ExtensionContext, TextDocument} from 'vscode';
 import { performance } from 'perf_hooks';
-import { log } from 'console';
 import { Disposable } from 'vscode-languageclient';
 
 export default class BrParser implements Disposable {
