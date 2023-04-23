@@ -98,12 +98,14 @@ async function startDiagnostics(context: ExtensionContext){
 
 	context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
 		const document  = e.document;
-		parser.updateTree(document);
-		updateDiagnostics(document, diagnosticCollection, parser);
+		if (document.languageId === "br"){
+			parser.updateTree(document);
+			updateDiagnostics(document, diagnosticCollection, parser);
+		}
 	}))
 
 	context.subscriptions.push(window.onDidChangeActiveTextEditor(editor => {
-		if (editor) {
+		if (editor && editor.document.languageId === "br") {
 			updateDiagnostics(editor.document, diagnosticCollection, parser);
 		}
 	}));
