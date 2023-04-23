@@ -34,6 +34,11 @@
         "url": "./schemas/br-project.json"
       }
     ],
+    "configurationDefaults": {
+      "[br]": {
+        "files.encoding": "cp437"
+      }
+    },
     "configuration": {
       "title": "Business Rules!",
       "properties": {
