@@ -7,6 +7,7 @@ This extension provides language support for the Business Rules! programming lan
 - Syntax Coloring
 - Lexi Support
 - Auto-Compile
+- Live Syntax Checking
 - prev/next occurence
 - snippets
 - function completions
