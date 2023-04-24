@@ -1,4 +1,4 @@
-import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument } from 'vscode';
+import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument, commands, Diagnostic, Range, Position, DiagnosticSeverity, DiagnosticCollection } from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
@@ -19,6 +19,7 @@ import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
 import BrParser from './parser';
 import { updateDiagnostics } from './class/BrDiagnostics';
 import { debounce } from './util/common';
+import OccurenceHighlightProvider from './providers/OccurenceHighlightProvider';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -80,17 +81,53 @@ export async function activate(context: ExtensionContext) {
 	// 	// console.log(testdoc.variables);
 	// })
 
-	await startDiagnostics(context);
-
-}
-
-async function startDiagnostics(context: ExtensionContext){
-	const diagnosticCollection  = languages.createDiagnosticCollection('br');
-	context.subscriptions.push(diagnosticCollection)
-
 	const parser = new BrParser()
 	context.subscriptions.push(parser)
 	await parser.activate(context)
+
+	const diagnosticCollection  = languages.createDiagnosticCollection('Project Scan');
+	context.subscriptions.push(commands.registerCommand('vslang-br.scanAll', async () => {
+		const sourceFiles = await workspace.findFiles("**/*.brs")
+		for (const sourceUri of sourceFiles) {
+			const libText = await workspace.fs.readFile(sourceUri)
+			if (libText){
+				console.log("scanning: " + sourceUri.toString())
+				getErrors(sourceUri, libText.toString(), parser, diagnosticCollection)
+			}
+		}
+  }))
+
+	const occurrenceProvider = new OccurenceHighlightProvider(parser)
+	languages.registerDocumentHighlightProvider(sel,occurrenceProvider)
+
+	await startDiagnostics(context, parser);
+
+}
+
+async function getErrors(uri: Uri, document: string, parser: BrParser, diagnosticCollection: DiagnosticCollection){
+  const errorQuery = parser.br.query('(ERROR) @error')
+	const tree = parser.parser.parse(document)
+  const errors = errorQuery.matches(tree.rootNode);
+  const diagnostics: Diagnostic[] = []
+  // collection.clear();
+  for (const error of errors) {
+    for (const capture of error.captures) {
+      diagnostics.push({
+        code: '',
+        message: 'Syntax error',
+        range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
+        severity: DiagnosticSeverity.Error,
+        source: 'BR Syntax Scanner'
+      })
+    }
+  }
+	tree.delete()
+  diagnosticCollection.set(uri, diagnostics);
+}
+
+async function startDiagnostics(context: ExtensionContext, parser: BrParser){
+	const diagnosticCollection  = languages.createDiagnosticCollection('br');
+	context.subscriptions.push(diagnosticCollection)
 
 	if (window.activeTextEditor && window.activeTextEditor.document.languageId == "br"){
 		const editor = window.activeTextEditor

@@ -108,6 +108,10 @@
         "key": "ctrl-alt-6"
       },
       {
+        "command": "vslang-br.scanAll",
+        "key": "ctrl-alt-7"
+      },
+      {
         "command": "vslang-br.nextOccurrence",
         "key": "ctrl-shift-down"
       },
@@ -152,6 +156,10 @@
       {
         "command": "vslang-br.setBr43",
         "title": "Lexi: Set BR Version 4.3"
+      },
+      {
+        "command": "vslang-br.scanAll",
+        "title": "BR: Scan All Project Source"
       }
     ],
     "snippets": [
