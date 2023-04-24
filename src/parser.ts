@@ -45,43 +45,22 @@ export default class BrParser implements Disposable {
 
 	getOccurences(word: string, document: TextDocument, range: Range): Range[] {
 		const occurrences: Range[] = []
+		
 		const tree = this.getTree(document)
 		const node = tree.rootNode.descendantForPosition(this.getPoint(range.start))
 
-		// console.log(node);
-		
-		switch (node.type) {
-			case 'stringidentifier': {
-				const parent = node.parent
-				if (node.parent?.type === "stringarray"){
-					const query = `(stringarray name: (_) @occurrence)`
-					const results = this.br.query(query).matches(tree.rootNode)
-					console.log(results);
-	
-					results.forEach(r => {
-						const text = r.captures[0].node.text
-						if (text.toLocaleLowerCase() === word.toLowerCase()){
-							occurrences.push(this.getNodeRange(r.captures[0].node))
-						}
-					});
-				} else if (node.parent?.type === "stringreference") {
-					const query = `(stringreference name: (_) @occurrence)`
-					const results = this.br.query(query).matches(tree.rootNode)
-					console.log(results);
-	
-					results.forEach(r => {
-						const text = r.captures[0].node.text
-						if (text.toLocaleLowerCase() === word.toLowerCase()){
-							occurrences.push(this.getNodeRange(r.captures[0].node))
-						}
-					});
-				}
-			}
-			break;
+		const name_match = word.replace(/\w/g, c => {
+			return `[${c.toUpperCase()}${c.toLowerCase()}]`
+		}).replace("$","\\\\$")
 
-			default:
-				break;
-		}
+		const query = `(${node.parent?.type} name: (_) @occurrence
+		(#match? @occurrence "^${name_match}$"))`
+		
+		const results = this.br.query(query).matches(tree.rootNode)
+	
+		results.forEach(r => {
+			occurrences.push(this.getNodeRange(r.captures[0].node))
+		});
 
 		return occurrences
 	}
