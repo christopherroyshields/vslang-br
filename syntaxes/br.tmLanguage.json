@@ -4,6 +4,9 @@
 	"scopeName": "source.br",
 	"patterns": [
 		{
+			"include": "#statements"
+		},
+		{
 			"include": "#comments"
 		},
 		{
@@ -17,6 +20,27 @@
 		}
 	],
 	"repository": {
+		"statements": {
+			"patterns": [
+				{
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(REM) ([^!\\r\\n]*)",
+					"captures": {
+						"1": {
+							"name": "linenumber.br"
+						},
+						"2": {
+							"name": "string.regexp.line-label.br"
+						},
+						"3": {
+							"name": "keyword.statement.br"
+						},
+						"4": {
+							"name": "comment.line"
+						}
+					}
+				}
+			]
+		},
 		"numbers": {
 			"patterns": [
 				{
@@ -159,9 +183,6 @@
 					"match": "\\@param",
 					"name": "comment.block.documentation"
 				}]
-			},{
-				"match": "(?i)\\brem\\b.*",
-				"name": "comment.line.br"
 			},{
 				"name": "comment.line",
 				"match": "!(\\r?\\n|[^:\\r\\n].*?(?=!:|\\r?\\n))",
