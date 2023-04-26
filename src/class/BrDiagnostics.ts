@@ -1,32 +1,65 @@
-import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, Position, Range, TextDocument, Uri } from "vscode";
-import Parser = require("web-tree-sitter");
+import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, ExtensionContext, Position, Range, TextDocument, Uri, commands, languages, window, workspace } from "vscode";
 import BrParser from "../parser";
+import { debounce } from "../util/common";
 
-export function updateDiagnostics(document: TextDocument, diagnosticCollection: DiagnosticCollection, parser: BrParser){
-  const diagnostics: Diagnostic[] = getDiagnostics(document, parser)
-  diagnosticCollection.set(document.uri, diagnostics);
-}
+export default class BrDiagnostics implements Disposable {
+  parser: BrParser
+  diagnosticCollection = languages.createDiagnosticCollection('BR Scanner')
+  constructor(parser: BrParser, context: ExtensionContext) {
+    this.parser = parser
+    context.subscriptions.push(this.diagnosticCollection)
+    if (window.activeTextEditor && window.activeTextEditor.document.languageId == "br"){
+      const editor = window.activeTextEditor
+      this.updateDiagnostics(editor.document);
+    }
 
-function getDiagnostics(document: TextDocument, parser: BrParser): Diagnostic[] {
+    const func = (document: TextDocument) => {
+      this.updateDiagnostics(document);
+    }
+  
+    const fn = debounce(func)
+  
+    context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
+      const document  = e.document;
+      if (document.languageId === "br"){
+        fn(document)
+      }
+    }))
 
-  const errorQuery = parser.br.query('(ERROR) @error')
-  const tree = parser.getTree(document)
-  const errors = errorQuery.matches(tree.rootNode);
-  const diagnostics: Diagnostic[] = []
-  // collection.clear();
-  for (const error of errors) {
-    for (const capture of error.captures) {
-      diagnostics.push({
-        code: '',
-        message: 'Syntax error',
-        range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
-        severity: DiagnosticSeverity.Error,
-        source: 'BR Syntax Scanner',
-        // relatedInformation: [
-        //   new DiagnosticRelatedInformation(new Location(document.uri, new Range(new Position(1, 8), new Position(1, 9))), 'first assignment to `x`')
-        // ]
-      })
+    context.subscriptions.push(window.onDidChangeActiveTextEditor(editor => {
+      if (editor && editor.document.languageId === "br") {
+        this.updateDiagnostics(editor.document);
+      }
+    }));
+  
+    context.subscriptions.push(workspace.onDidCloseTextDocument(document => {
+      this.diagnosticCollection.delete(document.uri)
+    }))
+
+    context.subscriptions.push(commands.registerCommand('vslang-br.scanAll', async () => {
+      await this.scanAll()
+    }))
+
+  }
+
+  dispose() {
+    this.diagnosticCollection.clear()
+  }
+
+  async scanAll() {
+    const sourceFiles = await workspace.findFiles("**/*.brs")
+    for (const sourceUri of sourceFiles) {
+      const libText = await workspace.fs.readFile(sourceUri)
+      if (libText){
+        console.log("scanning: " + sourceUri.toString())
+        const diagnostics = await this.parser.getErrors(sourceUri, libText.toString())
+        this.diagnosticCollection.set(sourceUri, diagnostics)
+      }
     }
   }
-  return diagnostics
+
+  updateDiagnostics(document: TextDocument){
+    const diagnostics: Diagnostic[] = this.parser.getDiagnostics(document)
+    this.diagnosticCollection.set(document.uri, diagnostics)
+  }
 }
