@@ -191,7 +191,11 @@
           ".brs",
           ".wbs"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icons/br-light.svg",
+          "dark": "./icons/br-dark.svg"
+        }
       },
       {
         "id": "lay",
