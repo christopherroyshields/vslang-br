@@ -28,7 +28,7 @@
         ["[", "]"]
     ],
     "indentationRules": {
-        "increaseIndentPattern": "^\\s*(do[ \\t](until|while).*|do|def\\s+fn\\w+\\$?\\*?\\d*\\([a-z0-9 \t,*&]*?\\)|then)\\s*$",
+        "increaseIndentPattern": "^\\s*(do[ \\t](until|while).*|do|def\\s+fn\\w+\\$?\\*?\\d*\\([a-z0-9 \t,*&$]*?\\)|then)\\s*$",
         "decreaseIndentPattern": "^\\s*(loop[ \\t](until|while).*|loop|end if|fnend)\\s*$"
     }
 }
