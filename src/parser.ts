@@ -1,6 +1,6 @@
 import Parser = require('web-tree-sitter');
 import path = require('path');
-import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, ExtensionContext, Position, Range, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
+import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, DocumentSymbol, ExtensionContext, Position, Range, SymbolKind, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
 import { performance } from 'perf_hooks';
 import { Disposable } from 'vscode-languageclient';
 import { EOL } from 'os';
@@ -339,4 +339,47 @@ export default class BrParser implements Disposable {
 		}
 		return diagnostics
 	}
+
+  getSymbols(document: TextDocument): DocumentSymbol[] {
+		const tree = this.getTree(document)
+		const query = `(def_statement) @def
+		(dim_statement
+			(_
+				name: (_) @dim)*)
+		(label) @label`
+		const results = this.match(query, tree.rootNode)
+		
+		const symbolInfoList: DocumentSymbol[] = []
+		for (const result of results) {
+			const node = result.captures[0].node
+			switch (node.type) {
+				case 'label': {
+						const labelRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
+						const symbolInfo = new DocumentSymbol(node.text, 'label', SymbolKind.Null, labelRange, labelRange)
+						symbolInfoList.push(symbolInfo)
+					}
+					break;
+				case 'stringidentifier':
+				case 'numberidentifier': {
+						const dimRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
+						const symbolInfo = new DocumentSymbol(node.text, node.parent?.text ?? "", SymbolKind.Variable, dimRange, dimRange)
+						symbolInfoList.push(symbolInfo)
+					}
+					break;
+				case 'def_statement': {
+						const name = node.descendantsOfType("function_name")
+						if (name.length){
+							const node = name[0]
+							const fnRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
+							const symbolInfo = new DocumentSymbol(node.text, "function", SymbolKind.Function, fnRange, fnRange)
+							symbolInfoList.push(symbolInfo)
+						}
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		return symbolInfoList
+  }
 }

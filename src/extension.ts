@@ -31,7 +31,6 @@ const libPathProvider = new LibPathProvider(ConfiguredProjects)
 const funcCompletionProvider = new FuncCompletionProvider(ConfiguredProjects)
 const statementCompletionProvider = new StatementCompletionProvider(ConfiguredProjects)
 const keywordCompletionProvider = new KeywordCompletionProvider(ConfiguredProjects)
-const brSourceSymbolProvider = new BrSourceSymbolProvider()
 const layoutSemanticTokenProvider = new LayoutSemanticTokenProvider()
 
 export async function activate(context: ExtensionContext) {
@@ -67,9 +66,10 @@ export async function activate(context: ExtensionContext) {
 
 	languages.registerCompletionItemProvider(sel, keywordCompletionProvider)
 
-	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
-
 	// activateClient(context)
+
+	const brSourceSymbolProvider = new BrSourceSymbolProvider(parser)
+	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
 
 	const occurrenceProvider = new OccurenceHighlightProvider(parser)
 	languages.registerDocumentHighlightProvider(sel,occurrenceProvider)
