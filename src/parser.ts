@@ -240,6 +240,11 @@ export default class BrParser implements Disposable {
 		return null
 	}
 
+	getNodeAtPosition(document: TextDocument, position: Position): Parser.SyntaxNode {
+		const tree = this.getTree(document)
+		const node = tree.rootNode.descendantForPosition(this.getPoint(position))
+		return node
+	}
 
 	getOccurences(word: string, document: TextDocument, range: Range): Range[] {
 		const occurrences: Range[] = []

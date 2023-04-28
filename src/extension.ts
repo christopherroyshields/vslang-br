@@ -20,6 +20,7 @@ import BrParser from './parser';
 import BrDiagnostics from './class/BrDiagnostics';
 import { debounce } from './util/common';
 import OccurenceHighlightProvider from './providers/OccurenceHighlightProvider';
+import BrRenameProvider from './providers/BrRenameProvider';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -72,6 +73,9 @@ export async function activate(context: ExtensionContext) {
 
 	const occurrenceProvider = new OccurenceHighlightProvider(parser)
 	languages.registerDocumentHighlightProvider(sel,occurrenceProvider)
+
+	const renameProvider = new BrRenameProvider(parser)
+	languages.registerRenameProvider(sel, renameProvider)
 
 	const diagnostics = new BrDiagnostics(parser, context)
 
