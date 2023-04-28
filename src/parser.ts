@@ -260,12 +260,10 @@ export default class BrParser implements Disposable {
 		switch (node.type) {
 			case "label_reference":
 			case "label": {
-				const selector = `(label (#match? @label "^${name_match}:$")) @label` + `(label_reference) @label_reference`
-				const predicate = ``
 				const query = `((label) @label
-				(#match? @label "${name_match}:"))
+				(#match? @label "^${name_match}:$"))
 				((label_reference) @label_ref
-				(#match? @label_ref "${name_match}"))`
+				(#match? @label_ref "^${name_match}$"))`
 				const results = this.match(query, tree.rootNode)
 				results.forEach(r => {
 					const node = r.captures[0].node
