@@ -4,6 +4,8 @@ import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, ExtensionContext,
 import { performance } from 'perf_hooks';
 import { Disposable } from 'vscode-languageclient';
 import { EOL } from 'os';
+import * as fs from 'fs';
+const fnQuery = fs.readFileSync(path.join(__dirname,"..","tree-query","function_def.scm")).toString()
 
 export default class BrParser implements Disposable {
 	br!: Parser.Language
@@ -116,10 +118,84 @@ export default class BrParser implements Disposable {
 		return diagnostics
 	}
 
+	filterOccurrences(node: Parser.SyntaxNode,  tree: Parser.Tree, occurrences: Parser.QueryMatch[]): Parser.QueryMatch[]{
+		// if selection is in function and is param
+		const fn: { node: Parser.SyntaxNode, endIndex: number } | null = this.inFunction(node, tree)
+		if (fn && this.isParamOfFunction(node, fn.node)) {
+			// deselect all occurrences not in function
+			occurrences = occurrences.filter((match)  => {
+				const occurrence = match.captures[0].node
+				if (occurrence.startIndex > fn.node.startIndex && occurrence.startIndex < fn.endIndex){
+					return true
+				} else {
+					return false
+				}
+			})
+		} else {
+			// select all occurrences that are not params
+			occurrences = occurrences.filter((match)  => {
+
+				const occurrence = match.captures[0].node
+
+				const occurenceFn = this.inFunction(occurrence, tree)
+				if (occurenceFn && this.isParamOfFunction(occurrence, occurenceFn.node)){
+					return false
+				} else {
+					return true
+				}
+			})
+		}
+
+		return occurrences
+	}
+
+	isParamOfFunction(node: Parser.SyntaxNode, fn: Parser.SyntaxNode): boolean {
+		let isParam = false
+
+		const paramResult = this.br.query("(parameter) @param").matches(fn);
+		for (const param of paramResult) {
+			const child = param.captures[0].node.namedChild(0)?.namedChild(0)
+			if (child?.type === node.parent?.type && node.text === child?.text.replace(/^mat[ \t]+/,"")){
+				// filter occurences outside of function
+				isParam = true
+			}
+		}
+
+		return isParam
+	}
+
+	inFunction(node: Parser.SyntaxNode,  tree: Parser.Tree): { node: Parser.SyntaxNode, endIndex: number } | null {
+
+		const results = this.br.query(fnQuery).matches(tree.rootNode)
+
+		const ranges: Range[] = []
+		let fnNode: Parser.SyntaxNode | undefined = undefined
+		let inFunction = false
+		for (const result of results) {
+			if (result.captures[0].node.type === "def_statement"){
+				fnNode = result.captures[0].node
+			} else if (fnNode && result.captures[0].node.type === "fnend_statement") {
+				const fnEnd = result.captures[0]
+				// if in func
+				if (node.startIndex >= fnNode.startIndex && node.endIndex <= fnEnd.node.startIndex) {
+          // if param
+					inFunction = true
+					return {
+						node: fnNode,
+						endIndex: fnEnd.node.startIndex
+					}
+				} 
+			}
+		}
+		return null
+	}
+
+
 	getOccurences(word: string, document: TextDocument, range: Range): Range[] {
 		const occurrences: Range[] = []
-		
+
 		const tree = this.getTree(document)
+		
 		const node = tree.rootNode.descendantForPosition(this.getPoint(range.start))
 
 		const name_match = word.replace(/\w/g, c => {
@@ -136,11 +212,16 @@ export default class BrParser implements Disposable {
 		const predicate = `(#match? @occurrence "^${name_match}$")`
 		const query = `(${selector} ${predicate})`
 		
-		const results = this.br.query(query).matches(tree.rootNode)
+		let results = this.br.query(query).matches(tree.rootNode)
 	
+		if (node.type !== "function_name"){
+			results = this.filterOccurrences(node, tree, results)
+		}
+
 		results.forEach(r => {
 			occurrences.push(this.getNodeRange(r.captures[0].node))
 		});
+
 
 		return occurrences
 	}
