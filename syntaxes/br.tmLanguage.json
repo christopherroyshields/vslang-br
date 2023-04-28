@@ -4,6 +4,9 @@
 	"scopeName": "source.br",
 	"patterns": [
 		{
+			"include": "#statements"
+		},
+		{
 			"include": "#comments"
 		},
 		{
@@ -17,6 +20,27 @@
 		}
 	],
 	"repository": {
+		"statements": {
+			"patterns": [
+				{
+					"match": "(?:(?:^|\\r?\\n) *(\\d{1,5})? *([a-zA-Z_]\\w*: *)?|!: *)(?i)(REM) ([^!\\r\\n]*)",
+					"captures": {
+						"1": {
+							"name": "linenumber.br"
+						},
+						"2": {
+							"name": "string.regexp.line-label.br"
+						},
+						"3": {
+							"name": "keyword.statement.br"
+						},
+						"4": {
+							"name": "comment.line"
+						}
+					}
+				}
+			]
+		},
 		"numbers": {
 			"patterns": [
 				{
@@ -83,19 +107,53 @@
 									}
 								}
 							},{
-								"name": "keyword.other",
-								"match": "\\b(?i)(BL|BH|B|CC|CR|C|DH|DL|DT|D|GF|GZ|G|L|NZ|N|POS|PD|PIC|P|SKIP|S|V|X|ZD)\\b"
-							},{
-								"match": "\\b\\d+(\\.\\d+)?\\b",
-								"name": "constant.numeric.br"
-							},{
-								"match": "(?i)(?<=\\b[a-z]+\\s+)[a-z_]\\w+\\b",
-								"name": "variable.numeric.br"		
-								},{
-								"match": "\\b(\\w[\\w\\d]*) *\\*",
+								"match": "(?i)(?:(\\d+|[a-z]\\w+)\\s*\\*\\s*)?([a-z]+)(?:[ \\t]+?([a-z]\\w*|\\d+)(?:.([a-z]\\w*|\\d+))?)?\\s*(?=,|$|\\))",
 								"captures": {
 									"1": {
-										"name": "variable.numeric.br"		
+										"patterns": [{
+											"name": "variable",
+											"match": "(?i)[a-z]\\w*"
+										},{
+											"name": "constant.numeric",
+											"match": "\\d+"
+										}]
+									},
+									"2": {
+										"patterns": [{
+											"name": "keyword.other",
+											"match": "\\b(?i)(BL|BH|B|CC|CR|C|DH|DL|DT|D|GF|GZ|G|L|NZ|N|POS|PD|PIC|P|SKIP|S|V|X|ZD)\\b"
+										}]						
+									},
+									"3":{
+										"patterns": [{
+											"name": "variable",
+											"match": "(?i)[a-z]\\w*"
+										},{
+											"name": "constant.numeric",
+											"match": "\\d+"
+										}]
+									},
+									"4":{
+										"patterns": [{
+											"name": "variable",
+											"match": "(?i)[a-z]\\w*"
+										},{
+											"name": "constant.numeric",
+											"match": "\\d+"
+										}]
+									}
+								}
+							},{
+								"match": "(\\d|[a-z]\\w*)[ \\t]*\\*[ \\t]*(?=\\()",
+								"captures": {
+									"1": {
+										"patterns": [{
+											"name": "variable",
+											"match": "(?i)[a-z]\\w*"
+										},{
+											"name": "constant.numeric",
+											"match": "\\d+"
+										}]
 									}
 								}
 							},{
@@ -159,9 +217,6 @@
 					"match": "\\@param",
 					"name": "comment.block.documentation"
 				}]
-			},{
-				"match": "(?i)\\brem\\b.*",
-				"name": "comment.line.br"
 			},{
 				"name": "comment.line",
 				"match": "!(\\r?\\n|[^:\\r\\n].*?(?=!:|\\r?\\n))",

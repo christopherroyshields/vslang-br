@@ -1,4 +1,4 @@
-import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument } from 'vscode';
+import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument, commands, Diagnostic, Range, Position, DiagnosticSeverity, DiagnosticCollection } from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
@@ -17,8 +17,9 @@ import { Project } from './class/Project';
 import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
 import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
 import BrParser from './parser';
-import { updateDiagnostics } from './class/BrDiagnostics';
+import BrDiagnostics from './class/BrDiagnostics';
 import { debounce } from './util/common';
+import OccurenceHighlightProvider from './providers/OccurenceHighlightProvider';
 
 const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
 
@@ -34,6 +35,10 @@ const layoutSemanticTokenProvider = new LayoutSemanticTokenProvider()
 
 export async function activate(context: ExtensionContext) {
 	
+	const parser = new BrParser()
+	context.subscriptions.push(parser)
+	await parser.activate(context)
+
 	activateLexi(context)
 
 	activateNextPrev(context)
@@ -65,65 +70,12 @@ export async function activate(context: ExtensionContext) {
 
 	// activateClient(context)
 
+	const occurrenceProvider = new OccurenceHighlightProvider(parser)
+	languages.registerDocumentHighlightProvider(sel,occurrenceProvider)
+
+	const diagnostics = new BrDiagnostics(parser, context)
+
 	activateWorkspaceFolders()
-
-	// debug
-	// workspace.onDidChangeTextDocument((e)=>{
-	// 	var startTime = performance.now()
-
-	// 	// const testdoc = new BrSourceDocument(e.document.getText())
-	// 	const src = new BrSourceDocument(e.document.getText())
-				
-	// 	var endTime = performance.now()
-		
-	// 	console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
-	// 	// console.log(testdoc.variables);
-	// })
-
-	await startDiagnostics(context);
-
-}
-
-async function startDiagnostics(context: ExtensionContext){
-	const diagnosticCollection  = languages.createDiagnosticCollection('br');
-	context.subscriptions.push(diagnosticCollection)
-
-	const parser = new BrParser()
-	context.subscriptions.push(parser)
-	await parser.activate(context)
-
-	if (window.activeTextEditor && window.activeTextEditor.document.languageId == "br"){
-		const editor = window.activeTextEditor
-		updateDiagnostics(editor.document, diagnosticCollection, parser);
-	}
-
-	const func = (document: TextDocument) => {
-		parser.updateTree(document);
-		updateDiagnostics(document, diagnosticCollection, parser);
-	}
-
-	const fn = debounce(func)
-
-	context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
-		const document  = e.document;
-		if (document.languageId === "br"){
-			fn(document)
-		}
-	}))
-
-	context.subscriptions.push(window.onDidChangeActiveTextEditor(editor => {
-		if (editor && editor.document.languageId === "br") {
-			updateDiagnostics(editor.document, diagnosticCollection, parser);
-		}
-	}));
-
-	// context.subscriptions.push(workspace.onDidOpenTextDocument(document => {
-	// 	updateDiagnostics(document, diagnosticCollection, parser);
-	// }))
-
-	context.subscriptions.push(workspace.onDidCloseTextDocument(document => {
-		diagnosticCollection.delete(document.uri)
-	}))
 
 }
 
