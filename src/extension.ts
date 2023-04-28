@@ -70,12 +70,13 @@ export async function activate(context: ExtensionContext) {
 
 	// activateClient(context)
 
-	activateWorkspaceFolders()
-
 	const occurrenceProvider = new OccurenceHighlightProvider(parser)
 	languages.registerDocumentHighlightProvider(sel,occurrenceProvider)
 
 	const diagnostics = new BrDiagnostics(parser, context)
+
+	activateWorkspaceFolders()
+
 }
 
 export function deactivate() {

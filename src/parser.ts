@@ -174,6 +174,20 @@ export default class BrParser implements Disposable {
 		for (const result of results) {
 			if (result.captures[0].node.type === "def_statement"){
 				fnNode = result.captures[0].node
+
+				const results = this.br.query("[(numeric_expression)(string_expression)] @expr").matches(fnNode)
+				if (results.length){
+					const fnEnd = result.captures[0]
+					if (node.startIndex >= fnNode.startIndex && node.endIndex <= fnEnd.node.endIndex) {
+						// if param
+						inFunction = true
+						return {
+							node: fnNode,
+							endIndex: fnEnd.node.endIndex
+						}
+					} 
+				}
+
 			} else if (fnNode && result.captures[0].node.type === "fnend_statement") {
 				const fnEnd = result.captures[0]
 				// if in func
