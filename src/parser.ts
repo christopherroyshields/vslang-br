@@ -255,27 +255,53 @@ export default class BrParser implements Disposable {
 
 		const name_match = word.replace(/\w/g, c => {
 			return `[${c.toUpperCase()}${c.toLowerCase()}]`
-		}).replace("$","\\\\$")
+		}).replace("$","\\\\$").replace(":","")
 
-		let selector = ""
-		if (node.type==="function_name"){
-			selector = `(function_name) @occurrence`
-		} else {
-			selector = `${node.parent?.type} name: (_) @occurrence`
-		}
-
-		const predicate = `(#match? @occurrence "^${name_match}$")`
-		const query = `(${selector} ${predicate})`
+		switch (node.type) {
+			case "label_reference":
+			case "label": {
+				const selector = `(label (#match? @label "^${name_match}:$")) @label` + `(label_reference) @label_reference`
+				const predicate = ``
+				const query = `((label) @label
+				(#match? @label "${name_match}:"))
+				((label_reference) @label_ref
+				(#match? @label_ref "${name_match}"))`
+				const results = this.match(query, tree.rootNode)
+				results.forEach(r => {
+					const node = r.captures[0].node
+					if (node.type === "label"){
+						occurrences.push(new Range(new Position(node.startPosition.row, node.startPosition.column),new Position(node.endPosition.row, node.endPosition.column-1)))
+					} else {
+						occurrences.push(this.getNodeRange(r.captures[0].node))
+					}
+				});
+			}
+			break;
+			case "function_name": {
+				const selector = `(function_name) @occurrence`
+				const predicate = `(#match? @occurrence "^${name_match}$")`
+				const query = `(${selector} ${predicate})`
+				const results = this.match(query, tree.rootNode)
+				results.forEach(r => {
+					occurrences.push(this.getNodeRange(r.captures[0].node))
+				});
+			}
+			break;
 		
-		let results = this.match(query, tree.rootNode)
-	
-		if (node.type !== "function_name"){
-			results = this.filterOccurrences(node, tree, results)
+			default: {
+				const selector = `${node.parent?.type} name: (_) @occurrence`
+				const predicate = `(#match? @occurrence "^${name_match}$")`
+				const query = `(${selector} ${predicate})`
+				let results = this.match(query, tree.rootNode)
+				results = this.filterOccurrences(node, tree, results)
+				results.forEach(r => {
+					occurrences.push(this.getNodeRange(r.captures[0].node))
+				});
+			}
+			break;
 		}
-
-		results.forEach(r => {
-			occurrences.push(this.getNodeRange(r.captures[0].node))
-		});
+		
+	
 
 
 		return occurrences

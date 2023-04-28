@@ -17,7 +17,7 @@ export default class BrRenameProvider implements RenameProvider {
   }
   prepareRename?(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Range | { range: Range; placeholder: string; }> {
     const node = this.parser.getNodeAtPosition(document, position)
-    if (node.type == "stringidentifier" || node.type == "numberidentifier" || node.type == "function_name"){
+    if (node.type == "stringidentifier" || node.type == "numberidentifier"){
       return new Range(
         new Position(
           node.startPosition.row,
@@ -28,6 +28,35 @@ export default class BrRenameProvider implements RenameProvider {
           node.endPosition.column
         )
       )
+    } else if (node.type == "function_name" && node.text.toLowerCase().startsWith("fn")){
+      if (node.text.toLowerCase().startsWith("fn")){
+        return new Range(
+          new Position(
+            node.startPosition.row,
+            node.startPosition.column
+          ),
+          new Position(
+            node.endPosition.row,
+            node.endPosition.column
+          )
+        )
+      } else {
+        throw new Error("Cannot rename system function")
+      }
+    } else if (node.type == "label") {
+      return {
+        range: new Range(
+          new Position(
+            node.startPosition.row,
+            node.startPosition.column
+          ),
+          new Position(
+            node.endPosition.row,
+            node.endPosition.column-1
+          )
+        ),
+        placeholder: node.text.replace(":","")
+      }
     } else {
       throw new Error("No rename provider available")
     }
