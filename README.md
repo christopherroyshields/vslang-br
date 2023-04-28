@@ -8,6 +8,7 @@ This extension provides language support for the Business Rules! programming lan
 - Lexi Support
 - Auto-Compile
 - Live Syntax Checking
+- Auto-Rename Variables
 - prev/next occurence
 - snippets
 - function completions
