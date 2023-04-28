@@ -3,3 +3,5 @@
 .gitignore
 node_modules/!(web-tree-sitter)
 vsc-extension-quickstart.md
+src
+*.vsix
