@@ -362,7 +362,7 @@ export default class BrParser implements Disposable {
 				case 'stringidentifier':
 				case 'numberidentifier': {
 						const dimRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
-						const symbolInfo = new DocumentSymbol(node.text, node.parent?.text ?? "", SymbolKind.Variable, dimRange, dimRange)
+						const symbolInfo = new DocumentSymbol(node.text, node.parent?.type ?? "", SymbolKind.Variable, dimRange, dimRange)
 						symbolInfoList.push(symbolInfo)
 					}
 					break;
