@@ -287,14 +287,16 @@ export default class BrParser implements Disposable {
 			break;
 		
 			default: {
-				const selector = `${node.parent?.type} name: (_) @occurrence`
-				const predicate = `(#match? @occurrence "^${name_match}$")`
-				const query = `(${selector} ${predicate})`
-				let results = this.match(query, tree.rootNode)
-				results = this.filterOccurrences(node, tree, results)
-				results.forEach(r => {
-					occurrences.push(this.getNodeRange(r.captures[0].node))
-				});
+				if (node.text.toLocaleLowerCase().substring(0,3)!=="mat"){
+					const selector = `${node.parent?.type} name: (_) @occurrence`
+					const predicate = `(#match? @occurrence "^${name_match}$")`
+					const query = `(${selector} ${predicate})`
+					let results = this.match(query, tree.rootNode)
+					results = this.filterOccurrences(node, tree, results)
+					results.forEach(r => {
+						occurrences.push(this.getNodeRange(r.captures[0].node))
+					});
+				}
 			}
 			break;
 		}
