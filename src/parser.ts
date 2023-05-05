@@ -5,9 +5,14 @@ import { performance } from 'perf_hooks';
 import { Disposable } from 'vscode-languageclient';
 import { EOL } from 'os';
 import * as fs from 'fs';
+import UserFunction from './class/UserFunction';
+import UserFunctionParameter from './class/UserFunctionParameter';
+import { nodeRange } from './util/common';
+import DocComment from './class/DocComment';
+import { VariableType } from './types/VariableType';
 const fnQuery = fs.readFileSync(path.join(__dirname,"..","tree-query","function_def.scm")).toString()
 
-export default class BrParser implements Disposable {
+export default class BrParser implements Disposable {	
 	br!: Parser.Language
 	parser!: Parser
 	trees: Map<string, Parser.Tree> = new Map<string, Parser.Tree>()
@@ -29,7 +34,95 @@ export default class BrParser implements Disposable {
 		}))
 	}
 
-	getTree(document: TextDocument):  Parser.Tree {
+  async getFunctionByName(name: string, uri: Uri): Promise<UserFunction | undefined> {
+		const tree = await this.getUriTree(uri)
+		const name_match = name.replace(/[a-zA-Z]/g, c => {
+			return `[${c.toUpperCase()}${c.toLowerCase()}]`
+		}).replace("$","\\\\$")
+
+		const query = `(
+			(line (doc_comment) @doc_comment)?
+			.
+			(line (statement
+			(def_statement 
+				[
+				(numeric_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+					(string_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+				]) @def))
+				(#match? @name "^${name_match}$")
+			)`
+
+		const results = this.match(query, tree.rootNode)
+		if (results){
+			const fn = this.toFn(results[0])
+			return fn
+		}
+  }
+
+  toFn(result: Parser.QueryMatch): UserFunction {
+    const def = result.captures[0].node
+    const nameNode = result.captures[2].node
+    const params = result.captures[3].node.namedChildren
+		const docs = DocComment.parse(result.captures[4].node.text)
+    let isLibrary = false
+    if (def.descendantsOfType("library_keyword")){
+      isLibrary = true
+    }
+    const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
+    fn.documentation = docs?.text
+    for (const param of params) {
+      const p = new UserFunctionParameter
+      const nameNode = param.descendantsOfType(['stringreference','numberreference','stringarray','numberarray'])[0]
+      p.name = nameNode.text ?? ""
+      if (param.type === "required_parameter"){
+        p.isOptional = false
+      } else {
+        p.isOptional = true
+      }
+      if (param.firstChild?.firstChild?.text === "&"){
+        p.isReference = true
+      } else {
+        p.isReference = false
+      }
+      p.documentation = docs?.params.get(nameNode.text)
+      p.length = this.getStringParamLengthFromNode(param)
+      p.type = this.getParamTypeFromNode(nameNode)
+      fn.params.push(p)
+    }
+    return fn
+  }
+
+	getParamTypeFromNode(param: Parser.SyntaxNode): VariableType {
+    switch (param.type) {
+      case 'stringreference':
+        return VariableType.string
+      case 'numberreference':
+        return VariableType.number
+      case 'stringarray':
+        return VariableType.stringarray
+      case 'numberarray':
+        return VariableType.numberarray
+      default:
+        throw new Error("Uknown type")
+    }    
+  }
+
+	getStringParamLengthFromNode(param: Parser.SyntaxNode): number | undefined {
+    const lengthNodes = param.descendantsOfType("int")
+    if (lengthNodes.length) {
+      const lengthNode = lengthNodes[0]
+      return parseInt(lengthNode.text)
+    } else {
+      return undefined
+    }
+  }
+
+
+	getDocumentTree(document: TextDocument):  Parser.Tree {
 		const startTime = performance.now()
 		let tree = this.trees.get(document.uri.toString())
 		if (tree){
@@ -41,6 +134,25 @@ export default class BrParser implements Disposable {
 			console.log(`Parse: ${endTime - startTime} milliseconds`)
 			this.trees.set(document.uri.toString(),tree)
 			return tree
+		}
+	}
+
+	async getUriTree(uri: Uri): Promise<Parser.Tree> {
+		const document = this.getOpenDocument(uri)
+		if (document){
+			return this.getDocumentTree(document)
+		} else {
+			const buffer = await workspace.fs.readFile(uri)
+			const tree = this.parser.parse(buffer.toString())
+			return tree
+		}
+	}
+
+	getOpenDocument(uri: Uri): TextDocument | undefined {
+		for (const doc of workspace.textDocuments) {
+			if (doc.uri.toString() === uri.toString()){
+				return doc
+			}
 		}
 	}
 
@@ -241,7 +353,7 @@ export default class BrParser implements Disposable {
 	}
 
 	getNodeAtPosition(document: TextDocument, position: Position): Parser.SyntaxNode {
-		const tree = this.getTree(document)
+		const tree = this.getDocumentTree(document)
 		const node = tree.rootNode.descendantForPosition(this.getPoint(position))
 		return node
 	}
@@ -249,7 +361,7 @@ export default class BrParser implements Disposable {
 	getOccurences(word: string, document: TextDocument, range: Range): Range[] {
 		const occurrences: Range[] = []
 
-		const tree = this.getTree(document)
+		const tree = this.getDocumentTree(document)
 		
 		const node = tree.rootNode.descendantForPosition(this.getPoint(range.start))
 
@@ -300,9 +412,6 @@ export default class BrParser implements Disposable {
 			}
 			break;
 		}
-		
-	
-
 
 		return occurrences
 	}
@@ -321,7 +430,7 @@ export default class BrParser implements Disposable {
 	getDiagnostics(document: TextDocument): Diagnostic[] {
 
 		const errorQuery = this.br.query('(ERROR) @error')
-		const tree = this.getTree(document)
+		const tree = this.getDocumentTree(document)
 		const errors = errorQuery.matches(tree.rootNode);
 		const diagnostics: Diagnostic[] = []
 		// collection.clear();
@@ -343,7 +452,7 @@ export default class BrParser implements Disposable {
 	}
 
   getSymbols(document: TextDocument): DocumentSymbol[] {
-		const tree = this.getTree(document)
+		const tree = this.getDocumentTree(document)
 		const query = `(def_statement) @def
 		(dim_statement
 			(_

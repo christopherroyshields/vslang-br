@@ -6,14 +6,17 @@ import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_OR_COMMENT, strip
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "../class/Project"
 import { VariableType } from "../types/VariableType"
+import BrParser from "../parser"
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
-  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
+  parser: BrParser
+  constructor(configuredProjects: Map<WorkspaceFolder, Project>, parser: BrParser) {
     this.configuredProjects = configuredProjects
+    this.parser = parser
   }
 
-  provideSignatureHelp(doc: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelp | undefined> {
+  async provideSignatureHelp(doc: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): Promise<SignatureHelp | undefined> {
     let preText = doc.getText(new Range(doc.positionAt(0), position))
     // strip functions with params
     if (preText){
@@ -31,35 +34,32 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   
         if (context.groups.name.substring(0,2).toLocaleLowerCase()==="fn"){
           const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
-          const localLib = new BrSourceDocument(doc.getText())
-          
-          for (const fn of localLib.functions) {
-            if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
-              const sigLabel = fn.name + fn.generateSignature()
+          const fn = await this.parser.getFunctionByName(context.groups.name, doc.uri)
+          if (fn) {
+            const sigLabel = fn.name + fn.generateSignature()
 
-              const params: ParameterInformation[] = []
-              if (fn && fn.params){
-                for (const param of fn.params) {
-                  const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$|])`, 'g')
-                  regex.test(sigLabel)
-                  const idx = regex.lastIndex - param.name.length
-                  const range: [number, number] = idx >= 0
-                    ? [idx, regex.lastIndex]
-                    : [0, 0]
+            const params: ParameterInformation[] = []
+            if (fn && fn.params){
+              for (const param of fn.params) {
+                const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$|])`, 'g')
+                regex.test(sigLabel)
+                const idx = regex.lastIndex - param.name.length
+                const range: [number, number] = idx >= 0
+                  ? [idx, regex.lastIndex]
+                  : [0, 0]
 
-                  params.push({
-                    label: range,
-                    documentation: param.documentation
-                  })
-                }
+                params.push({
+                  label: range,
+                  documentation: param.documentation
+                })
               }
-      
-              const sigInfo = new SignatureInformation(fn.name + fn.generateSignature(), new MarkdownString(fn.documentation))
-              sigInfo.parameters = params
-              sigInfo.activeParameter = context.groups.params?.split(',').length - 1
-              sigHelp.signatures.push(sigInfo)
-              return sigHelp
             }
+    
+            const sigInfo = new SignatureInformation(fn.name + fn.generateSignature(), new MarkdownString(fn.documentation))
+            sigInfo.parameters = params
+            sigInfo.activeParameter = context.groups.params?.split(',').length - 1
+            sigHelp.signatures.push(sigInfo)
+            return sigHelp
           }
   
           if (workspaceFolder){
@@ -67,23 +67,26 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
             if (project){
               for (const [libUri,lib] of project.sourceFiles) {
                 if (libUri !== doc.uri.toString()){
-                  for (const fn of lib.functions) {
-                    if (fn.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
-                      const params: ParameterInformation[] = []
-                      if (fn && fn.params){
-                        for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
-                          const el = fn.params[paramIndex]
-                          params.push({
-                            label: el.name,
-                            documentation: el.documentation
-                          })
+                  for (const fnKey of lib.functions) {
+                    if (fnKey.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
+                      const fn = await this.parser.getFunctionByName(fnKey.name, lib.uri)
+                      if (fn){
+                        const params: ParameterInformation[] = []
+                        if (fn && fn.params){
+                          for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
+                            const el = fn.params[paramIndex]
+                            params.push({
+                              label: el.name,
+                              documentation: el.documentation
+                            })
+                          }
                         }
+                
+                        const sigInfo = new SignatureInformation(fn.name + fn.generateSignature())
+                        sigInfo.parameters = params
+                        sigInfo.activeParameter = context.groups.params?.split(',').length - 1
+                        sigHelp.signatures.push(sigInfo)
                       }
-              
-                      const sigInfo = new SignatureInformation(fn.name + fn.generateSignature())
-                      sigInfo.parameters = params
-                      sigInfo.activeParameter = context.groups.params?.split(',').length - 1
-                      sigHelp.signatures.push(sigInfo)
                     }
                   }
                 }

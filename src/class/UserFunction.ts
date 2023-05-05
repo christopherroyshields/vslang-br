@@ -2,6 +2,10 @@ import { EOL } from "os"
 import BrFunction from "../interface/BrFunction"
 import { EntityOffset } from "./EntityOffset"
 import UserFunctionParameter from "./UserFunctionParameter"
+import { Range } from "vscode"
+import { SyntaxNode } from "web-tree-sitter"
+import { nodeRange } from "../util/common"
+import { VariableType } from "../types/VariableType"
 
 /**
  * User Defined BR Function found in source
@@ -12,16 +16,41 @@ import UserFunctionParameter from "./UserFunctionParameter"
   description?: string
   documentation?: string
   params: UserFunctionParameter[] = []
+  nameRange: Range
   offset: EntityOffset = {
     start: 0,
     end: 0
   }
   /**
    * @param name - function name
+   * @param isLibrary - Is a library function
+   * @param nameRange - Range of name text
    */
-  constructor(name: string, isLibrary: boolean) {
+  constructor(name: string, isLibrary: boolean, nameRange: Range) {
     this.name = name
     this.isLibrary = isLibrary
+    this.nameRange = nameRange
+  }
+
+  static fromNode(nameNode: SyntaxNode, defNode: SyntaxNode, params: SyntaxNode[]): UserFunction {
+    let isLibrary = false
+    if (defNode.firstChild?.type === "library_keyword"){
+      isLibrary = true
+    }
+    const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
+    const reqs = defNode.descendantsOfType("required_parameter")
+    if (reqs){
+      const params = reqs[0].children
+      for (const param of params) {
+        const paramNode = param.namedChild(0)
+        if (paramNode){
+          const newParam = new UserFunctionParameter()
+          newParam.name = paramNode?.text
+          fn.params.push(new UserFunctionParameter())
+        }
+      }
+    }
+    return fn
   }
 
   /**

@@ -1,4 +1,4 @@
-import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument, commands, Diagnostic, Range, Position, DiagnosticSeverity, DiagnosticCollection } from 'vscode';
+import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument, commands, Diagnostic, Range, Position, DiagnosticSeverity, DiagnosticCollection, StatusBarAlignment } from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
 import { activateClient, deactivateClient } from './client'
@@ -21,65 +21,81 @@ import BrDiagnostics from './class/BrDiagnostics';
 import { debounce } from './util/common';
 import OccurenceHighlightProvider from './providers/OccurenceHighlightProvider';
 import BrRenameProvider from './providers/BrRenameProvider';
-
-const ConfiguredProjects = new Map<WorkspaceFolder, Project>()
-
-const signatureHelpProvider = new BrSignatureHelpProvider(ConfiguredProjects)
-const hoverProvider = new BrHoverProvider(ConfiguredProjects)
-const libLinkListProvider = new LibLinkListProvider(ConfiguredProjects)
-const libPathProvider = new LibPathProvider(ConfiguredProjects)
-const funcCompletionProvider = new FuncCompletionProvider(ConfiguredProjects)
-const statementCompletionProvider = new StatementCompletionProvider(ConfiguredProjects)
-const keywordCompletionProvider = new KeywordCompletionProvider(ConfiguredProjects)
-const layoutSemanticTokenProvider = new LayoutSemanticTokenProvider()
+import BrWorkspaceSymbolProvider from './providers/BrWorkspaceSymbolProvider';
+import { log } from 'console';
+import LocalVariableCompletionProvider from './providers/LocalCompletionProvider';
+import LocalFunctionCompletionProvider from './providers/LocalFunctionCompletionProvider';
+import InternalFunctionCompletionProvider from './providers/InternalFunctionCompletionProvider';
 
 export async function activate(context: ExtensionContext) {
+	const subscriptions = context.subscriptions
 	
 	const parser = new BrParser()
-	context.subscriptions.push(parser)
+	subscriptions.push(parser)
 	await parser.activate(context)
 
 	activateLexi(context)
 
 	activateNextPrev(context)
 
-	languages.registerDocumentSemanticTokensProvider({
+	const layoutSemanticTokenProvider = new LayoutSemanticTokenProvider()
+
+	subscriptions.push(languages.registerDocumentSemanticTokensProvider({
 		language: "lay",
 		scheme: "file"
-	}, layoutSemanticTokenProvider, LayoutLegend)
+	}, layoutSemanticTokenProvider, LayoutLegend))
 	
 	const sel: DocumentSelector = {
 		language: "br"
 	}
 
-	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
+	const statementCompletionProvider = new StatementCompletionProvider()
+	subscriptions.push(languages.registerCompletionItemProvider(sel, statementCompletionProvider))
 
-	languages.registerHoverProvider(sel, hoverProvider)
-
-	languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ")
-	
-	languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'")
-
-	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
-
-	languages.registerCompletionItemProvider(sel, statementCompletionProvider)
-
-	languages.registerCompletionItemProvider(sel, keywordCompletionProvider)
+	const internalFunctionCompletionProvider = new InternalFunctionCompletionProvider()
+	subscriptions.push(languages.registerCompletionItemProvider(sel, internalFunctionCompletionProvider))
 
 	// activateClient(context)
 
 	const brSourceSymbolProvider = new BrSourceSymbolProvider(parser)
-	languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider)
+	subscriptions.push(languages.registerDocumentSymbolProvider(sel, brSourceSymbolProvider))
 
 	const occurrenceProvider = new OccurenceHighlightProvider(parser)
-	languages.registerDocumentHighlightProvider(sel,occurrenceProvider)
+	subscriptions.push(languages.registerDocumentHighlightProvider(sel,occurrenceProvider))
 
 	const renameProvider = new BrRenameProvider(parser)
-	languages.registerRenameProvider(sel, renameProvider)
+	subscriptions.push(languages.registerRenameProvider(sel, renameProvider))
+
+	const keywordCompletionProvider = new KeywordCompletionProvider()
+	languages.registerCompletionItemProvider(sel, keywordCompletionProvider)
+
+	const localVariableCompletionProvider = new LocalVariableCompletionProvider(parser)
+	languages.registerCompletionItemProvider(sel, localVariableCompletionProvider)
+
+	const localFunctionCompletionProvider = new LocalFunctionCompletionProvider(parser)
+	languages.registerCompletionItemProvider(sel, localFunctionCompletionProvider)
 
 	const diagnostics = new BrDiagnostics(parser, context)
+	
+	const configuredProjects = await activateWorkspaceFolders(context)
 
-	activateWorkspaceFolders()
+	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects)
+	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
+
+	const libLinkListProvider = new LibLinkListProvider(configuredProjects)
+	languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ")
+
+	const hoverProvider = new BrHoverProvider(configuredProjects, parser)
+	languages.registerHoverProvider(sel, hoverProvider)
+
+	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
+	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
+
+	const libPathProvider = new LibPathProvider(configuredProjects, parser)
+	languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'")
+
+	const workspaceSymbolProvider = new BrWorkspaceSymbolProvider(parser, configuredProjects)
+	languages.registerWorkspaceSymbolProvider(workspaceSymbolProvider)
 
 }
 
@@ -90,13 +106,20 @@ export function deactivate() {
 /**
  * Sets up monitoring of project configuration
  */
-function activateWorkspaceFolders() {
+async function activateWorkspaceFolders(context: ExtensionContext): Promise<Map<WorkspaceFolder, Project>> {
+	const configuredProjects = new Map<WorkspaceFolder, Project>()
+
+	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
+	context.subscriptions.push(statusBarItem)
+	statusBarItem.text = `$(loading~spin) Loading project...`
+	statusBarItem.show()
+
 	const disposablesMap = new Map<WorkspaceFolder,Disposable[]>()
 	if (workspace.workspaceFolders){
-		workspace.workspaceFolders.forEach(async (workspaceFolder: WorkspaceFolder) => {
+		for (const workspaceFolder of workspace.workspaceFolders) {
 			const disposables: Disposable[] = []
 			const project = await startWatchingFiles(workspaceFolder, disposables)
-			ConfiguredProjects.set(workspaceFolder, project)
+			configuredProjects.set(workspaceFolder, project)
 			disposablesMap.set(workspaceFolder, disposables)
 
 			workspace.onDidChangeConfiguration(async (e: ConfigurationChangeEvent) => {
@@ -104,20 +127,21 @@ function activateWorkspaceFolders() {
 					disposablesMap.get(workspaceFolder)?.forEach(d => d.dispose())	
 					const disposables: Disposable[] = []
 					const project = await startWatchingFiles(workspaceFolder, disposables)
-					ConfiguredProjects.set(workspaceFolder, project)
+					configuredProjects.set(workspaceFolder, project)
 					disposablesMap.set(workspaceFolder, disposables)
 				}
 			})
-		
-		})
+		}
 	}
+
+	statusBarItem.hide()
 
 	workspace.onDidChangeWorkspaceFolders(async ({ added, removed }: WorkspaceFoldersChangeEvent) => {
 		if (added) {
 			for (const workspaceFolder of added) {
 				const disposables: Disposable[] = []
 				const project = await startWatchingFiles(workspaceFolder,  disposables)
-				ConfiguredProjects.set(workspaceFolder, project)
+				configuredProjects.set(workspaceFolder, project)
 				disposablesMap.set(workspaceFolder, disposables)
 			}
 		}
@@ -127,6 +151,8 @@ function activateWorkspaceFolders() {
 			}
 		}
 	})
+
+	return configuredProjects
 }
 
 async function updateLibraryFunctions(uri: Uri, workspaceFolder: WorkspaceFolder): Promise<ProjectSourceDocument | undefined> {
@@ -206,7 +232,11 @@ async function watchLayoutFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: string, project: Project, disposables: Disposable[]) {
 	const sourceGlob = workspace.getConfiguration('br', workspaceFolder).get("sourceFileGlobPattern", "**/*.{brs,wbs}");
 	const sourceFileGlobPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath), sourceGlob)
+
+	const startTime = performance.now()
 	const sourceFiles = await workspace.findFiles(sourceFileGlobPattern)
+	const endTime = performance.now()
+	console.log(`sourc load: ${endTime - startTime} ms`);
 	for (const sourceUri of sourceFiles) {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
 		if (sourceLib){

@@ -3,16 +3,25 @@ import { CancellationToken, CompletionContext, CompletionItem, CompletionItemLab
 import { getSearchPath } from "../util/common"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import { Project } from "../class/Project"
+import BrParser from "../parser";
 
 /**
  * Library statement file path provider
  */
 export default class LibPathProvider extends BaseCompletionProvider {
-  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
+  parser: BrParser
+  constructor(configuredProjects: Map<WorkspaceFolder, Project>, parser: BrParser) {
     super(configuredProjects)
+    this.parser = parser
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): CompletionList<CompletionItem> {
     const completionItems: CompletionList<CompletionItem> = new CompletionList()
+
+    // const selectedNode = this.parser.getNodeAtPosition(doc, position)
+    // let isLibraryLiteral = false
+    // if (selectedNode.type === "string" && selectedNode.parent?.parent?.parent?.parent?.type === "library_statement"){
+    //   isLibraryLiteral = true
+    // }
 
     const line = doc.getText(new Range(doc.lineAt(position).range.start, position))
     const ISLIBRARY_LITERAL = /library\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')$/gi

@@ -30,9 +30,7 @@ export default class FuncCompletionProvider extends BaseCompletionProvider {
                     label: fn.name,
                     detail: ' (library function)',
                     description: path.basename(lib.uri.fsPath)
-                  },
-                  detail: `(library function) ${fn.name}${fn.generateSignature()}`,
-                  documentation: new MarkdownString(fn.getAllDocs())
+                  }
                 })
               }
             }
@@ -55,49 +53,6 @@ export default class FuncCompletionProvider extends BaseCompletionProvider {
           }
         }
       }
-    }
-
-    let docText = doc.getText()
-    const currentWordRange = doc.getWordRangeAtPosition(position, /\w+\$?/)
-    if (currentWordRange){
-      const start = doc.offsetAt(currentWordRange.start)
-      const end = doc.offsetAt(currentWordRange.end)
-      docText = docText.substring(0, start) + " ".repeat(end - start) + docText.substring(end)
-    }
-    
-    for (const fn of InternalFunctions) {
-      completionItems.push({
-        kind: CompletionItemKind.Function,
-        label: {
-          label: fn.name,
-          detail: `(internal function)`
-        },
-        detail: `(internal function) ${fn.name}${fn.generateSignature()}`,
-        documentation: new MarkdownString(fn.getAllDocs())
-      })
-    }    
-
-    const source = new BrSourceDocument(docText)
-    for (const fn of source.functions) {
-      completionItems.push({
-        kind: CompletionItemKind.Function,
-        label: {
-          label: fn.name,
-          detail: ` (${fn.isLibrary ? 'library' : 'local'} function)`
-        },
-        detail: `(${fn.isLibrary ? 'library' : 'local'} function) ${fn.name}${fn.generateSignature()}`,
-        documentation: new MarkdownString(fn.getAllDocs())
-      })
-    }
-
-    for (const [k,v] of source.variables){
-      const label: CompletionItemLabel = {
-        label: v.name.replace(/mat[ \t]*/i, ""),
-        detail: ` (${TypeLabel.get(v.type)})`
-      }
-      const completionItem = new CompletionItem(label, CompletionItemKind.Variable)
-      completionItem.detail = `(variable) ${v.name}: ${TypeLabel.get(v.type)}`
-      completionItems.push(completionItem)
     }
 
     return completionItems

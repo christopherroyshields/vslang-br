@@ -7,13 +7,16 @@ import { isComment } from "../util/common"
 import { Project } from '../class/Project'
 import UserFunction from '../class/UserFunction'
 import InternalFunction from '../class/InternalFunction'
+import BrParser from '../parser'
 
 export default class BrHoverProvider implements HoverProvider {
+  parser: BrParser
   configuredProjects: Map<WorkspaceFolder, Project>
-  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
+  constructor(configuredProjects: Map<WorkspaceFolder, Project>, parser: BrParser) {
     this.configuredProjects = configuredProjects
+    this.parser = parser
   }
-  provideHover(doc: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover> {
+  async provideHover(doc: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {
     const doctext = doc.getText()
     if (isComment(position, doctext, doc)){
       return			
@@ -25,13 +28,11 @@ export default class BrHoverProvider implements HoverProvider {
           if (word.substring(0,2).toLowerCase() == "fn"){
             
             // local functions
-            const localSource = new BrSourceDocument(doc.getText())
-            for (const fn of localSource.functions) {
-              if (fn.name.toLowerCase() == word.toLocaleLowerCase()){
-                const hover = this.createHoverFromInternalFunction(fn)
-                hover.range = wordRange
-                return hover
-              }
+            const fn = await this.parser.getFunctionByName(word, doc.uri)
+            if (fn) {
+              const hover = this.createHoverFromInternalFunction(fn)
+              hover.range = wordRange
+              return hover
             }
             
             // library functions
@@ -42,9 +43,12 @@ export default class BrHoverProvider implements HoverProvider {
                 for (const [uri,lib] of project.sourceFiles) {
                   for (const fn of lib.functions) {
                     if (fn.name.toLowerCase() === word.toLocaleLowerCase()){
-                      const hover = this.createHoverFromInternalFunction(fn)
-                      hover.range = wordRange
-                      return hover
+                      const fn = await this.parser.getFunctionByName(word, lib.uri)
+                      if (fn){
+                        const hover = this.createHoverFromInternalFunction(fn)
+                        hover.range = wordRange
+                        return hover
+                      }
                     }
                   }
                 }

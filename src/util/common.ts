@@ -1,8 +1,30 @@
-import { Position, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
+import { Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
 import { VariableType } from "../types/VariableType"
+import Parser = require("web-tree-sitter")
 
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
 export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))/g
+
+export function indicesToRange(text: string, startOffset: number, endOffset: number): Range {
+	const startLines = text.substring(0, startOffset).split(/\r?\n/)
+	const startLine = startLines.length - 1
+	const startCol = startLines[startLines.length - 1].length
+
+	const rangeLines = text.substring(startOffset, endOffset).split(/\r?\n/)
+	const endLine = startLine + rangeLines.length - 1
+	const endCol = rangeLines[rangeLines.length - 1].length
+
+	const range = new Range(startLine, startCol, endLine, endCol)
+	return range
+}
+
+export function pointToPos(point: Parser.Point): Position {
+	return new Position(point.row, point.column)
+}
+
+export function nodeRange(node: Parser.SyntaxNode): Range {
+	return new Range(node.startPosition.row,node.startPosition.column,node.endPosition.row,node.endPosition.column)
+}
 
 export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
   func: F
