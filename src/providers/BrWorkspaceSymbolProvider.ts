@@ -16,11 +16,12 @@ export default class BrWorkspaceSymbolProvider implements WorkspaceSymbolProvide
   async provideWorkspaceSymbols(query: string, token: CancellationToken): Promise<SymbolInformation[]> {
     const symbols: SymbolInformation[] = []
 
+    const dummyRange = new Range(0,0,0,0)
     this.configuredProjects.forEach(project => {
       if (project){
         for (const [uri, lib] of project.sourceFiles) {
           for (const fn of lib.functions){
-            const loc = new Location(Uri.parse(uri),fn.range)
+            const loc = new Location(lib.uri,dummyRange)
             const symbolInfo = new SymbolInformation(fn.name,SymbolKind.Function,"",loc)
             symbols.push(symbolInfo)
           }
@@ -31,7 +32,13 @@ export default class BrWorkspaceSymbolProvider implements WorkspaceSymbolProvide
     return symbols
   }
 
-  resolveWorkspaceSymbol?(symbol: SymbolInformation, token: CancellationToken): ProviderResult<SymbolInformation> {
+  async resolveWorkspaceSymbol(symbol: SymbolInformation, token: CancellationToken): Promise<SymbolInformation> {
+    if (symbol.kind === SymbolKind.Function){
+      const fn = await this.parser.getFunctionByName(symbol.name,symbol.location.uri)
+      if (fn){
+        symbol.location.range = fn.nameRange
+      }
+    }
     return symbol
   }
 }

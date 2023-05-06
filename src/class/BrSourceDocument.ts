@@ -19,8 +19,7 @@ type DimVariable = {
 
 type FunctionKey = {
   isLibrary: boolean,
-  name: string,
-  range: Range
+  name: string
 }
 
 export default class BrSourceDocument {
@@ -164,11 +163,9 @@ export default class BrSourceDocument {
     BrSourceDocument.DEF_FN.lastIndex = index
     const match = BrSourceDocument.DEF_FN.exec(text)
     if (match?.groups?.name){
-      const range = indicesToRange(text, index, BrSourceDocument.DEF_FN.lastIndex)
       this.functions.push({
         isLibrary: match?.groups?.isLibrary ? true : false,
-        name: match.groups.name,
-        range: range
+        name: match.groups.name
       })
       return BrSourceDocument.DEF_FN.lastIndex
     } else {
