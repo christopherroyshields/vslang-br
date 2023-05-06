@@ -36,30 +36,32 @@ export default class BrParser implements Disposable {
 
   async getFunctionByName(name: string, uri: Uri): Promise<UserFunction | undefined> {
 		const tree = await this.getUriTree(uri)
-		const name_match = name.replace(/[a-zA-Z]/g, c => {
-			return `[${c.toUpperCase()}${c.toLowerCase()}]`
-		}).replace("$","\\\\$")
-
-		const query = `(
-			(line (doc_comment) @doc_comment)?
-			.
-			(line (statement
-			(def_statement 
-				[
-				(numeric_function_definition (function_name) @name
-					(parameter_list)? @params
-					) @type
-					(string_function_definition (function_name) @name
-					(parameter_list)? @params
-					) @type
-				]) @def))
-				(#match? @name "^${name_match}$")
-			)`
-
-		const results = this.match(query, tree.rootNode)
-		if (results.length){
-			const fn = this.toFn(results[0])
-			return fn
+		if (tree){
+			const name_match = name.replace(/[a-zA-Z]/g, c => {
+				return `[${c.toUpperCase()}${c.toLowerCase()}]`
+			}).replace("$","\\\\$")
+	
+			const query = `(
+				(line (doc_comment) @doc_comment)?
+				.
+				(line (statement
+				(def_statement 
+					[
+					(numeric_function_definition (function_name) @name
+						(parameter_list)? @params
+						) @type
+						(string_function_definition (function_name) @name
+						(parameter_list)? @params
+						) @type
+					]) @def))
+					(#match? @name "^${name_match}$")
+				)`
+	
+			const results = this.match(query, tree.rootNode)
+			if (results.length){
+				const fn = this.toFn(results[0])
+				return fn
+			}
 		}
   }
 
@@ -181,14 +183,24 @@ export default class BrParser implements Disposable {
 		}
 	}
 
-	async getUriTree(uri: Uri): Promise<Parser.Tree> {
+	async getUriTree(uri: Uri): Promise<Parser.Tree | undefined> {
 		const document = this.getOpenDocument(uri)
 		if (document){
 			return this.getDocumentTree(document)
 		} else {
-			const buffer = await workspace.fs.readFile(uri)
-			const tree = this.parser.parse(buffer.toString())
-			return tree
+			let tree: Parser.Tree | undefined
+			if (this.trees.has(uri.toString())){
+				tree = this.trees.get(uri.toString())
+				if (tree){
+					return tree
+				}
+			} else {
+				const buffer = await workspace.fs.readFile(uri)
+				tree = this.parser.parse(buffer.toString())
+				this.trees.set(uri.toString(),tree.copy())
+				tree.delete()
+				return tree
+			}
 		}
 	}
 
