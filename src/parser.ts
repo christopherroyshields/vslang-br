@@ -398,7 +398,7 @@ export default class BrParser implements Disposable {
 
 	getNodeAtPosition(document: TextDocument, position: Position): Parser.SyntaxNode {
 		const tree = this.getDocumentTree(document)
-		const node = tree.rootNode.descendantForPosition(this.getPoint(position))
+		const node = tree.rootNode.namedDescendantForPosition(this.getPoint(position))
 		return node
 	}
 
