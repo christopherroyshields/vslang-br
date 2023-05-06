@@ -85,7 +85,7 @@ export async function activate(context: ExtensionContext) {
 	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
 	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
 
-	await activateWorkspaceFolders(context, configuredProjects)
+	await activateWorkspaceFolders(context, configuredProjects, parser)
 
 	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects, parser)
 	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
@@ -108,7 +108,7 @@ export function deactivate() {
 /**
  * Sets up monitoring of project configuration
  */
-async function activateWorkspaceFolders(context: ExtensionContext, configuredProjects: Map<WorkspaceFolder, Project>): Promise<Map<WorkspaceFolder, Project>> {
+async function activateWorkspaceFolders(context: ExtensionContext, configuredProjects: Map<WorkspaceFolder, Project>, parser: BrParser): Promise<Map<WorkspaceFolder, Project>> {
 	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
 	context.subscriptions.push(statusBarItem)
 	statusBarItem.text = `$(loading~spin) Loading project...`
@@ -118,7 +118,7 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 	if (workspace.workspaceFolders){
 		for (const workspaceFolder of workspace.workspaceFolders) {
 			const disposables: Disposable[] = []
-			const project = await startWatchingFiles(workspaceFolder, disposables)
+			const project = await startWatchingFiles(workspaceFolder, disposables, parser)
 			configuredProjects.set(workspaceFolder, project)
 			disposablesMap.set(workspaceFolder, disposables)
 
@@ -126,7 +126,7 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 				if (e.affectsConfiguration("br", workspaceFolder)){
 					disposablesMap.get(workspaceFolder)?.forEach(d => d.dispose())	
 					const disposables: Disposable[] = []
-					const project = await startWatchingFiles(workspaceFolder, disposables)
+					const project = await startWatchingFiles(workspaceFolder, disposables, parser)
 					configuredProjects.set(workspaceFolder, project)
 					disposablesMap.set(workspaceFolder, disposables)
 				}
@@ -140,7 +140,7 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 		if (added) {
 			for (const workspaceFolder of added) {
 				const disposables: Disposable[] = []
-				const project = await startWatchingFiles(workspaceFolder,  disposables)
+				const project = await startWatchingFiles(workspaceFolder,  disposables, parser)
 				configuredProjects.set(workspaceFolder, project)
 				disposablesMap.set(workspaceFolder, disposables)
 			}
@@ -167,7 +167,7 @@ async function updateLibraryFunctions(uri: Uri, workspaceFolder: WorkspaceFolder
 	}
 }
 
-async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables: Disposable[]): Promise<Project> {
+async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables: Disposable[], parser: BrParser): Promise<Project> {
 	const project: Project = {
 		sourceFiles: new Map<string, ProjectSourceDocument>(),
 		layouts: new Map<string, Layout>()
@@ -176,7 +176,7 @@ async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables:
 	const searchPath = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
 
 	await watchLayoutFiles(workspaceFolder, searchPath, project, disposables)
-	await watchSourceFiles(workspaceFolder, searchPath, project, disposables)
+	await watchSourceFiles(workspaceFolder, searchPath, project, disposables, parser)
 
 	return project
 }
@@ -229,7 +229,7 @@ async function watchLayoutFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	}, undefined, disposables)
 }
 
-async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: string, project: Project, disposables: Disposable[]) {
+async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: string, project: Project, disposables: Disposable[], parser: BrParser) {
 	const sourceGlob = workspace.getConfiguration('br', workspaceFolder).get("sourceFileGlobPattern", "**/*.{brs,wbs}");
 	const sourceFileGlobPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath), sourceGlob)
 
@@ -253,12 +253,18 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 					project.sourceFiles.set(sourceUri.toString(), sourceLib)
 				}
 			}
+			if (parser.trees.has(sourceUri.toString())){
+				parser.getUriTree(sourceUri,true)
+			}
 		}
 	}, undefined, disposables)
 
 	codeWatcher.onDidDelete(async (sourceUri: Uri) => {
 		project.sourceFiles.delete(sourceUri.toString())
-	}, undefined, disposables)
+		if (parser.trees.has(sourceUri.toString())){
+			parser.trees.delete(sourceUri.toString())
+		}
+}, undefined, disposables)
 
 	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)

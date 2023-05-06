@@ -183,13 +183,13 @@ export default class BrParser implements Disposable {
 		}
 	}
 
-	async getUriTree(uri: Uri): Promise<Parser.Tree | undefined> {
+	async getUriTree(uri: Uri, update = false): Promise<Parser.Tree | undefined> {
 		const document = this.getOpenDocument(uri)
 		if (document){
 			return this.getDocumentTree(document)
 		} else {
 			let tree: Parser.Tree | undefined
-			if (this.trees.has(uri.toString())){
+			if (!update && this.trees.has(uri.toString())){
 				tree = this.trees.get(uri.toString())
 				if (tree){
 					return tree
