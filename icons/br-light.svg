@@ -23,16 +23,21 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     showgrid="false"
-     inkscape:zoom="23.632548"
-     inkscape:cx="9.5842396"
-     inkscape:cy="10.092014"
-     inkscape:window-width="1350"
+     showgrid="true"
+     inkscape:zoom="32"
+     inkscape:cx="0.09375"
+     inkscape:cy="10.140625"
+     inkscape:window-width="1845"
      inkscape:window-height="1000"
      inkscape:window-x="182"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer1"
+     showguides="false">
+    <inkscape:grid
+       type="xygrid"
+       id="grid224" />
+  </sodipodi:namedview>
   <defs
      id="defs2" />
   <g
@@ -42,26 +47,27 @@
      transform="translate(-45.879367,-94.296642)">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.56488px;line-height:0;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';text-align:center;text-anchor:middle;fill:#9fa4a3;fill-opacity:1;stroke-width:0.0668416"
-       x="-47.813557"
-       y="98.620544"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.70559px;line-height:0;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Medium';text-align:center;text-anchor:middle;fill:#9fa4a3;fill-opacity:1;stroke-width:0.0694799"
+       x="-48.260864"
+       y="98.940948"
        id="text113"
-       transform="scale(-1,1)"><tspan
+       transform="scale(-0.9999846,1.0000154)"><tspan
          sodipodi:role="line"
          id="tspan111"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';fill:#9fa4a3;fill-opacity:1;stroke-width:0.0668416"
-         x="-47.813557"
-         y="98.620544">B</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Medium';fill:#9fa4a3;fill-opacity:1;stroke-width:0.0694799"
+         x="-48.260864"
+         y="98.940948">B</tspan></text>
     <text
        xml:space="preserve"
-       style="font-size:3.56488px;line-height:0;font-family:Consolas;-inkscape-font-specification:Consolas;text-align:center;text-anchor:middle;fill:#7a0000;fill-opacity:1;stroke-width:0.0668416"
-       x="50.200008"
-       y="98.604965"
-       id="text167"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:3.70559px;line-height:0;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Medium';text-align:center;text-anchor:middle;fill:#7a0000;fill-opacity:1;stroke-width:0.0694799"
+       x="50.333614"
+       y="98.940948"
+       id="text167"
+       transform="scale(0.9999846,1.0000154)"><tspan
          sodipodi:role="line"
          id="tspan165"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';fill:#7a0000;fill-opacity:1;stroke-width:0.0668416"
-         x="50.200008"
-         y="98.604965">R</tspan></text>
+         style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Medium';fill:#7a0000;fill-opacity:1;stroke-width:0.0694799"
+         x="50.333614"
+         y="98.940948">R</tspan></text>
   </g>
 </svg>
