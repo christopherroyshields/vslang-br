@@ -1,6 +1,7 @@
 import { EOL } from "os"
 import BrFunction from "../interface/BrFunction"
 import FunctionParameter from "../interface/FunctionParameter"
+import { ParameterInformation } from "vscode"
 
 export default class InternalFunction implements BrFunction {
   name = ''
@@ -18,14 +19,15 @@ export default class InternalFunction implements BrFunction {
     this.documentation=documentation
     this.params=params
   }
-  public generateSignature(): string {
-    let sig = ''
+  public generateSignature(paramInfo: ParameterInformation[] | undefined = undefined): string {
+    let sig = this.name
     if (this.params ?. length) {
       sig += '('
       for (let paramindex = 0; paramindex < this.params.length; paramindex++) {
         if (paramindex > 0) {
           sig += ','
         }
+        const paramStart = sig.length
         const element = this.params[paramindex]
         let name = ''
         name += element.name
@@ -33,6 +35,13 @@ export default class InternalFunction implements BrFunction {
           name = '[' + name + ']'
         }
         sig += name
+        const paramEnd = sig.length
+        if (paramInfo){
+          paramInfo.push({
+            label: [paramStart, paramEnd],
+            documentation: element.documentation
+          })
+        }
       }
       sig += ')'
     }

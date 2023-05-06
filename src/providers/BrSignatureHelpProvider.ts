@@ -2,11 +2,12 @@ import { CancellationToken, MarkdownString, ParameterInformation, Position, Prov
 import ConfiguredProject from "../class/ConfiguredProject"
 import BrSourceDocument from "../class/BrSourceDocument"
 import { getFunctionsByName } from "../completions/functions"
-import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common"
+import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, nodeRange, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common"
 import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "../class/Project"
 import { VariableType } from "../types/VariableType"
 import BrParser from "../parser"
+import { SyntaxNode } from "web-tree-sitter"
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -16,113 +17,125 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
     this.parser = parser
   }
 
+  getParentByType(node: SyntaxNode, type: string | string[]): SyntaxNode | undefined {
+    const parent = node.parent
+    if (parent){
+      if (typeof type === "object"){
+        for (const t of type) {
+          if (parent.type === t){
+            return parent
+          }
+        }
+        return this.getParentByType(parent, type)
+      } else {
+        if (parent.type === type){
+          return parent
+        } else {
+          return this.getParentByType(parent, type)
+        }
+      }
+    }
+  }
+
   async provideSignatureHelp(doc: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): Promise<SignatureHelp | undefined> {
-    let preText = doc.getText(new Range(doc.positionAt(0), position))
-    // strip functions with params
-    if (preText){
-      // remove literals first
-      preText = preText.replace(STRING_OR_COMMENT, "")
-      preText = stripBalancedFunctions(preText)
-      const context: RegExpExecArray | null = FUNCTION_CALL_CONTEXT.exec(preText)
-      if (context && context.groups && !context.groups.isDef){
-  
+    const posNode = this.parser.getNodeAtPosition(doc, position)
+    let argList = undefined
+    if (posNode.type === "arguments"){
+      argList = posNode
+    } else {
+      argList = this.getParentByType(posNode, "arguments")
+    }
+    if (argList){
+      const call = this.getParentByType(argList, ["string_user_function", "numeric_user_function", "numeric_system_function", "string_system_function"])
+      if (call){
         const sigHelp: SignatureHelp = {
           signatures: [],
           activeSignature: 0,
           activeParameter: 0
         }
+
+        const activeParameter = this.getActiveParameter(call, position)
+        const name = call.firstNamedChild
+        if (name){
+          if (call.type === "numeric_system_function" || call.type === "string_system_function"){
+            const internalFunctions = getFunctionsByName(name.text)
+            if (internalFunctions){
+              for (const fn of internalFunctions) {
+                const params: ParameterInformation[] = []
+                const sigLabel = fn.generateSignature(params)
   
-        if (context.groups.name.substring(0,2).toLocaleLowerCase()==="fn"){
-          const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
-          const fn = await this.parser.getFunctionByName(context.groups.name, doc.uri)
-          if (fn) {
-            const sigLabel = fn.name + fn.generateSignature()
-
-            const params: ParameterInformation[] = []
-            if (fn && fn.params){
-              for (const param of fn.params) {
-                const regex = new RegExp(`(\\W|^)${escapeRegExpCharacters(param.name)}(?=\\*|,|\\)|$|])`, 'g')
-                regex.test(sigLabel)
-                const idx = regex.lastIndex - param.name.length
-                const range: [number, number] = idx >= 0
-                  ? [idx, regex.lastIndex]
-                  : [0, 0]
-
-                params.push({
-                  label: range,
-                  documentation: param.documentation
+                sigHelp.signatures.push({
+                  documentation: fn.documentation,
+                  label: sigLabel,
+                  parameters: params,
+                  activeParameter: activeParameter
                 })
+  
+                return sigHelp
               }
             }
-    
-            const sigInfo = new SignatureInformation(fn.name + fn.generateSignature(), new MarkdownString(fn.documentation))
-            sigInfo.parameters = params
-            sigInfo.activeParameter = context.groups.params?.split(',').length - 1
-            sigHelp.signatures.push(sigInfo)
-            return sigHelp
-          }
-  
-          if (workspaceFolder){
-            const project = this.configuredProjects.get(workspaceFolder)
-            if (project){
-              for (const [libUri,lib] of project.sourceFiles) {
-                if (libUri !== doc.uri.toString()){
-                  for (const fnKey of lib.functions) {
-                    if (fnKey.name.toLowerCase() == context.groups.name.toLocaleLowerCase()){
-                      const fn = await this.parser.getFunctionByName(fnKey.name, lib.uri)
-                      if (fn){
-                        const params: ParameterInformation[] = []
-                        if (fn && fn.params){
-                          for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
-                            const el = fn.params[paramIndex]
-                            params.push({
-                              label: el.name,
-                              documentation: el.documentation
-                            })
-                          }
+          } else {
+            const fn = await this.parser.getFunctionByName(name.text, doc.uri)
+            if (fn) {
+              const params: ParameterInformation[] = []
+              const sigLabel = fn.generateSignature(params)
+              sigHelp.signatures.push({
+                documentation: fn.documentation,
+                label: sigLabel,
+                parameters: params,
+                activeParameter: activeParameter
+              })
+              return sigHelp
+            }
+
+            const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+            if (workspaceFolder){
+              const project = this.configuredProjects.get(workspaceFolder)
+              if (project){
+                for (const [libUri,lib] of project.sourceFiles) {
+                  if (libUri !== doc.uri.toString()){
+                    for (const fnKey of lib.functions) {
+                      if (fnKey.isLibrary && fnKey.name.toLowerCase() == name.text.toLowerCase()){
+                        const fn = await this.parser.getFunctionByName(fnKey.name, lib.uri)
+                        if (fn){
+                          const params: ParameterInformation[] = []
+                          const sigLabel = fn.generateSignature(params)
+                          sigHelp.signatures.push({
+                            documentation: fn.documentation,
+                            label: sigLabel,
+                            parameters: params,
+                            activeParameter: activeParameter
+                          })
                         }
-                
-                        const sigInfo = new SignatureInformation(fn.name + fn.generateSignature())
-                        sigInfo.parameters = params
-                        sigInfo.activeParameter = context.groups.params?.split(',').length - 1
-                        sigHelp.signatures.push(sigInfo)
                       }
                     }
                   }
                 }
               }
             }
-          }
-        } else {
-          const internalFunctions = getFunctionsByName(context.groups.name)
-          if (internalFunctions){
-            for (const fn of internalFunctions) {
-              const params: ParameterInformation[] = []
-              if (fn && fn.params){
-                for (let paramIndex = 0; paramIndex < fn.params.length; paramIndex++) {
-                  const el = fn.params[paramIndex]
-                  params.push({
-                    label: el.name,
-                    documentation: el.documentation
-                  })
-                }
-              }
-        
-              sigHelp.signatures.push({
-                label: fn.name + fn.generateSignature(),
-                parameters: params,
-                activeParameter: context.groups.params?.split(',').length - 1
-              })
-            }
+
+            return sigHelp
           }
         }
-  
-        return sigHelp
-        
-      } else {
-        // not in function call with parameters
-        return
       }
     }
+  }
+
+  getActiveParameter(call: SyntaxNode, position: Position): number {
+    const args = call.childForFieldName("arguments")?.children
+    let activeParameter = 0
+    if (args?.length) {
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i];
+        if (arg.text === ","){
+          const sepRange = nodeRange(arg)
+          if (sepRange.end.isBeforeOrEqual(position)){
+            activeParameter += 1
+          }
+        }
+      }
+    }
+    console.log(`active parameter: ${activeParameter}`);
+    return activeParameter
   }
 }

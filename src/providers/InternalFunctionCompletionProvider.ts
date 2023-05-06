@@ -16,7 +16,7 @@ export default class InternalFunctionCompletionProvider {
           label: fn.name,
           detail: `(internal function)`
         },
-        detail: `(internal function) ${fn.name}${fn.generateSignature()}`,
+        detail: `(internal function) ${fn.generateSignature()}`,
         documentation: new MarkdownString(fn.getAllDocs())
       })
     }

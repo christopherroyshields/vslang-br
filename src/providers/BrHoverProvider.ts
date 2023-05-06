@@ -45,7 +45,7 @@ export default class BrHoverProvider implements HoverProvider {
             if (project){
               for (const [uri,lib] of project.sourceFiles) {
                 for (const fn of lib.functions) {
-                  if (fn.name.toLowerCase() === posNode.text.toLocaleLowerCase()){
+                  if (fn.isLibrary && fn.name.toLowerCase() === posNode.text.toLocaleLowerCase()){
                     const fn = await this.parser.getFunctionByName(posNode.text, lib.uri)
                     if (fn){
                       const hover = this.createHoverFromFunction(fn)
@@ -64,7 +64,7 @@ export default class BrHoverProvider implements HoverProvider {
   }
 
   createHoverFromFunction<T extends InternalFunction>(fn: T): Hover {
-    let markDownString = '```br\n' + fn.name + fn.generateSignature() + '\n```\n---'
+    let markDownString = '```br\n' + fn.generateSignature() + '\n```\n---'
   
     if (markDownString && fn.documentation){
       markDownString += '\n' + fn.documentation

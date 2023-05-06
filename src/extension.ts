@@ -82,6 +82,9 @@ export async function activate(context: ExtensionContext) {
 	const hoverProvider = new BrHoverProvider(configuredProjects, parser)
 	languages.registerHoverProvider(sel, hoverProvider)
 
+	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
+	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
+
 	await activateWorkspaceFolders(context, configuredProjects)
 
 	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects, parser)
@@ -89,9 +92,6 @@ export async function activate(context: ExtensionContext) {
 
 	const libLinkListProvider = new LibLinkListProvider(configuredProjects)
 	languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ")
-
-	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
-	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
 
 	const libPathProvider = new LibPathProvider(configuredProjects, parser)
 	languages.registerCompletionItemProvider(sel, libPathProvider, "\"", "'")

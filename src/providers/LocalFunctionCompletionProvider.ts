@@ -16,7 +16,7 @@ export default class LocalFunctionCompletionProvider implements CompletionItemPr
           label: fn.name,
           detail: ' (local function)'
         },
-        detail: `(local function) ${fn.name}${fn.generateSignature()}`,
+        detail: `(local function) ${fn.generateSignature()}`,
         documentation: new MarkdownString(fn.getAllDocs())
       })
     }

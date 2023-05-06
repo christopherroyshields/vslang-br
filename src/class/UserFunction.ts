@@ -2,7 +2,7 @@ import { EOL } from "os"
 import BrFunction from "../interface/BrFunction"
 import { EntityOffset } from "./EntityOffset"
 import UserFunctionParameter from "./UserFunctionParameter"
-import { Range } from "vscode"
+import { ParameterInformation, Range } from "vscode"
 import { SyntaxNode } from "web-tree-sitter"
 import { nodeRange } from "../util/common"
 import { VariableType } from "../types/VariableType"
@@ -75,14 +75,15 @@ import { VariableType } from "../types/VariableType"
     }
     return docs
   }
-  generateSignature() : string {
-    let sig = ''
+  generateSignature(paramInfo: ParameterInformation[] | undefined = undefined) : string {
+    let sig = this.name
     if (this.params ?. length) {
       sig += '('
       for (let paramindex = 0; paramindex < this.params.length; paramindex++) {
         if (paramindex > 0) {
           sig += ','
         }
+        const paramStart = sig.length
         const element = this.params[paramindex]
         let name = ''
         if (element.isReference) {
@@ -96,6 +97,13 @@ import { VariableType } from "../types/VariableType"
           name = '[' + name + ']'
         }
         sig += name
+        const paramEnd = sig.length
+        if (paramInfo){
+          paramInfo.push({
+            label: [paramStart, paramEnd],
+            documentation: element.documentation
+          })
+        }
       }
       sig += ')'
     }

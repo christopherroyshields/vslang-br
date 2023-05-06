@@ -60,7 +60,7 @@ export default class FuncCompletionProvider implements CompletionItemProvider<Fu
     if (item.name && item.uri){
       const fn = await this.parser.getFunctionByName(item.name, item.uri)
       if (fn){
-        item.detail = `(library function) ${fn.name}${fn.generateSignature()}`
+        item.detail = `(library function) ${fn.generateSignature()}`
         item.documentation = new MarkdownString(fn.getAllDocs())
         return item
       }
