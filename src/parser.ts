@@ -1,13 +1,18 @@
 import Parser = require('web-tree-sitter');
 import path = require('path');
-import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, ExtensionContext, Position, Range, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
+import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, DocumentSymbol, ExtensionContext, Position, Range, SymbolKind, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
 import { performance } from 'perf_hooks';
 import { Disposable } from 'vscode-languageclient';
 import { EOL } from 'os';
 import * as fs from 'fs';
+import UserFunction from './class/UserFunction';
+import UserFunctionParameter from './class/UserFunctionParameter';
+import { nodeRange } from './util/common';
+import DocComment from './class/DocComment';
+import { VariableType } from './types/VariableType';
 const fnQuery = fs.readFileSync(path.join(__dirname,"..","tree-query","function_def.scm")).toString()
 
-export default class BrParser implements Disposable {
+export default class BrParser implements Disposable {	
 	br!: Parser.Language
 	parser!: Parser
 	trees: Map<string, Parser.Tree> = new Map<string, Parser.Tree>()
@@ -29,7 +34,139 @@ export default class BrParser implements Disposable {
 		}))
 	}
 
-	getTree(document: TextDocument):  Parser.Tree {
+  async getFunctionByName(name: string, uri: Uri): Promise<UserFunction | undefined> {
+		const tree = await this.getUriTree(uri)
+		const name_match = name.replace(/[a-zA-Z]/g, c => {
+			return `[${c.toUpperCase()}${c.toLowerCase()}]`
+		}).replace("$","\\\\$")
+
+		const query = `(
+			(line (doc_comment) @doc_comment)?
+			.
+			(line (statement
+			(def_statement 
+				[
+				(numeric_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+					(string_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+				]) @def))
+				(#match? @name "^${name_match}$")
+			)`
+
+		const results = this.match(query, tree.rootNode)
+		if (results.length){
+			const fn = this.toFn(results[0])
+			return fn
+		}
+  }
+
+	getLocalFunctionList(document: TextDocument): UserFunction[] {
+		const fnList: UserFunction[] = []
+		const tree = this.getDocumentTree(document)
+		const query = `(
+			(line (doc_comment) @doc_comment)?
+			.
+			(line (statement
+			(def_statement 
+				[
+				(numeric_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+					(string_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+				]) @def))
+			)`
+
+		const results = this.match(query, tree.rootNode)
+		for (const result of results) {
+			const fn = this.toFn(result)
+			if (fn){
+				fnList.push(fn)
+			}
+		}
+		return fnList
+	}
+
+	getCaptureByName(result: Parser.QueryMatch, name: string): Parser.SyntaxNode | undefined {
+		for (const capture of result.captures) {
+			if (capture.name === name){
+				return capture.node
+			}
+		}
+	}
+
+  toFn(result: Parser.QueryMatch): UserFunction {
+		const docNode = this.getCaptureByName(result, "doc_comment")
+		const defNode = this.getCaptureByName(result, "def")
+		const nameNode = this.getCaptureByName(result, "name")
+		const paramsNode = this.getCaptureByName(result, "params")
+		if (nameNode && defNode){
+			let isLibrary = false
+			if (defNode.descendantsOfType("library_keyword")){
+				isLibrary = true
+			}
+			const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
+			const docs = docNode ? DocComment.parse(docNode.text) : undefined
+			fn.documentation = docs?.text
+			if (paramsNode){
+				for (const param of paramsNode.namedChildren) {
+					const p = new UserFunctionParameter
+					const nameNode = param.firstNamedChild?.firstNamedChild?.firstNamedChild
+					if (nameNode){
+						p.name = nameNode.text
+						if (param.type === "required_parameter"){
+							p.isOptional = false
+						} else {
+							p.isOptional = true
+						}
+						if (param.firstChild?.firstChild?.text === "&"){
+							p.isReference = true
+						} else {
+							p.isReference = false
+						}
+						p.documentation = docs?.params.get(nameNode.text)
+						p.length = this.getStringParamLengthFromNode(param)
+						p.type = this.getParamTypeFromNode(nameNode)
+						fn.params.push(p)
+					}
+				}
+			}
+			return fn
+		}
+		throw Error("Could not parse result")
+  }
+
+	getParamTypeFromNode(param: Parser.SyntaxNode): VariableType {
+    switch (param.type) {
+      case 'stringreference':
+        return VariableType.string
+      case 'numberreference':
+        return VariableType.number
+      case 'stringarray':
+        return VariableType.stringarray
+      case 'numberarray':
+        return VariableType.numberarray
+      default:
+        throw new Error("Uknown type")
+    }    
+  }
+
+	getStringParamLengthFromNode(param: Parser.SyntaxNode): number | undefined {
+    const lengthNodes = param.descendantsOfType("int")
+    if (lengthNodes.length) {
+      const lengthNode = lengthNodes[0]
+      return parseInt(lengthNode.text)
+    } else {
+      return undefined
+    }
+  }
+
+
+	getDocumentTree(document: TextDocument):  Parser.Tree {
 		const startTime = performance.now()
 		let tree = this.trees.get(document.uri.toString())
 		if (tree){
@@ -41,6 +178,25 @@ export default class BrParser implements Disposable {
 			console.log(`Parse: ${endTime - startTime} milliseconds`)
 			this.trees.set(document.uri.toString(),tree)
 			return tree
+		}
+	}
+
+	async getUriTree(uri: Uri): Promise<Parser.Tree> {
+		const document = this.getOpenDocument(uri)
+		if (document){
+			return this.getDocumentTree(document)
+		} else {
+			const buffer = await workspace.fs.readFile(uri)
+			const tree = this.parser.parse(buffer.toString())
+			return tree
+		}
+	}
+
+	getOpenDocument(uri: Uri): TextDocument | undefined {
+		for (const doc of workspace.textDocuments) {
+			if (doc.uri.toString() === uri.toString()){
+				return doc
+			}
 		}
 	}
 
@@ -241,15 +397,15 @@ export default class BrParser implements Disposable {
 	}
 
 	getNodeAtPosition(document: TextDocument, position: Position): Parser.SyntaxNode {
-		const tree = this.getTree(document)
-		const node = tree.rootNode.descendantForPosition(this.getPoint(position))
+		const tree = this.getDocumentTree(document)
+		const node = tree.rootNode.namedDescendantForPosition(this.getPoint(position))
 		return node
 	}
 
 	getOccurences(word: string, document: TextDocument, range: Range): Range[] {
 		const occurrences: Range[] = []
 
-		const tree = this.getTree(document)
+		const tree = this.getDocumentTree(document)
 		
 		const node = tree.rootNode.descendantForPosition(this.getPoint(range.start))
 
@@ -287,20 +443,19 @@ export default class BrParser implements Disposable {
 			break;
 		
 			default: {
-				const selector = `${node.parent?.type} name: (_) @occurrence`
-				const predicate = `(#match? @occurrence "^${name_match}$")`
-				const query = `(${selector} ${predicate})`
-				let results = this.match(query, tree.rootNode)
-				results = this.filterOccurrences(node, tree, results)
-				results.forEach(r => {
-					occurrences.push(this.getNodeRange(r.captures[0].node))
-				});
+				if (node.text.toLocaleLowerCase().substring(0,3)!=="mat"){
+					const selector = `${node.parent?.type} name: (_) @occurrence`
+					const predicate = `(#match? @occurrence "^${name_match}$")`
+					const query = `(${selector} ${predicate})`
+					let results = this.match(query, tree.rootNode)
+					results = this.filterOccurrences(node, tree, results)
+					results.forEach(r => {
+						occurrences.push(this.getNodeRange(r.captures[0].node))
+					});
+				}
 			}
 			break;
 		}
-		
-	
-
 
 		return occurrences
 	}
@@ -319,7 +474,7 @@ export default class BrParser implements Disposable {
 	getDiagnostics(document: TextDocument): Diagnostic[] {
 
 		const errorQuery = this.br.query('(ERROR) @error')
-		const tree = this.getTree(document)
+		const tree = this.getDocumentTree(document)
 		const errors = errorQuery.matches(tree.rootNode);
 		const diagnostics: Diagnostic[] = []
 		// collection.clear();
@@ -339,4 +494,47 @@ export default class BrParser implements Disposable {
 		}
 		return diagnostics
 	}
+
+  getSymbols(document: TextDocument): DocumentSymbol[] {
+		const tree = this.getDocumentTree(document)
+		const query = `(def_statement) @def
+		(dim_statement
+			(_
+				name: (_) @dim)*)
+		(label) @label`
+		const results = this.match(query, tree.rootNode)
+		
+		const symbolInfoList: DocumentSymbol[] = []
+		for (const result of results) {
+			const node = result.captures[0].node
+			switch (node.type) {
+				case 'label': {
+						const labelRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
+						const symbolInfo = new DocumentSymbol(node.text, 'label', SymbolKind.Null, labelRange, labelRange)
+						symbolInfoList.push(symbolInfo)
+					}
+					break;
+				case 'stringidentifier':
+				case 'numberidentifier': {
+						const dimRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
+						const symbolInfo = new DocumentSymbol(node.text, node.parent?.type ?? "", SymbolKind.Variable, dimRange, dimRange)
+						symbolInfoList.push(symbolInfo)
+					}
+					break;
+				case 'def_statement': {
+						const name = node.descendantsOfType("function_name")
+						if (name.length){
+							const node = name[0]
+							const fnRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
+							const symbolInfo = new DocumentSymbol(node.text, "function", SymbolKind.Function, fnRange, fnRange)
+							symbolInfoList.push(symbolInfo)
+						}
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		return symbolInfoList
+  }
 }

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="21"
+   height="21"
+   viewBox="0 0 5.5562504 5.5562496"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="br-light.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="23.632548"
+     inkscape:cx="9.5842396"
+     inkscape:cy="10.092014"
+     inkscape:window-width="1350"
+     inkscape:window-height="1000"
+     inkscape:window-x="182"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-45.879367,-94.296642)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.56488px;line-height:0;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';text-align:center;text-anchor:middle;fill:#9fa4a3;fill-opacity:1;stroke-width:0.0668416"
+       x="-47.813557"
+       y="98.620544"
+       id="text113"
+       transform="scale(-1,1)"><tspan
+         sodipodi:role="line"
+         id="tspan111"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';fill:#9fa4a3;fill-opacity:1;stroke-width:0.0668416"
+         x="-47.813557"
+         y="98.620544">B</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:3.56488px;line-height:0;font-family:Consolas;-inkscape-font-specification:Consolas;text-align:center;text-anchor:middle;fill:#7a0000;fill-opacity:1;stroke-width:0.0668416"
+       x="50.200008"
+       y="98.604965"
+       id="text167"><tspan
+         sodipodi:role="line"
+         id="tspan165"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';fill:#7a0000;fill-opacity:1;stroke-width:0.0668416"
+         x="50.200008"
+         y="98.604965">R</tspan></text>
+  </g>
+</svg>

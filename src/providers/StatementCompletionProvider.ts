@@ -1,19 +1,12 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionList, MarkdownString, Position, TextDocument, workspace, WorkspaceFolder } from "vscode"
-import ConfiguredProject from "../class/ConfiguredProject"
-import BrSourceDocument from "../class/BrSourceDocument"
 import { Statements } from "../completions/statements"
 import BaseCompletionProvider from "./BaseCompletionProvider"
-import ProjectSourceDocument from "../class/ProjectSourceDocument"
-import { Project } from "../class/Project"
 
 /**
  * Library statement linkage list completion provider
  */
-export default class StatementCompletionProvider extends BaseCompletionProvider {
-  constructor(configuredProjects: Map<WorkspaceFolder, Project>) {
-    super(configuredProjects)
-  }
+export default class StatementCompletionProvider {
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken): CompletionItem[] {
     const word = doc.getText(doc.getWordRangeAtPosition(position))
     const isLower = !/[A-Z]/.test(word)
