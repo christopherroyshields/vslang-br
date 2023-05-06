@@ -59,7 +59,7 @@ import { VariableType } from "../types/VariableType"
    */
 	getAllDocs(): string | undefined {
     let docs: string | undefined
-    if (this.documentation){
+    if (this.documentation?.trim().length){
       docs = this.documentation + "\\"+EOL
     }
     if (this.params){

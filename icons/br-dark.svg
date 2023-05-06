@@ -42,25 +42,25 @@
      transform="translate(-45.879367,-94.296642)">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:3.56488px;line-height:0;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';text-align:center;text-anchor:middle;fill:#d4d7d6;fill-opacity:1;stroke-width:0.0668416"
+       style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:3.56488px;line-height:0;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Light';text-align:center;text-anchor:middle;fill:#d4d7d6;fill-opacity:1;stroke-width:0.0668416"
        x="-47.813557"
        y="98.620544"
        id="text113"
        transform="scale(-1,1)"><tspan
          sodipodi:role="line"
          id="tspan111"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';fill:#d4d7d6;fill-opacity:1;stroke-width:0.0668416"
+         style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Light';fill:#d4d7d6;fill-opacity:1;stroke-width:0.0668416"
          x="-47.813557"
          y="98.620544">B</tspan></text>
     <text
        xml:space="preserve"
-       style="font-size:3.56488px;line-height:0;font-family:Consolas;-inkscape-font-specification:Consolas;text-align:center;text-anchor:middle;fill:#c50000;fill-opacity:1;stroke-width:0.0668416"
+       style="font-size:3.56488px;line-height:0;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Light';text-align:center;text-anchor:middle;fill:#c50000;fill-opacity:1;stroke-width:0.0668416;font-weight:300;font-style:normal;font-stretch:normal;font-variant:normal"
        x="50.200008"
        y="98.604965"
        id="text167"><tspan
          sodipodi:role="line"
          id="tspan165"
-         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Bold';fill:#c50000;fill-opacity:1;stroke-width:0.0668416"
+         style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-family:'Noto Sans';-inkscape-font-specification:'Noto Sans Light';fill:#c50000;fill-opacity:1;stroke-width:0.0668416"
          x="50.200008"
          y="98.604965">R</tspan></text>
   </g>

@@ -57,43 +57,87 @@ export default class BrParser implements Disposable {
 			)`
 
 		const results = this.match(query, tree.rootNode)
-		if (results){
+		if (results.length){
 			const fn = this.toFn(results[0])
 			return fn
 		}
   }
 
+	getLocalFunctionList(document: TextDocument): UserFunction[] {
+		const fnList: UserFunction[] = []
+		const tree = this.getDocumentTree(document)
+		const query = `(
+			(line (doc_comment) @doc_comment)?
+			.
+			(line (statement
+			(def_statement 
+				[
+				(numeric_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+					(string_function_definition (function_name) @name
+					(parameter_list)? @params
+					) @type
+				]) @def))
+			)`
+
+		const results = this.match(query, tree.rootNode)
+		for (const result of results) {
+			const fn = this.toFn(result)
+			if (fn){
+				fnList.push(fn)
+			}
+		}
+		return fnList
+	}
+
+	getCaptureByName(result: Parser.QueryMatch, name: string): Parser.SyntaxNode | undefined {
+		for (const capture of result.captures) {
+			if (capture.name === name){
+				return capture.node
+			}
+		}
+	}
+
   toFn(result: Parser.QueryMatch): UserFunction {
-    const def = result.captures[0].node
-    const nameNode = result.captures[2].node
-    const params = result.captures[3].node.namedChildren
-		const docs = DocComment.parse(result.captures[4].node.text)
-    let isLibrary = false
-    if (def.descendantsOfType("library_keyword")){
-      isLibrary = true
-    }
-    const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
-    fn.documentation = docs?.text
-    for (const param of params) {
-      const p = new UserFunctionParameter
-      const nameNode = param.descendantsOfType(['stringreference','numberreference','stringarray','numberarray'])[0]
-      p.name = nameNode.text ?? ""
-      if (param.type === "required_parameter"){
-        p.isOptional = false
-      } else {
-        p.isOptional = true
-      }
-      if (param.firstChild?.firstChild?.text === "&"){
-        p.isReference = true
-      } else {
-        p.isReference = false
-      }
-      p.documentation = docs?.params.get(nameNode.text)
-      p.length = this.getStringParamLengthFromNode(param)
-      p.type = this.getParamTypeFromNode(nameNode)
-      fn.params.push(p)
-    }
-    return fn
+		const docNode = this.getCaptureByName(result, "doc_comment")
+		const defNode = this.getCaptureByName(result, "def")
+		const nameNode = this.getCaptureByName(result, "name")
+		const paramsNode = this.getCaptureByName(result, "params")
+		if (nameNode && defNode){
+			let isLibrary = false
+			if (defNode.descendantsOfType("library_keyword")){
+				isLibrary = true
+			}
+			const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
+			const docs = docNode ? DocComment.parse(docNode.text) : undefined
+			fn.documentation = docs?.text
+			if (paramsNode){
+				for (const param of paramsNode.namedChildren) {
+					const p = new UserFunctionParameter
+					const nameNode = param.firstNamedChild?.firstNamedChild?.firstNamedChild
+					if (nameNode){
+						p.name = nameNode.text
+						if (param.type === "required_parameter"){
+							p.isOptional = false
+						} else {
+							p.isOptional = true
+						}
+						if (param.firstChild?.firstChild?.text === "&"){
+							p.isReference = true
+						} else {
+							p.isReference = false
+						}
+						p.documentation = docs?.params.get(nameNode.text)
+						p.length = this.getStringParamLengthFromNode(param)
+						p.type = this.getParamTypeFromNode(nameNode)
+						fn.params.push(p)
+					}
+				}
+			}
+			return fn
+		}
+		throw Error("Could not parse result")
   }
 
 	getParamTypeFromNode(param: Parser.SyntaxNode): VariableType {

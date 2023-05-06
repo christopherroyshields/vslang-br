@@ -77,16 +77,18 @@ export async function activate(context: ExtensionContext) {
 
 	const diagnostics = new BrDiagnostics(parser, context)
 	
-	const configuredProjects = await activateWorkspaceFolders(context)
+	const configuredProjects: Map<WorkspaceFolder, Project> = new Map()
 
-	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects)
+	const hoverProvider = new BrHoverProvider(configuredProjects, parser)
+	languages.registerHoverProvider(sel, hoverProvider)
+
+	await activateWorkspaceFolders(context, configuredProjects)
+
+	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects, parser)
 	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
 
 	const libLinkListProvider = new LibLinkListProvider(configuredProjects)
 	languages.registerCompletionItemProvider(sel, libLinkListProvider, ":", ",", " ")
-
-	const hoverProvider = new BrHoverProvider(configuredProjects, parser)
-	languages.registerHoverProvider(sel, hoverProvider)
 
 	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
 	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
@@ -106,9 +108,7 @@ export function deactivate() {
 /**
  * Sets up monitoring of project configuration
  */
-async function activateWorkspaceFolders(context: ExtensionContext): Promise<Map<WorkspaceFolder, Project>> {
-	const configuredProjects = new Map<WorkspaceFolder, Project>()
-
+async function activateWorkspaceFolders(context: ExtensionContext, configuredProjects: Map<WorkspaceFolder, Project>): Promise<Map<WorkspaceFolder, Project>> {
 	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
 	context.subscriptions.push(statusBarItem)
 	statusBarItem.text = `$(loading~spin) Loading project...`
