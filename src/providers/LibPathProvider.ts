@@ -17,33 +17,46 @@ export default class LibPathProvider extends BaseCompletionProvider {
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): CompletionList<CompletionItem> {
     const completionItems: CompletionList<CompletionItem> = new CompletionList()
 
-    // const selectedNode = this.parser.getNodeAtPosition(doc, position)
-    // let isLibraryLiteral = false
-    // if (selectedNode.type === "string" && selectedNode.parent?.parent?.parent?.parent?.type === "library_statement"){
-    //   isLibraryLiteral = true
-    // }
+    const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/)
+    const pos = wordRange ? wordRange.start : position
+    const posNode = this.parser.getNodeAtPosition(doc, pos)
+    
+    if (posNode.parent?.parent?.parent?.type==="library_statement"){
+      const libNode = posNode.parent?.parent?.parent
+      const pathQuery = `path: (string_expression 
+        (string_primary_expression
+            (string) @path))`
 
-    const line = doc.getText(new Range(doc.lineAt(position).range.start, position))
-    const ISLIBRARY_LITERAL = /library\s+(release\s*,)?(\s*nofiles\s*,)?\s*("|')$/gi
-    if (ISLIBRARY_LITERAL.test(line)){
-      const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
-      if (workspaceFolder){
-        const project = this.configuredProjects.get(workspaceFolder)
-        if (project){
-          const searchPath = getSearchPath(workspaceFolder)
-          for (const [uri, lib] of project.sourceFiles) {
-            if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
-              const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1))
-              const libPath = path.join(parsedPath.dir, parsedPath.name)
-              const itemLabel: CompletionItemLabel = {
-                label: libPath,
-                detail: parsedPath.ext.substring(0,parsedPath.ext.length-1)
+      const results = this.parser.match(pathQuery, libNode)
+      if (results.length){
+        const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+        if (workspaceFolder){
+          const project = this.configuredProjects.get(workspaceFolder)
+          if (project){
+            const searchPath = getSearchPath(workspaceFolder)
+            for (const [uri, lib] of project.sourceFiles) {
+              if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
+                let hasLib = false
+                for (const fn of lib.functions) {
+                  if (fn.isLibrary) {
+                    hasLib = true
+                    break;
+                  }
+                }
+                if (hasLib){
+                  const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1))
+                  const libPath = path.join(parsedPath.dir, parsedPath.name)
+                  const itemLabel: CompletionItemLabel = {
+                    label: libPath,
+                    detail: parsedPath.ext
+                  }
+                  completionItems.items.push({
+                    label: itemLabel
+                  })
+                }
               }
-              completionItems.items.push({
-                label: itemLabel
-              })
-            }
-          }				
+            }				
+          }
         }
       }
     }
