@@ -80,11 +80,14 @@ import { VariableType } from "../types/VariableType"
     if (this.params ?. length) {
       sig += '('
       for (let paramindex = 0; paramindex < this.params.length; paramindex++) {
+        const element = this.params[paramindex]
+        if (element.name === "___"){
+          break
+        }
         if (paramindex > 0) {
           sig += ','
         }
         const paramStart = sig.length
-        const element = this.params[paramindex]
         let name = ''
         if (element.isReference) {
           name += '&'
