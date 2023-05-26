@@ -26,6 +26,7 @@ import { log } from 'console';
 import LocalVariableCompletionProvider from './providers/LocalCompletionProvider';
 import LocalFunctionCompletionProvider from './providers/LocalFunctionCompletionProvider';
 import InternalFunctionCompletionProvider from './providers/InternalFunctionCompletionProvider';
+import BrReferenceProvder from './providers/BrReferenceProvider';
 
 export async function activate(context: ExtensionContext) {
 	const subscriptions = context.subscriptions
@@ -67,23 +68,26 @@ export async function activate(context: ExtensionContext) {
 	subscriptions.push(languages.registerRenameProvider(sel, renameProvider))
 
 	const keywordCompletionProvider = new KeywordCompletionProvider()
-	languages.registerCompletionItemProvider(sel, keywordCompletionProvider)
+	subscriptions.push(languages.registerCompletionItemProvider(sel, keywordCompletionProvider))
 
 	const localVariableCompletionProvider = new LocalVariableCompletionProvider(parser)
-	languages.registerCompletionItemProvider(sel, localVariableCompletionProvider)
+	subscriptions.push(languages.registerCompletionItemProvider(sel, localVariableCompletionProvider))
 
 	const localFunctionCompletionProvider = new LocalFunctionCompletionProvider(parser)
-	languages.registerCompletionItemProvider(sel, localFunctionCompletionProvider)
+	subscriptions.push(languages.registerCompletionItemProvider(sel, localFunctionCompletionProvider))
 
 	const diagnostics = new BrDiagnostics(parser, context)
 	
 	const configuredProjects: Map<WorkspaceFolder, Project> = new Map()
 
 	const hoverProvider = new BrHoverProvider(configuredProjects, parser)
-	languages.registerHoverProvider(sel, hoverProvider)
+	subscriptions.push(languages.registerHoverProvider(sel, hoverProvider))
 
 	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
-	languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ",")
+	subscriptions.push(languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ","))
+
+	const referenceProvider = new BrReferenceProvder(parser)
+	subscriptions.push(languages.registerReferenceProvider(sel, referenceProvider))
 
 	await activateWorkspaceFolders(context, configuredProjects, parser)
 
