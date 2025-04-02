@@ -3,8 +3,7 @@ import BrParser from "../parser";
 import { Project } from "../class/Project";
 import { performance } from "perf_hooks";
 import Parser = require("web-tree-sitter");
-import { SymbolKind } from "vscode-languageclient";
-import { Location } from "vscode";
+import { SymbolKind, Location } from "vscode";
 
 export default class BrWorkspaceSymbolProvider implements WorkspaceSymbolProvider {
   parser: BrParser
