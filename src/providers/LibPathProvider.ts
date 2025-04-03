@@ -21,41 +21,43 @@ export default class LibPathProvider extends BaseCompletionProvider {
     const pos = wordRange ? wordRange.start : position
     const posNode = this.parser.getNodeAtPosition(doc, pos)
     
-    if (posNode.parent?.parent?.parent?.type==="library_statement"){
-      const libNode = posNode.parent?.parent?.parent
-      const pathQuery = `path: (string_expression 
-        (string_primary_expression
-            (string) @path))`
-
-      const results = this.parser.match(pathQuery, libNode)
-      if (results.length){
-        const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
-        if (workspaceFolder){
-          const project = this.configuredProjects.get(workspaceFolder)
-          if (project){
-            const searchPath = getSearchPath(workspaceFolder)
-            for (const [uri, lib] of project.sourceFiles) {
-              if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
-                let hasLib = false
-                for (const fn of lib.functions) {
-                  if (fn.isLibrary) {
-                    hasLib = true
-                    break;
+    if (posNode){
+      if (posNode.parent?.parent?.parent?.type==="library_statement"){
+        const libNode = posNode.parent?.parent?.parent
+        const pathQuery = `path: (string_expression 
+          (string_primary_expression
+              (string) @path))`
+  
+        const results = this.parser.match(pathQuery, libNode)
+        if (results.length){
+          const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+          if (workspaceFolder){
+            const project = this.configuredProjects.get(workspaceFolder)
+            if (project){
+              const searchPath = getSearchPath(workspaceFolder)
+              for (const [uri, lib] of project.sourceFiles) {
+                if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
+                  let hasLib = false
+                  for (const fn of lib.functions) {
+                    if (fn.isLibrary) {
+                      hasLib = true
+                      break;
+                    }
+                  }
+                  if (hasLib){
+                    const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1))
+                    const libPath = path.join(parsedPath.dir, parsedPath.name)
+                    const itemLabel: CompletionItemLabel = {
+                      label: libPath,
+                      detail: parsedPath.ext
+                    }
+                    completionItems.items.push({
+                      label: itemLabel
+                    })
                   }
                 }
-                if (hasLib){
-                  const parsedPath = path.parse(lib.uri.fsPath.substring(searchPath.fsPath.length + 1))
-                  const libPath = path.join(parsedPath.dir, parsedPath.name)
-                  const itemLabel: CompletionItemLabel = {
-                    label: libPath,
-                    detail: parsedPath.ext
-                  }
-                  completionItems.items.push({
-                    label: itemLabel
-                  })
-                }
-              }
-            }				
+              }				
+            }
           }
         }
       }

@@ -3,7 +3,7 @@ import BrFunction from "../interface/BrFunction"
 import { EntityOffset } from "./EntityOffset"
 import UserFunctionParameter from "./UserFunctionParameter"
 import { ParameterInformation, Range } from "vscode"
-import { SyntaxNode } from "web-tree-sitter"
+import { Node } from "web-tree-sitter"
 import { nodeRange } from "../util/common"
 import { VariableType } from "../types/VariableType"
 
@@ -32,21 +32,23 @@ import { VariableType } from "../types/VariableType"
     this.nameRange = nameRange
   }
 
-  static fromNode(nameNode: SyntaxNode, defNode: SyntaxNode, params: SyntaxNode[]): UserFunction {
+  static fromNode(nameNode: Node, defNode: Node, params: Node[]): UserFunction {
     let isLibrary = false
     if (defNode.firstChild?.type === "library_keyword"){
       isLibrary = true
     }
     const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
     const reqs = defNode.descendantsOfType("required_parameter")
-    if (reqs){
+    if (reqs && reqs[0]){
       const params = reqs[0].children
       for (const param of params) {
-        const paramNode = param.namedChild(0)
-        if (paramNode){
-          const newParam = new UserFunctionParameter()
-          newParam.name = paramNode?.text
-          fn.params.push(new UserFunctionParameter())
+        if (param){
+          const paramNode = param.namedChild(0)
+          if (paramNode){
+            const newParam = new UserFunctionParameter()
+            newParam.name = paramNode?.text
+            fn.params.push(new UserFunctionParameter())
+          }
         }
       }
     }

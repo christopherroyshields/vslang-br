@@ -22,7 +22,7 @@ export function pointToPos(point: Parser.Point): Position {
 	return new Position(point.row, point.column)
 }
 
-export function nodeRange(node: Parser.SyntaxNode): Range {
+export function nodeRange(node: Parser.Node): Range {
 	return new Range(node.startPosition.row,node.startPosition.column,node.endPosition.row,node.endPosition.column)
 }
 

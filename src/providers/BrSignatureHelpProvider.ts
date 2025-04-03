@@ -7,7 +7,7 @@ import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "../class/Project"
 import { VariableType } from "../types/VariableType"
 import BrParser from "../parser"
-import { SyntaxNode } from "web-tree-sitter"
+import { Node } from "web-tree-sitter"
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -17,7 +17,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
     this.parser = parser
   }
 
-  getParentByType(node: SyntaxNode, type: string | string[]): SyntaxNode | undefined {
+  getParentByType(node: Node, type: string | string[]): Node | undefined {
     const parent = node.parent
     if (parent){
       if (typeof type === "object"){
@@ -39,98 +39,102 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
 
   async provideSignatureHelp(doc: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): Promise<SignatureHelp | undefined> {
     const posNode = this.parser.getNodeAtPosition(doc, position)
-    let argList = undefined
-    if (posNode.type === "arguments"){
-      argList = posNode
-    } else {
-      argList = this.getParentByType(posNode, "arguments")
-    }
-    if (argList){
-      const call = this.getParentByType(argList, ["string_user_function", "numeric_user_function", "numeric_system_function", "string_system_function"])
-      if (call){
-        const sigHelp: SignatureHelp = {
-          signatures: [],
-          activeSignature: 0,
-          activeParameter: 0
-        }
-
-        const activeParameter = this.getActiveParameter(call, position)
-        const name = call.firstNamedChild
-        if (name){
-          if (call.type === "numeric_system_function" || call.type === "string_system_function"){
-            const internalFunctions = getFunctionsByName(name.text)
-            if (internalFunctions){
-              for (const fn of internalFunctions) {
+    if (posNode){
+      let argList = undefined
+      if (posNode.type === "arguments"){
+        argList = posNode
+      } else {
+        argList = this.getParentByType(posNode, "arguments")
+      }
+      if (argList){
+        const call = this.getParentByType(argList, ["string_user_function", "numeric_user_function", "numeric_system_function", "string_system_function"])
+        if (call){
+          const sigHelp: SignatureHelp = {
+            signatures: [],
+            activeSignature: 0,
+            activeParameter: 0
+          }
+  
+          const activeParameter = this.getActiveParameter(call, position)
+          const name = call.firstNamedChild
+          if (name){
+            if (call.type === "numeric_system_function" || call.type === "string_system_function"){
+              const internalFunctions = getFunctionsByName(name.text)
+              if (internalFunctions){
+                for (const fn of internalFunctions) {
+                  const params: ParameterInformation[] = []
+                  const sigLabel = fn.generateSignature(params)
+    
+                  sigHelp.signatures.push({
+                    documentation: fn.documentation,
+                    label: sigLabel,
+                    parameters: params,
+                    activeParameter: activeParameter
+                  })
+    
+                  return sigHelp
+                }
+              }
+            } else {
+              const fn = await this.parser.getFunctionByName(name.text, doc.uri)
+              if (fn) {
                 const params: ParameterInformation[] = []
                 const sigLabel = fn.generateSignature(params)
-  
                 sigHelp.signatures.push({
                   documentation: fn.documentation,
                   label: sigLabel,
                   parameters: params,
                   activeParameter: activeParameter
                 })
-  
                 return sigHelp
               }
-            }
-          } else {
-            const fn = await this.parser.getFunctionByName(name.text, doc.uri)
-            if (fn) {
-              const params: ParameterInformation[] = []
-              const sigLabel = fn.generateSignature(params)
-              sigHelp.signatures.push({
-                documentation: fn.documentation,
-                label: sigLabel,
-                parameters: params,
-                activeParameter: activeParameter
-              })
-              return sigHelp
-            }
-
-            const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
-            if (workspaceFolder){
-              const project = this.configuredProjects.get(workspaceFolder)
-              if (project){
-                for (const [libUri,lib] of project.sourceFiles) {
-                  if (libUri !== doc.uri.toString()){
-                    for (const fnKey of lib.functions) {
-                      if (fnKey.isLibrary && fnKey.name.toLowerCase() == name.text.toLowerCase()){
-                        const fn = await this.parser.getFunctionByName(fnKey.name, lib.uri)
-                        if (fn){
-                          const params: ParameterInformation[] = []
-                          const sigLabel = fn.generateSignature(params)
-                          sigHelp.signatures.push({
-                            documentation: fn.documentation,
-                            label: sigLabel,
-                            parameters: params,
-                            activeParameter: activeParameter
-                          })
+  
+              const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+              if (workspaceFolder){
+                const project = this.configuredProjects.get(workspaceFolder)
+                if (project){
+                  for (const [libUri,lib] of project.sourceFiles) {
+                    if (libUri !== doc.uri.toString()){
+                      for (const fnKey of lib.functions) {
+                        if (fnKey.isLibrary && fnKey.name.toLowerCase() == name.text.toLowerCase()){
+                          const fn = await this.parser.getFunctionByName(fnKey.name, lib.uri)
+                          if (fn){
+                            const params: ParameterInformation[] = []
+                            const sigLabel = fn.generateSignature(params)
+                            sigHelp.signatures.push({
+                              documentation: fn.documentation,
+                              label: sigLabel,
+                              parameters: params,
+                              activeParameter: activeParameter
+                            })
+                          }
                         }
                       }
                     }
                   }
                 }
               }
+  
+              return sigHelp
             }
-
-            return sigHelp
           }
         }
       }
     }
   }
 
-  getActiveParameter(call: SyntaxNode, position: Position): number {
+  getActiveParameter(call: Node, position: Position): number {
     const args = call.childForFieldName("arguments")?.children
     let activeParameter = 0
     if (args?.length) {
       for (let i = 0; i < args.length; i++) {
         const arg = args[i];
-        if (arg.text === ","){
-          const sepRange = nodeRange(arg)
-          if (sepRange.end.isBeforeOrEqual(position)){
-            activeParameter += 1
+        if (arg){
+          if (arg.text === ","){
+            const sepRange = nodeRange(arg)
+            if (sepRange.end.isBeforeOrEqual(position)){
+              activeParameter += 1
+            }
           }
         }
       }
