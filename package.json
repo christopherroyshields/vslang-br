@@ -2,8 +2,10 @@
   "name": "vslang-br",
   "displayName": "BR Language Extension",
   "description": "Language support for Business Rules!",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "license": "LICENSE",
+  "publisher": "Christopher Shields",
+  "icon": "logo.png",
   "repository": {
     "url": "https://github.com/christopherroyshields/vslang-br"
   },
