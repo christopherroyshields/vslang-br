@@ -268,7 +268,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 		if (parser.trees.has(sourceUri.toString())){
 			parser.trees.delete(sourceUri.toString())
 		}
-}, undefined, disposables)
+	}, undefined, disposables)
 
 	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
 		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
@@ -276,5 +276,8 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 			project.sourceFiles.set(sourceUri.toString(), sourceLib)
 		}
 	}, undefined, disposables)
+
+	console.log(`files watched`);
+
 }
 
