@@ -440,7 +440,7 @@ export default class BrParser implements Disposable {
 
 		if (node){
 			
-			const name_match = word.replace(/\w/g, c => {
+			const name_match = word.replace(/[A-Za-z]/g, c => {
 				return `[${c.toUpperCase()}${c.toLowerCase()}]`
 			}).replace("$","\\\\$").replace(":","")
 			
