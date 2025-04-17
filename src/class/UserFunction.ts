@@ -3,7 +3,7 @@ import BrFunction from "../interface/BrFunction"
 import { EntityOffset } from "./EntityOffset"
 import UserFunctionParameter from "./UserFunctionParameter"
 import { ParameterInformation, Range } from "vscode"
-import { Node } from "web-tree-sitter"
+import { SyntaxNode } from "tree-sitter"
 import { nodeRange } from "../util/common"
 import { VariableType } from "../types/VariableType"
 
@@ -32,7 +32,7 @@ import { VariableType } from "../types/VariableType"
     this.nameRange = nameRange
   }
 
-  static fromNode(nameNode: Node, defNode: Node, params: Node[]): UserFunction {
+  static fromNode(nameNode: SyntaxNode, defNode: SyntaxNode, params: SyntaxNode[]): UserFunction {
     let isLibrary = false
     if (defNode.firstChild?.type === "library_keyword"){
       isLibrary = true

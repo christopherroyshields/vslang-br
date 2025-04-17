@@ -1,6 +1,6 @@
 import { Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
 import { VariableType } from "../types/VariableType"
-import Parser = require("web-tree-sitter")
+import Parser = require("tree-sitter")
 
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
 export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))/g
@@ -22,7 +22,7 @@ export function pointToPos(point: Parser.Point): Position {
 	return new Position(point.row, point.column)
 }
 
-export function nodeRange(node: Parser.Node): Range {
+export function nodeRange(node: Parser.SyntaxNode): Range {
 	return new Range(node.startPosition.row,node.startPosition.column,node.endPosition.row,node.endPosition.column)
 }
 

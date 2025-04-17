@@ -1,4 +1,7 @@
-import * as Parser from "web-tree-sitter";
+// import * as Parser from "web-tree-sitter";
+import * as Parser from "tree-sitter"
+// const Parser = require("tree-sitter")
+const BrLang = require("../binding.js")
 import path = require('path');
 import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, DocumentSymbol, ExtensionContext, Position, Range, SymbolKind, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
 import { performance } from 'perf_hooks';
@@ -14,17 +17,18 @@ const fnQuery = fs.readFileSync(path.join(__dirname,"..","tree-query","function_
 
 export default class BrParser implements Disposable {	
 	br!: Parser.Language
-	parser!: Parser.Parser
+	parser!: Parser
 	trees: Map<string, Parser.Tree> = new Map<string, Parser.Tree>()
 	dispose(): void {
-		this.trees.forEach(t => t.delete())
+		// this.trees.forEach(t => t.delete())
 	}
 
 	async activate(context: ExtensionContext): Promise<void> {
-		await Parser.Parser.init();
-		this.br = await Parser.Language.load(path.resolve(__dirname, "..", 'tree-sitter-br.wasm'))
-		this.parser = new Parser.Parser()
-		this.parser.setLanguage(this.br)
+		// await Parser.Parser.init();
+		// this.br = await Parser.Language.load(path.resolve(__dirname, "..", 'tree-sitter-br.wasm'))
+		this.parser = new Parser()
+		this.parser.setLanguage(BrLang)
+		this.br = BrLang
 
 		context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
 			const document  = e.document;
@@ -93,7 +97,7 @@ export default class BrParser implements Disposable {
 		return fnList
 	}
 
-	getCaptureByName(result: Parser.QueryMatch, name: string): Parser.Node | undefined {
+	getCaptureByName(result: Parser.QueryMatch, name: string): Parser.SyntaxNode | undefined {
 		for (const capture of result.captures) {
 			if (capture.name === name){
 				return capture.node
@@ -144,7 +148,7 @@ export default class BrParser implements Disposable {
 		throw Error("Could not parse result")
   }
 
-	getParamTypeFromNode(param: Parser.Node): VariableType {
+	getParamTypeFromNode(param: Parser.SyntaxNode): VariableType {
     switch (param.type) {
       case 'stringreference':
         return VariableType.string
@@ -159,7 +163,7 @@ export default class BrParser implements Disposable {
     }    
   }
 
-	getStringParamLengthFromNode(param: Parser.Node): number | undefined {
+	getStringParamLengthFromNode(param: Parser.SyntaxNode): number | undefined {
     const lengthNodes = param.descendantsOfType("int")
     if (lengthNodes !== null && lengthNodes[0] !== null && lengthNodes.length) {
       const lengthNode = lengthNodes[0]
@@ -206,8 +210,8 @@ export default class BrParser implements Disposable {
 				const buffer = await workspace.fs.readFile(uri)
 				tree = this.parser.parse(buffer.toString())
 				if (tree){
-					this.trees.set(uri.toString(),tree.copy())
-					tree.delete()
+					this.trees.set(uri.toString(),tree)
+					// tree.delete()
 				} else {
 					throw new Error("Could not parse text of " + uri.toString())
 				}
@@ -295,21 +299,21 @@ export default class BrParser implements Disposable {
 					})
 				}
 			}
-			tree.delete()
+			// tree.delete()
 		}
 		return diagnostics
 	}
 
-	filterOccurrences(node: Parser.Node,  tree: Parser.Tree, occurrences: Parser.QueryMatch[]): Parser.QueryMatch[]{
+	filterOccurrences(node: Parser.SyntaxNode,  tree: Parser.Tree, occurrences: Parser.QueryMatch[]): Parser.QueryMatch[]{
 		// get function ranges
 		const fnRanges: {
-			node: Parser.Node;
+			node: Parser.SyntaxNode;
 			start: number;
 			end: number;
 		}[] = this.getFunctionRanges(tree)
 
 		// if selection is in function and is param
-		const fn: { node: Parser.Node, endIndex: number } | null = this.inFunction(node, fnRanges)
+		const fn: { node: Parser.SyntaxNode, endIndex: number } | null = this.inFunction(node, fnRanges)
 		if (fn && this.isParamOfFunction(node, fn.node)) {
 			// deselect all occurrences not in function
 			occurrences = occurrences.filter((match)  => {
@@ -338,7 +342,7 @@ export default class BrParser implements Disposable {
 		return occurrences
 	}
 
-	match(query: string, tree: Parser.Node): Parser.QueryMatch[] {
+	match(query: string, tree: Parser.SyntaxNode): Parser.QueryMatch[] {
 		const startTime = performance.now()
 		
 		const parserQuery = new Parser.Query(this.br, query)
@@ -348,11 +352,11 @@ export default class BrParser implements Disposable {
 		return results
 	}
 
-	getFunctionRanges(tree: Parser.Tree): {node: Parser.Node, start: number, end: number}[] {
+	getFunctionRanges(tree: Parser.Tree): {node: Parser.SyntaxNode, start: number, end: number}[] {
 		const results = this.match(fnQuery, tree.rootNode)
 
-		const ranges: {node: Parser.Node, start: number, end: number}[] = []
-		let fnNode: Parser.Node | undefined = undefined
+		const ranges: {node: Parser.SyntaxNode, start: number, end: number}[] = []
+		let fnNode: Parser.SyntaxNode | undefined = undefined
 		for (const result of results) {
 			if (result.captures[0].node.type === "def_statement"){
 				fnNode = result.captures[0].node
@@ -378,7 +382,7 @@ export default class BrParser implements Disposable {
 		return ranges
 	}
 
-	isParamOfFunction(node: Parser.Node, fn: Parser.Node): boolean {
+	isParamOfFunction(node: Parser.SyntaxNode, fn: Parser.SyntaxNode): boolean {
 		let isParam = false
 
 		const paramResult = fn.descendantsOfType("parameter")
@@ -404,12 +408,12 @@ export default class BrParser implements Disposable {
 		return isParam
 	}
 
-	inFunction(node: Parser.Node,  
+	inFunction(node: Parser.SyntaxNode,  
 		ranges: {
-			node: Parser.Node;
+			node: Parser.SyntaxNode;
 			start: number;
 			end: number;
-		}[],): { node: Parser.Node, endIndex: number } | null {
+		}[],): { node: Parser.SyntaxNode, endIndex: number } | null {
 
 		let inFunction = false
 		for (const range of ranges) {
@@ -425,7 +429,7 @@ export default class BrParser implements Disposable {
 		return null
 	}
 
-	getNodeAtPosition(document: TextDocument, position: Position): Parser.Node | null {
+	getNodeAtPosition(document: TextDocument, position: Position): Parser.SyntaxNode | null {
 		const tree = this.getDocumentTree(document)
 		const node = tree.rootNode.namedDescendantForPosition(this.getPoint(position))
 		return node
@@ -492,7 +496,7 @@ export default class BrParser implements Disposable {
 		return occurrences
 	}
 
-	getNodeRange(node: Parser.Node){
+	getNodeRange(node: Parser.SyntaxNode){
 		return new Range(new Position(node.startPosition.row,node.startPosition.column),new Position(node.endPosition.row,node.endPosition.column))
 	}
 

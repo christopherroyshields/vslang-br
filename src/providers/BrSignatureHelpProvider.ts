@@ -7,7 +7,7 @@ import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "../class/Project"
 import { VariableType } from "../types/VariableType"
 import BrParser from "../parser"
-import { Node } from "web-tree-sitter"
+import { SyntaxNode } from "tree-sitter"
 
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
@@ -17,7 +17,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
     this.parser = parser
   }
 
-  getParentByType(node: Node, type: string | string[]): Node | undefined {
+  getParentByType(node: SyntaxNode, type: string | string[]): SyntaxNode | undefined {
     const parent = node.parent
     if (parent){
       if (typeof type === "object"){
@@ -123,7 +123,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
     }
   }
 
-  getActiveParameter(call: Node, position: Position): number {
+  getActiveParameter(call: SyntaxNode, position: Position): number {
     const args = call.childForFieldName("arguments")?.children
     let activeParameter = 0
     if (args?.length) {
