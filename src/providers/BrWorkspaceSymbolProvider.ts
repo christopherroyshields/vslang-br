@@ -2,7 +2,6 @@ import { CancellationToken, Position, ProviderResult, Range, SymbolInformation, 
 import BrParser from "../parser";
 import { Project } from "../class/Project";
 import { performance } from "perf_hooks";
-import Parser = require("web-tree-sitter");
 import { SymbolKind, Location } from "vscode";
 
 export default class BrWorkspaceSymbolProvider implements WorkspaceSymbolProvider {

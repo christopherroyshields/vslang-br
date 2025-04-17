@@ -4,6 +4,7 @@ This extension provides language support for the Business Rules! programming lan
 
 ## Features
 
+- Multi-Line Commenting - `cntrl + /` to toggle comment on current or all selected lines
 - Syntax Coloring
 - Lexi Support
 - Auto-Compile
