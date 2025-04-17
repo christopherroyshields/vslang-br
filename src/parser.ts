@@ -1,7 +1,7 @@
 // import * as Parser from "web-tree-sitter";
 import * as Parser from "tree-sitter"
 // const Parser = require("tree-sitter")
-const BrLang = require("../binding.js")
+const BrLang = require("tree-sitter-br")
 import path = require('path');
 import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, DocumentSymbol, ExtensionContext, Position, Range, SymbolKind, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
 import { performance } from 'perf_hooks';
