@@ -11,9 +11,6 @@ export default class OccurenceHighlightProvider implements DocumentHighlightProv
     const wordRange = document.getWordRangeAtPosition(position, /\w+\$?/)
 
     if (wordRange){
-      const hl = new DocumentHighlight(wordRange);
-      highlights.push(hl)
-
       const word = document.getText(wordRange)
       const ranges = this.parser.getOccurences(word, document, wordRange)
       ranges.forEach(r => {

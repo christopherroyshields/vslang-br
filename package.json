@@ -4,7 +4,7 @@
   "description": "Language support for Business Rules!",
   "version": "0.0.8",
   "license": "LICENSE",
-  "publisher": "Christopher Shields",
+  "publisher": "crs-dev",
   "icon": "logo.png",
   "repository": {
     "url": "https://github.com/christopherroyshields/vslang-br"
@@ -221,7 +221,6 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
