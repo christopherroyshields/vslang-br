@@ -48,7 +48,7 @@ export default class BrParser implements Disposable {
 			const query = `(
 				(line (doc_comment) @doc_comment)?
 				.
-				(line (statement
+				(line
 				(def_statement 
 					[
 					(numeric_function_definition (function_name) @name
@@ -57,7 +57,7 @@ export default class BrParser implements Disposable {
 						(string_function_definition (function_name) @name
 						(parameter_list)? @params
 						) @type
-					]) @def))
+					]) @def)
 					(#match? @name "^${name_match}$")
 				)`
 	
@@ -75,7 +75,7 @@ export default class BrParser implements Disposable {
 		const query = `(
 			(line (doc_comment) @doc_comment)?
 			.
-			(line (statement
+			(line
 			(def_statement 
 				[
 				(numeric_function_definition (function_name) @name
@@ -84,7 +84,7 @@ export default class BrParser implements Disposable {
 					(string_function_definition (function_name) @name
 					(parameter_list)? @params
 					) @type
-				]) @def))
+				]) @def)
 			)`
 
 		const results = this.match(query, tree.rootNode)
@@ -442,6 +442,8 @@ export default class BrParser implements Disposable {
 		
 		const node = tree.rootNode.descendantForPosition(this.getPoint(range.start))
 
+		console.log("Node Type:" + node.type)
+
 		if (node){
 			
 			const name_match = word.replace(/[A-Za-z]/g, c => {
@@ -476,18 +478,17 @@ export default class BrParser implements Disposable {
 					});
 				}
 				break;
-				
-				default: {
-					if (node.text.toLocaleLowerCase().substring(0,3)!=="mat"){
-						const selector = `${node.parent?.type} name: (_) @occurrence`
-						const predicate = `(#match? @occurrence "^${name_match}$")`
-						const query = `(${selector} ${predicate})`
-						let results = this.match(query, tree.rootNode)
-						results = this.filterOccurrences(node, tree, results)
-						results.forEach(r => {
-							occurrences.push(this.getNodeRange(r.captures[0].node))
-						});
-					}
+
+				case "stringidentifier":
+				case "numberidentifier": {
+					const selector = `${node.parent?.type} name: (_) @occurrence`
+					const predicate = `(#match? @occurrence "^${name_match}$")`
+					const query = `(${selector} ${predicate})`
+					let results = this.match(query, tree.rootNode)
+					results = this.filterOccurrences(node, tree, results)
+					results.forEach(r => {
+						occurrences.push(this.getNodeRange(r.captures[0].node))
+					});
 				}
 				break;
 			}
