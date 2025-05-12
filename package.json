@@ -225,9 +225,10 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "vscode-test"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.2",
     "@types/emscripten": "^1.40.0",
     "@types/glob": "^7.2.0",
     "@types/mocha": "^9.1.1",
@@ -235,17 +236,19 @@
     "@types/vscode": "^1.70.0",
     "@typescript-eslint/eslint-plugin": "^5.31.0",
     "@typescript-eslint/parser": "^5.31.0",
-    "@vscode/test-electron": "^2.1.5",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.5.2",
+    "chai": "^5.2.0",
     "electron": "^19.1.9",
     "electron-rebuild": "^3.2.9",
     "eslint": "^8.20.0",
     "glob": "^8.0.3",
-    "mocha": "^10.0.0",
+    "mocha": "^10.8.2",
     "typescript": "^4.8.0"
   },
   "dependencies": {
-    "tree-sitter-br": "^0.1.0",
     "tree-sitter": "^0.22.4",
+    "tree-sitter-br": "^0.1.0",
     "vscode-languageclient": "^8.0.2",
     "vscode-languageserver": "^8.0.2",
     "vscode-languageserver-textdocument": "^1.0.7"

@@ -1,5 +1,4 @@
 import ProjectConfig from "../interface/ProjectConfig"
-import BrSourceDocument from "./BrSourceDocument"
 import ProjectSourceDocument from "./ProjectSourceDocument"
 
 export default class ConfiguredProject {
