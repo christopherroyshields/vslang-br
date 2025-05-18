@@ -1,10 +1,6 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabel, CompletionItemProvider, CompletionList, MarkdownString, Position, ProviderResult, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
-import BrSourceDocument from "../class/BrSourceDocument"
-import BaseCompletionProvider from "./BaseCompletionProvider"
-import { TypeLabel } from "../util/common"
 import { Project } from "../class/Project"
-import { InternalFunctions } from "../completions/functions";
 import BrParser from "../parser";
 
 class FunctionCompletionItem extends CompletionItem {

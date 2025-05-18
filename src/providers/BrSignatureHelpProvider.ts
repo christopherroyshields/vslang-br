@@ -1,11 +1,7 @@
 import { CancellationToken, MarkdownString, ParameterInformation, Position, ProviderResult, Range, SignatureHelp, SignatureHelpContext, SignatureHelpProvider, SignatureInformation, TextDocument, workspace, WorkspaceFolder } from "vscode"
-import ConfiguredProject from "../class/ConfiguredProject"
-import BrSourceDocument from "../class/BrSourceDocument"
 import { getFunctionsByName } from "../completions/functions"
 import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, nodeRange, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common"
-import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import { Project } from "../class/Project"
-import { VariableType } from "../types/VariableType"
 import BrParser from "../parser"
 import { SyntaxNode } from "tree-sitter"
 

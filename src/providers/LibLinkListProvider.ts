@@ -1,6 +1,4 @@
 import { CancellationToken, CompletionContext, CompletionItem, CompletionList, CompletionTriggerKind, Position, Range, TextDocument, workspace, WorkspaceFolder } from "vscode"
-import ConfiguredProject from "../class/ConfiguredProject"
-import ProjectSourceDocument from "../class/ProjectSourceDocument"
 import BaseCompletionProvider from "./BaseCompletionProvider"
 import { Project } from "../class/Project"
 

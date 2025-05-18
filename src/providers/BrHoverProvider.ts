@@ -1,11 +1,7 @@
 import { MarkdownString, workspace, WorkspaceFolder } from 'vscode'
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode"
-import BrSourceDocument from "../class/BrSourceDocument"
 import { getFunctionByName } from '../completions/functions'
-import BrFunction from '../interface/BrFunction'
-import { isComment } from "../util/common"
 import { Project } from '../class/Project'
-import UserFunction from '../class/UserFunction'
 import InternalFunction from '../class/InternalFunction'
 import BrParser from '../parser'
 
@@ -16,7 +12,7 @@ export default class BrHoverProvider implements HoverProvider {
     this.configuredProjects = configuredProjects
     this.parser = parser
   }
-  async provideHover(doc: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {
+  async provideHover(doc: TextDocument, position: Position): Promise<Hover | undefined> {
     const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/)
     if (wordRange){
       const posNode = this.parser.getNodeAtPosition(doc, wordRange.start)

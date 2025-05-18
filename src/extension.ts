@@ -10,7 +10,6 @@ import FuncCompletionProvider from './providers/FuncCompletionProvider';
 import StatementCompletionProvider from './providers/StatementCompletionProvider';
 import BrSourceSymbolProvider from './providers/BrSymbolProvider';
 import ProjectSourceDocument from './class/ProjectSourceDocument';
-import BrSourceDocument from './class/BrSourceDocument';
 import { performance } from 'perf_hooks';
 import Layout from './class/Layout';
 import { Project } from './class/Project';
@@ -27,6 +26,7 @@ import LocalVariableCompletionProvider from './providers/LocalCompletionProvider
 import LocalFunctionCompletionProvider from './providers/LocalFunctionCompletionProvider';
 import InternalFunctionCompletionProvider from './providers/InternalFunctionCompletionProvider';
 import BrReferenceProvder from './providers/BrReferenceProvider';
+import TreeSitterSourceDocument from './class/TreeSitterSourceDocument';
 
 export async function activate(context: ExtensionContext) {
 	const subscriptions = context.subscriptions
@@ -159,21 +159,31 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 	return configuredProjects
 }
 
-async function updateLibraryFunctions(uri: Uri, workspaceFolder: WorkspaceFolder): Promise<ProjectSourceDocument | undefined> {
+async function readSourceFileToTree(uri: Uri, workspaceFolder: WorkspaceFolder, parser: BrParser): Promise<TreeSitterSourceDocument | undefined> {
 	try {
 		const libText = await workspace.fs.readFile(uri)
 		if (libText){
-			const newDoc = new ProjectSourceDocument(libText.toString(), uri, workspaceFolder)
-			return newDoc
+			// let startTime = performance.now()
+			// const newDoc = new ProjectSourceDocument(libText.toString(), uri, workspaceFolder)
+			// let endTime = performance.now()
+			// console.log(`Regex Parse: ${endTime - startTime} milliseconds`)
+
+			const startTime = performance.now()
+			const tree = parser.parser.parse(libText.toString())
+			const treeDoc = new TreeSitterSourceDocument(parser, uri, tree, workspaceFolder)
+			const endTime = performance.now()
+			console.log(`Tree Parse: ${endTime - startTime} milliseconds`)
+
+			return treeDoc
 		}
-	} catch {
-		window.showWarningMessage(`Library source not found ${uri.fsPath}`)
+	} catch (error: any) {
+		window.showErrorMessage(`Error reading source: ${uri.fsPath}, ${error.message}`)
 	}
 }
 
 async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables: Disposable[], parser: BrParser): Promise<Project> {
 	const project: Project = {
-		sourceFiles: new Map<string, ProjectSourceDocument>(),
+		sourceFiles: new Map<string, TreeSitterSourceDocument>(),
 		layouts: new Map<string, Layout>()
 	}
 
@@ -242,7 +252,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	const endTime = performance.now()
 	console.log(`sourc load: ${endTime - startTime} ms`);
 	for (const sourceUri of sourceFiles) {
-		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
+		const sourceLib = await readSourceFileToTree(sourceUri, workspaceFolder, parser)
 		if (sourceLib){
 			project.sourceFiles.set(sourceUri.toString(), sourceLib)
 		}
@@ -250,11 +260,11 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 
 	const codeWatcher = workspace.createFileSystemWatcher(sourceFileGlobPattern)
 	codeWatcher.onDidChange(async (sourceUri: Uri) => {
-		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
-		if (sourceLib){
+		const brSource = await readSourceFileToTree(sourceUri, workspaceFolder, parser)
+		if (brSource){
 			for (const [uri] of project.sourceFiles) {
 				if (uri === sourceUri.toString()){
-					project.sourceFiles.set(sourceUri.toString(), sourceLib)
+					project.sourceFiles.set(sourceUri.toString(), brSource)
 				}
 			}
 			if (parser.trees.has(sourceUri.toString())){
@@ -271,7 +281,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	}, undefined, disposables)
 
 	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
-		const sourceLib = await updateLibraryFunctions(sourceUri, workspaceFolder)
+		const sourceLib = await readSourceFileToTree(sourceUri, workspaceFolder, parser)
 		if (sourceLib){
 			project.sourceFiles.set(sourceUri.toString(), sourceLib)
 		}

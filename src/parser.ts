@@ -15,7 +15,7 @@ import DocComment from './class/DocComment';
 import { VariableType } from './types/VariableType';
 const fnQuery = fs.readFileSync(path.join(__dirname,"..","tree-query","function_def.scm")).toString()
 
-export default class BrParser implements Disposable {	
+export default class BrParser implements Disposable {
 	br!: Parser.Language
 	parser!: Parser
 	trees: Map<string, Parser.Tree> = new Map<string, Parser.Tree>()
@@ -23,7 +23,7 @@ export default class BrParser implements Disposable {
 		// this.trees.forEach(t => t.delete())
 	}
 
-	async activate(context: ExtensionContext): Promise<void> {
+	activate(context: ExtensionContext): void {
 		// await Parser.Parser.init();
 		// this.br = await Parser.Language.load(path.resolve(__dirname, "..", 'tree-sitter-br.wasm'))
 		this.parser = new Parser()
@@ -31,7 +31,7 @@ export default class BrParser implements Disposable {
 		this.br = BrLang
 
 		context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
-			const document  = e.document;
+			const document = e.document;
 			if (document.languageId === "br"){
 				this.updateTree(e);
 			}
@@ -195,6 +195,26 @@ export default class BrParser implements Disposable {
 		}
 	}
 
+  getBufferTree(uri: Uri, buffer: Buffer) {
+		try {
+			const tree: Parser.Tree = this.parser.parse(buffer.toString())
+			this.trees.set(uri.toString(),tree)
+			return tree
+		}	catch (error) {
+			console.error("Error parsing text:", error)
+		}
+  }	
+
+	getTextTree(uri: Uri, text: string): Parser.Tree | undefined {
+		try {
+			const tree: Parser.Tree = this.parser.parse(text)
+			this.trees.set(uri.toString(),tree)
+			return tree
+		}	catch (error) {
+			console.error("Error parsing text:", error)
+		}
+	}
+	
 	async getUriTree(uri: Uri, update = false): Promise<Parser.Tree | undefined> {
 		const document = this.getOpenDocument(uri)
 		if (document){
