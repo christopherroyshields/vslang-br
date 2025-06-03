@@ -76,9 +76,10 @@ export async function activate(context: ExtensionContext) {
 	const localFunctionCompletionProvider = new LocalFunctionCompletionProvider(parser)
 	subscriptions.push(languages.registerCompletionItemProvider(sel, localFunctionCompletionProvider))
 
-	const diagnostics = new BrDiagnostics(parser, context)
-	
 	const configuredProjects: Map<WorkspaceFolder, Project> = new Map()
+	await activateWorkspaceFolders(context, configuredProjects, parser)
+
+	const diagnostics = new BrDiagnostics(parser, context)
 
 	const hoverProvider = new BrHoverProvider(configuredProjects, parser)
 	subscriptions.push(languages.registerHoverProvider(sel, hoverProvider))
@@ -89,7 +90,6 @@ export async function activate(context: ExtensionContext) {
 	const referenceProvider = new BrReferenceProvder(parser)
 	subscriptions.push(languages.registerReferenceProvider(sel, referenceProvider))
 
-	await activateWorkspaceFolders(context, configuredProjects, parser)
 
 	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects, parser)
 	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
@@ -169,8 +169,8 @@ async function readSourceFileToTree(uri: Uri, workspaceFolder: WorkspaceFolder, 
 			// console.log(`Regex Parse: ${endTime - startTime} milliseconds`)
 
 			const startTime = performance.now()
-			const tree = parser.parser.parse(libText.toString())
-			const treeDoc = new TreeSitterSourceDocument(parser, uri, tree, workspaceFolder)
+			// const tree = parser.parser.parse(libText.toString())
+			const treeDoc = new TreeSitterSourceDocument(parser, uri, libText, workspaceFolder)
 			const endTime = performance.now()
 			console.log(`Tree Parse: ${endTime - startTime} milliseconds`)
 

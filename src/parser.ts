@@ -176,26 +176,18 @@ export default class BrParser implements Disposable {
 
 	getDocumentTree(document: TextDocument):  Parser.Tree {
 		const startTime = performance.now()
-		let tree: Parser.Tree | undefined | null = this.trees.get(document.uri.toString())
+		const tree = this.parser.parse(document.getText())
+		const endTime = performance.now()
+		console.log(`Parse: ${endTime - startTime} milliseconds`)
+		
 		if (tree){
 			return tree
 		} else {
-			const startTime = performance.now()
-			tree = this.parser.parse(document.getText())
-			const endTime = performance.now()
-			console.log(`Parse: ${endTime - startTime} milliseconds`)
-			
-			if (tree){
-				this.trees.set(document.uri.toString(),tree)
-			} else {
-				throw new Error("Could not parse document text.");
-			}
-
-			return tree
+			throw new Error("Could not parse document text.");
 		}
 	}
 
-  getBufferTree(uri: Uri, buffer: Buffer) {
+  getBufferTree(uri: Uri, buffer: ArrayBufferLike) {
 		try {
 			const tree: Parser.Tree = this.parser.parse(buffer.toString())
 			this.trees.set(uri.toString(),tree)
