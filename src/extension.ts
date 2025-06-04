@@ -103,6 +103,15 @@ export async function activate(context: ExtensionContext) {
 	const workspaceSymbolProvider = new BrWorkspaceSymbolProvider(parser, configuredProjects)
 	languages.registerWorkspaceSymbolProvider(workspaceSymbolProvider)
 
+	// Register walkthrough command
+	subscriptions.push(commands.registerCommand('vslang-br.openWalkthrough', () => {
+		commands.executeCommand('workbench.action.openWalkthrough', 'crs-dev.vslang-br#brLanguageExtension', false).then((result) => {
+			console.log(result)
+		}, (error) => {
+			console.error(error)
+		})
+	}))
+
 }
 
 export function deactivate() {
