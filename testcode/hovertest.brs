@@ -15,3 +15,4 @@ fnend
 library "testlib" : fnbar
 
 let fnbar
+let fNbar
