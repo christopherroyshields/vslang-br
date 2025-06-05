@@ -125,6 +125,7 @@ export default class TreeSitterSourceDocument {
     }
 
     const query = `(def_statement 
+      (library_keyword)? @isLibrary
       [
         (numeric_function_definition (function_name) @name) @fn
         (string_function_definition (function_name) @name) @fn
@@ -134,11 +135,10 @@ export default class TreeSitterSourceDocument {
     for (const result of results) {
       const nameNode = result.captures.find(c => c.name === "name")?.node;
       const fnNode = result.captures.find(c => c.name === "fn")?.node;
-      
+      const isLibrary: boolean = result.captures.find(c => c.name === "isLibrary")?.node !== undefined;
       if (nameNode && fnNode) {
-        const isLibrary = fnNode.descendantsOfType("library_keyword").length > 0;
         this.functions.push({
-          isLibrary,
+          isLibrary: isLibrary,
           name: nameNode.text,
         });
       }

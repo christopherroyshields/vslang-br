@@ -27,8 +27,13 @@ export default class BrHoverProvider implements HoverProvider {
               return hover
             }
           } else {
-            // Try to find function in workspace
-            const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+            let workspaceFolder: WorkspaceFolder | undefined = undefined;
+            for (const [folder] of this.configuredProjects) {
+              if (doc.uri.fsPath.startsWith(folder.uri.fsPath)) {
+                workspaceFolder = folder;
+                break;
+              }
+            }
             if (workspaceFolder){
               const project = this.configuredProjects.get(workspaceFolder)
               if (project){
@@ -42,7 +47,7 @@ export default class BrHoverProvider implements HoverProvider {
                     return hover
                   }
                 }
-
+                
                 // Then check all other documents for library functions
                 for (const [uri, lib] of project.sourceFiles) {
                   if (uri !== doc.uri.toString()) {
@@ -61,22 +66,22 @@ export default class BrHoverProvider implements HoverProvider {
       }
     }
   }
-
+  
   createHoverFromFunction<T extends InternalFunction>(fn: T): Hover {
     let markDownString = '```br\n' + fn.generateSignature() + '\n```\n---'
-  
+    
     if (markDownString && fn.documentation){
       markDownString += '\n' + fn.documentation
     }
-  
+    
     fn.params?.forEach((param)=>{
       if (param.documentation){
         markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`
       }
     })
-  
+    
     const markup = new MarkdownString(markDownString)
-  
+    
     return new Hover(markup)
   }
 }

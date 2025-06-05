@@ -6,8 +6,8 @@ import { Project } from "../class/Project"
 import BrParser from "../parser";
 
 /**
- * Library statement file path provider
- */
+* Library statement file path provider
+*/
 export default class LibPathProvider extends BaseCompletionProvider {
   parser: BrParser
   constructor(configuredProjects: Map<WorkspaceFolder, Project>, parser: BrParser) {
@@ -16,7 +16,7 @@ export default class LibPathProvider extends BaseCompletionProvider {
   }
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): CompletionList<CompletionItem> {
     const completionItems: CompletionList<CompletionItem> = new CompletionList()
-
+    
     const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/)
     const pos = wordRange ? wordRange.start : position
     const posNode = this.parser.getNodeAtPosition(doc, pos)
@@ -27,10 +27,18 @@ export default class LibPathProvider extends BaseCompletionProvider {
         const pathQuery = `path: (string_expression 
           (string_primary_expression
               (string) @path))`
-  
+        
         const results = this.parser.match(pathQuery, libNode)
         if (results.length){
-          const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+          
+          let workspaceFolder: WorkspaceFolder | undefined = undefined;
+          for (const [folder] of this.configuredProjects) {
+            if (doc.uri.fsPath.startsWith(folder.uri.fsPath)) {
+              workspaceFolder = folder;
+              break;
+            }
+          }
+
           if (workspaceFolder){
             const project = this.configuredProjects.get(workspaceFolder)
             if (project){
@@ -62,7 +70,7 @@ export default class LibPathProvider extends BaseCompletionProvider {
         }
       }
     }
-
+    
     return completionItems
   }
 }

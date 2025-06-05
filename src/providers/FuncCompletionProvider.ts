@@ -22,7 +22,14 @@ export default class FuncCompletionProvider implements CompletionItemProvider<Fu
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken): FunctionCompletionItem[] {
     const completionItems: FunctionCompletionItem[] = []
 
-    const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+    let workspaceFolder: WorkspaceFolder | undefined = undefined;
+    for (const [folder] of this.configuredProjects) {
+      if (doc.uri.fsPath.startsWith(folder.uri.fsPath)) {
+        workspaceFolder = folder;
+        break;
+      }
+    }
+
     if (workspaceFolder){
       const project = this.configuredProjects.get(workspaceFolder)
       if (project){
