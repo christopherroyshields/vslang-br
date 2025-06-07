@@ -5,7 +5,7 @@ import BrParser from '../../parser'
 import path = require('path')
 
 suite('BrReferenceProvider Test Suite', () => {
-	vscode.window.showInformationMessage('Start BrReferenceProvider tests.')
+	vscode.window.showInformationMessage('Start BrReferenceProvider tests.');
 
 	const parser = new BrParser()
 	parser.activate({
@@ -16,13 +16,24 @@ suite('BrReferenceProvider Test Suite', () => {
 
 	test('Find references to variable', async () => {
 		console.log('Running variable references test...')
-		const document = await vscode.workspace.openTextDocument({
-			language: 'br',
-			content: `dim testVar
+		
+		// Create a temporary file in the test workspace
+		const testFilePath = path.join(__dirname, '../../../testcode/temp_var_refs_test.brs')
+		const testFileUri = vscode.Uri.file(testFilePath)
+		
+		// Write content to file
+		const content = `dim testVar
 let testVar = 10
 print testVar
 let testVar = testVar + 5`
-		})
+
+		await vscode.workspace.fs.writeFile(
+			testFileUri,
+			Buffer.from(content)
+		)
+		
+		// Open the saved document
+		const document = await vscode.workspace.openTextDocument(testFileUri)
 		
 		// Position on the first occurrence of testVar
 		const position = new vscode.Position(0, 4)
@@ -45,20 +56,36 @@ let testVar = testVar + 5`
 		
 		console.log('Variable references test passed')
 		
-		await vscode.window.showTextDocument(document)
+		// Cleanup
+		try {
+			await vscode.workspace.fs.delete(testFileUri)
+		} catch (error) {
+			console.error('Failed to cleanup test file:', error)
+		}
+		
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
 	test('Find references to function name', async () => {
-		const document = await vscode.workspace.openTextDocument({
-			language: 'br',
-			content: `def testFunc(x)
+		// Create a temporary file in the test workspace
+		const testFilePath = path.join(__dirname, '../../../testcode/temp_func_refs_test.brs')
+		const testFileUri = vscode.Uri.file(testFilePath)
+		
+		// Write content to file
+		const content = `def fnTestFunc(x)
   print x
 fnend
 
-let result = testFunc(5)
-print testFunc(10)`
-		})
+let result = fnTestFunc(5)
+print fnTestFunc(10)`
+
+		await vscode.workspace.fs.writeFile(
+			testFileUri,
+			Buffer.from(content)
+		)
+		
+		// Open the saved document
+		const document = await vscode.workspace.openTextDocument(testFileUri)
 		
 		// Position on the function definition
 		const position = new vscode.Position(0, 4)
@@ -76,18 +103,34 @@ print testFunc(10)`
 		
 		console.log('Function references test passed')
 		
-		await vscode.window.showTextDocument(document)
+		// Cleanup
+		try {
+			await vscode.workspace.fs.delete(testFileUri)
+		} catch (error) {
+			console.error('Failed to cleanup test file:', error)
+		}
+		
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
 	test('Find references to label', async () => {
-		const document = await vscode.workspace.openTextDocument({
-			language: 'br',
-			content: `start:
+		// Create a temporary file in the test workspace
+		const testFilePath = path.join(__dirname, '../../../testcode/temp_label_refs_test.brs')
+		const testFileUri = vscode.Uri.file(testFilePath)
+		
+		// Write content to file
+		const content = `start:
 print "Begin"
 goto start
 if x > 0 then goto start`
-		})
+
+		await vscode.workspace.fs.writeFile(
+			testFileUri,
+			Buffer.from(content)
+		)
+		
+		// Open the saved document
+		const document = await vscode.workspace.openTextDocument(testFileUri)
 		
 		// Position on the label definition
 		const position = new vscode.Position(0, 0)
@@ -105,7 +148,13 @@ if x > 0 then goto start`
 		
 		console.log('Label references test passed')
 		
-		await vscode.window.showTextDocument(document)
+		// Cleanup
+		try {
+			await vscode.workspace.fs.delete(testFileUri)
+		} catch (error) {
+			console.error('Failed to cleanup test file:', error)
+		}
+		
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 

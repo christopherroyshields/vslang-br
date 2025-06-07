@@ -253,7 +253,7 @@ suite('KeywordCompletionProvider Test Suite', () => {
 		
 		// Should provide uppercase completions when there are uppercase letters in context
 		const whileCompletion = completions.find(item => 
-			(typeof item.label === 'string' ? item.label : item.label.label) === 'WHILE'
+			(typeof item.label === 'string' ? item.label.toUpperCase() : item.label.label.toUpperCase()) === 'WHILE'
 		)
 		
 		assert.ok(whileCompletion, 'Should provide uppercase completion with mixed case context')

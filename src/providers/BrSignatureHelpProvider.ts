@@ -98,20 +98,21 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
 
     if (call.type === "numeric_system_function" || call.type === "string_system_function"){
       const internalFunctions = getFunctionsByName(name.text)
-      if (internalFunctions){
-        for (const fn of internalFunctions) {
-          const params: ParameterInformation[] = []
-          const sigLabel = fn.generateSignature(params)
+      if (!internalFunctions || internalFunctions.length === 0){
+        return undefined
+      }
+      for (const fn of internalFunctions) {
+        const params: ParameterInformation[] = []
+        const sigLabel = fn.generateSignature(params)
 
-          sigHelp.signatures.push({
-            documentation: fn.documentation,
-            label: sigLabel,
-            parameters: params,
-            activeParameter: activeParameter
-          })
+        sigHelp.signatures.push({
+          documentation: fn.documentation,
+          label: sigLabel,
+          parameters: params,
+          activeParameter: activeParameter
+        })
 
-          return sigHelp
-        }
+        return sigHelp
       }
     } else {
       const fn = await this.parser.getFunctionByName(name.text, doc.uri)
@@ -124,6 +125,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
           parameters: params,
           activeParameter: activeParameter
         })
+        sigHelp.activeParameter = activeParameter
         return sigHelp
       }
 
@@ -152,6 +154,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
                       parameters: params,
                       activeParameter: activeParameter
                     })
+                    sigHelp.activeParameter = activeParameter
                   }
                 }
               }
@@ -186,7 +189,6 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
         }
       }
     }
-    console.log(`active parameter: ${activeParameter}`);
     return activeParameter
   }
 }

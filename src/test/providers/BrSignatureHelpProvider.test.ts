@@ -110,27 +110,19 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		const documentSource = new TreeSitterSourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
 		project.sourceFiles.set(uri.toString(), documentSource)
 		
-		// Create a test document with function call
-		const testDocument = await vscode.workspace.openTextDocument({
-			language: 'br',
-			content: 'let result = fnfoo('
-		})
-		
-		const position = new vscode.Position(0, 18) // After opening parenthesis
+		const position = new vscode.Position(0, 14) // After opening parenthesis
 		
 		const signatureProvider = new BrSignatureHelpProvider(projects, parser)
-		const signatureHelp = await signatureProvider.provideSignatureHelp(testDocument, position, new vscode.CancellationTokenSource().token, {} as vscode.SignatureHelpContext)
+		const signatureHelp = await signatureProvider.provideSignatureHelp(document, position, new vscode.CancellationTokenSource().token, {} as vscode.SignatureHelpContext)
 
 		assert.ok(signatureHelp, 'Should provide signature help for user function')
 		assert.strictEqual(signatureHelp.signatures.length, 1, 'Should have one signature')
 		assert.ok(signatureHelp.signatures[0].label.includes('fnfoo'), 'Should contain fnfoo function signature')
-		assert.strictEqual(signatureHelp.activeParameter, 0, 'Should highlight first parameter')
+		assert.strictEqual(signatureHelp.activeParameter, 1, 'Should highlight second parameter')
 		
 		// Clean up
 		project.sourceFiles.delete(uri.toString())
 		await vscode.window.showTextDocument(document)
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-		await vscode.window.showTextDocument(testDocument)
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
@@ -167,12 +159,9 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		project.sourceFiles.set(testlibUri.toString(), testlibDoc)
 		
 		// Create a test document with library function call
-		const testDocument = await vscode.workspace.openTextDocument({
-			language: 'br',
-			content: 'let result = fnbar('
-		})
+		const testDocument = document
 		
-		const position = new vscode.Position(0, 18) // After opening parenthesis
+		const position = new vscode.Position(16, 10) // After opening parenthesis
 		
 		const signatureProvider = new BrSignatureHelpProvider(projects, parser)
 		const signatureHelp = await signatureProvider.provideSignatureHelp(testDocument, position, new vscode.CancellationTokenSource().token, {} as vscode.SignatureHelpContext)
@@ -186,17 +175,15 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		project.sourceFiles.delete(uri.toString())
 		await vscode.window.showTextDocument(document)
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-		await vscode.window.showTextDocument(testDocument)
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
 	test('Active parameter detection', async () => {
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
-			content: 'PRINT val("123",'
+			content: 'PRINT val("123",)'
 		})
 		
-		const position = new vscode.Position(0, 17) // After comma
+		const position = new vscode.Position(0, 16) // After comma
 		
 		const signatureProvider = new BrSignatureHelpProvider(projects, parser)
 		const signatureHelp = await signatureProvider.provideSignatureHelp(document, position, new vscode.CancellationTokenSource().token, {} as vscode.SignatureHelpContext)

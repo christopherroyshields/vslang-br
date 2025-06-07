@@ -10,7 +10,7 @@ import { readFileSync } from 'fs'
 import path = require('path')
 
 suite('FuncCompletionProvider Test Suite', () => {
-	vscode.window.showInformationMessage('Start FuncCompletionProvider tests.')
+	vscode.window.showInformationMessage('Start FuncCompletionProvider tests.');
 
 	const parser = new BrParser()
 	parser.activate({
@@ -168,28 +168,27 @@ suite('FuncCompletionProvider Test Suite', () => {
 	})
 
 	test('Exclude current document functions', async () => {
+		// Create a temporary file in the test workspace
 		const codepath = path.join(__dirname, '../../../testcode/hovertest.brs')
 		const uri = vscode.Uri.file(codepath)
-		const document = await vscode.workspace.openTextDocument(uri)
-
-		const testWorkspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
 		
-		const projects = new Map<vscode.WorkspaceFolder, Project>()
-		const project = {
+		// Open the document
+		const document = await vscode.workspace.openTextDocument(uri)
+		
+		// Use the existing testWorkspaceFolder from the suite setup
+		// instead of creating a new one with getWorkspaceFolder
+		const testProject = {
 			sourceFiles: new Map<string, TreeSitterSourceDocument>()
 		} as Project
 		
-		if (!testWorkspaceFolder) {
-			throw new Error('No workspace folder found')
-		}
-		
-		projects.set(testWorkspaceFolder, project)
+		const localProjects = new Map<vscode.WorkspaceFolder, Project>()
+		localProjects.set(testWorkspaceFolder, testProject)
 		
 		// Add the current document to project source files
 		const documentContent = document.getText()
 		const documentBuffer = Buffer.from(documentContent)
 		const documentSource = new TreeSitterSourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
-		project.sourceFiles.set(uri.toString(), documentSource)
+		testProject.sourceFiles.set(uri.toString(), documentSource)
 
 		// Add test library
 		const testcodeDir = path.join(__dirname, '../../../testcode')
@@ -198,11 +197,11 @@ suite('FuncCompletionProvider Test Suite', () => {
 		const testlibUri = Uri.file(testlibPath)
 		const testlibBuffer = Buffer.from(testlibContent)
 		const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
-		project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+		testProject.sourceFiles.set(testlibUri.toString(), testlibDoc)
 		
 		const position = new vscode.Position(1, 0) // Empty line
 		
-		const funcCompletionProvider = new FuncCompletionProvider(projects, parser)
+		const funcCompletionProvider = new FuncCompletionProvider(localProjects, parser)
 		const completions = await funcCompletionProvider.provideCompletionItems(
 			document, 
 			position, 
@@ -228,14 +227,14 @@ suite('FuncCompletionProvider Test Suite', () => {
 		assert.ok(libFunctionCompletion, 'Should include library functions from other files')
 		
 		// Clean up
-		project.sourceFiles.delete(uri.toString())
+		testProject.sourceFiles.delete(uri.toString())
 		await vscode.window.showTextDocument(document)
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
 	test('Only include library functions', async () => {
 		// Create a mock document with both library and non-library functions
-		const mockUri = Uri.file('/test/mock.brs')
+		const mockUri = vscode.Uri.file(path.join(__dirname, '../../../testcode/mock_lib_functions.brs'))
 		const mockContent = `def fnLocalFunc(x)
   return x
 fnend
@@ -243,18 +242,45 @@ fnend
 def library fnLibraryFunc(y)
   return y
 fnend`
+
+		// Write the mock file to disk
+		await vscode.workspace.fs.writeFile(
+			mockUri,
+			Buffer.from(mockContent)
+		)
+		
+		// Create test file in the workspace
+		const testFileUri = vscode.Uri.file(path.join(__dirname, '../../../testcode/temp_lib_test.brs'))
+		await vscode.workspace.fs.writeFile(
+			testFileUri,
+			Buffer.from('let result = ')
+		)
+		
+		// Create a new test project
+		const testProject = {
+			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
+			layouts: new Map<string, Layout>()
+		}
+		const localProjects = new Map<vscode.WorkspaceFolder, Project>()
+		localProjects.set(testWorkspaceFolder, testProject)
+		
+		// Add the mock document to project source files
 		const mockBuffer = Buffer.from(mockContent)
 		const mockDoc = new TreeSitterSourceDocument(parser, mockUri, mockBuffer, testWorkspaceFolder)
-		project.sourceFiles.set(mockUri.toString(), mockDoc)
+		testProject.sourceFiles.set(mockUri.toString(), mockDoc)
 		
-		const document = await vscode.workspace.openTextDocument({
-			language: 'br',
-			content: 'let result = '
-		})
+		// Open the test document
+		const document = await vscode.workspace.openTextDocument(testFileUri)
+		
+		// Add the test document to project source files
+		const testContent = document.getText()
+		const testBuffer = Buffer.from(testContent)
+		const testDoc = new TreeSitterSourceDocument(parser, testFileUri, testBuffer, testWorkspaceFolder)
+		testProject.sourceFiles.set(testFileUri.toString(), testDoc)
 		
 		const position = new vscode.Position(0, 13)
 		
-		const funcCompletionProvider = new FuncCompletionProvider(projects, parser)
+		const funcCompletionProvider = new FuncCompletionProvider(localProjects, parser)
 		const completions = await funcCompletionProvider.provideCompletionItems(
 			document, 
 			position, 
@@ -280,12 +306,29 @@ fnend`
 		assert.ok(!localFunctionCompletion, 'Should not include non-library functions')
 		
 		// Clean up
-		project.sourceFiles.delete(mockUri.toString())
-		await vscode.window.showTextDocument(document)
+		testProject.sourceFiles.delete(mockUri.toString())
+		testProject.sourceFiles.delete(testFileUri.toString())
+		
+		try {
+			await vscode.workspace.fs.delete(testFileUri)
+			await vscode.workspace.fs.delete(mockUri)
+		} catch (error) {
+			console.error('Failed to cleanup test files:', error)
+		}
+		
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
 	test('Handle empty project', async () => {
+		// Create a temp file in the test workspace
+		const testFileUri = vscode.Uri.file(path.join(__dirname, '../../../testcode/temp_empty_test.brs'))
+		
+		// Write initial content to the file
+		await vscode.workspace.fs.writeFile(
+			testFileUri,
+			Buffer.from('let result = ')
+		)
+		
 		const emptyProjects = new Map<vscode.WorkspaceFolder, Project>()
 		const emptyProject = {
 			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
@@ -293,10 +336,14 @@ fnend`
 		}
 		emptyProjects.set(testWorkspaceFolder, emptyProject)
 		
-		const document = await vscode.workspace.openTextDocument({
-			language: 'br',
-			content: 'let result = '
-		})
+		// Open the document
+		const document = await vscode.workspace.openTextDocument(testFileUri)
+		
+		// Add the document to the empty project (to simulate a file with no functions)
+		const testContent = document.getText()
+		const testBuffer = Buffer.from(testContent)
+		const testDoc = new TreeSitterSourceDocument(parser, testFileUri, testBuffer, testWorkspaceFolder)
+		emptyProject.sourceFiles.set(testFileUri.toString(), testDoc)
 		
 		const position = new vscode.Position(0, 13)
 		
@@ -312,7 +359,15 @@ fnend`
 		
 		console.log('Empty project test passed')
 		
-		await vscode.window.showTextDocument(document)
+		// Clean up
+		emptyProject.sourceFiles.delete(testFileUri.toString())
+		
+		try {
+			await vscode.workspace.fs.delete(testFileUri)
+		} catch (error) {
+			console.error('Failed to cleanup test file:', error)
+		}
+		
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 })

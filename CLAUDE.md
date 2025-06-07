@@ -6,6 +6,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a VS Code extension providing language support for Business Rules! (BR), a BASIC-like programming language. The extension uses Tree-sitter for parsing and provides comprehensive IDE features including IntelliSense, hover information, syntax highlighting, and Lexi compiler integration.
 
+## Business Rules! Language Overview
+
+Business Rules! (BR) is a line-numbered procedural language designed for application programming, especially in business environments that require structured I/O, reporting, file manipulation, and forms processing. Its syntax resembles older BASIC-style languages but with extensive support for structured data access and GUI/RTF integration.
+
+### Language Syntax Rules
+- **Line Numbers**: Every line must start with a numeric label (e.g., `100`, `105`, `1200`)
+- **Statement Delimiter**: Colon `:` separates multiple statements on the same line
+- **Multi-line Continuation**: Use `!:` to continue logic across lines
+- **Case Insensitive**: All keywords and identifiers are case-insensitive
+
+### Data Types
+- **Strings**: Declared with `DIM Var$*##` (e.g., `DIM Name$*30` for 30-char string)
+- **Numerics**: Implicitly declared, no DIM needed unless for arrays
+- **Arrays**: Support up to 3 dimensions (e.g., `DIM ArrayName(N)` or `DIM StrArray$(N)*##`)
+- **Function Returns**: Functions return values by assigning to function name (e.g., `LET MyFunc=42 : FNEND`)
+
+### Control Structures
+- **Conditionals**: `IF...THEN`, `IF...THEN...ELSE`, `END IF`
+- **Loops**: `DO...LOOP` (with `WHILE`/`UNTIL`), `FOR...TO...NEXT`
+- **Branching**: `GOTO`, `GOSUB`, `RETURN`, `ON GOTO`, `ON GOSUB`, `LABEL`
+
+### File I/O
+- **OPEN Statement**: `OPEN #1: "name=FILENAME", display, input, sequential`
+- **File Types**: DISPLAY (text), INTERNAL (structured records)
+- **Access Modes**: SEQUENTIAL, RELATIVE, KEYED
+- **I/O Commands**: `INPUT #`, `LINPUT #`, `PRINT #`, `READ`, `WRITE`, `REWRITE`
+
+### Libraries and DLLs
+- **LIBRARY Statement**: Load external libraries (e.g., `LIBRARY "FNSnap.dll": FNPRINT_FILE`)
+- **Common Libraries**: FNSnap.dll (GUI), RTFLIB.dll (RTF generation)
+- **Library Functions**: Use `DEF LIBRARY` declaration with `FNEND` return
+
 ### Key Features
 - **Syntax Highlighting**: Full BR language syntax support
 - **IntelliSense**: Code completion for functions, statements, keywords, and variables
