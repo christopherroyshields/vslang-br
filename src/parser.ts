@@ -441,11 +441,63 @@ export default class BrParser implements Disposable {
 		return null
 	}
 
+	/**
+	 * Get the syntax node at a specific position in the document.
+	 * @param document The text document to search in.
+	 * @param position The position to find the node at.
+	 * @returns The syntax node at the specified position, or null if not found.
+	 */
+
 	getNodeAtPosition(document: TextDocument, position: Position): Parser.SyntaxNode | null {
 		const tree = this.getDocumentTree(document)
 		const node = tree.rootNode.namedDescendantForPosition(this.getPoint(position))
 		return node
 	}
+
+	/**
+	 * Find the nearest node of a specific type by walking backwards through the tree.
+	 * Checks current node and parents, then walks through prior siblings of each parent.
+	 * @param node The starting node to search from.
+	 * @param nodeType The type of node to find.
+	 * @returns The nearest node of the specified type, or null if not found.
+	 */
+	findNearestNodeOfType(node: Parser.SyntaxNode, nodeType: string): Parser.SyntaxNode | null {
+		// Check if current node matches
+		if (node.type === nodeType) {
+			return node;
+		}
+		
+		// Check ancestors and their prior siblings
+		let currentNode: Parser.SyntaxNode | null = node;
+		while (currentNode) {
+			// Check prior siblings of current node
+			let sibling = currentNode.previousSibling;
+			while (sibling) {
+				if (sibling.type === nodeType) {
+					return sibling;
+				}
+				// Move on to the next sibling
+				sibling = sibling.previousSibling;
+			}
+			
+			// Move up to parent
+			currentNode = currentNode.parent;
+			
+			// Stop the search if we reach a line node
+			if (currentNode?.type === 'line') {
+				break;
+			}
+			
+			// Check if current parent matches
+			if (currentNode?.type === nodeType) {
+				return currentNode;
+			}
+		}
+		
+		return null;
+	}
+
+
 
 	getOccurences(word: string, document: TextDocument, range: Range): Range[] {
 		const occurrences: Range[] = []
@@ -543,48 +595,24 @@ export default class BrParser implements Disposable {
 		return diagnostics
 	}
 
-  getSymbols(document: TextDocument): DocumentSymbol[] {
+  getSymbols(document: TextDocument): Parser.SyntaxNode[] {
+		const nodeList = new Array<Parser.SyntaxNode>()
 		const tree = this.getDocumentTree(document)
 		const query = `(def_statement) @def
-		(dim_statement
-			(_
-				name: (_) @dim)*)
+		(dim_statement [
+			(numberreference)
+				(stringreference)
+				(numberarray)
+				(stringarray)
+				] @symbol)
 		(label) @label`
 		const results = this.match(query, tree.rootNode)
-		
-		const symbolInfoList: DocumentSymbol[] = []
+
 		for (const result of results) {
 			const node = result.captures[0].node
-			switch (node.type) {
-				case 'label': {
-						const labelRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
-						const symbolInfo = new DocumentSymbol(node.text, 'label', SymbolKind.Null, labelRange, labelRange)
-						symbolInfoList.push(symbolInfo)
-					}
-					break;
-				case 'stringidentifier':
-				case 'numberidentifier': {
-						const dimRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
-						const symbolInfo = new DocumentSymbol(node.text, node.parent?.type ?? "", SymbolKind.Variable, dimRange, dimRange)
-						symbolInfoList.push(symbolInfo)
-					}
-					break;
-				case 'def_statement': {
-						const name = node.descendantsOfType("function_name")
-						if (name.length){
-							const node = name[0]
-							if (node){
-								const fnRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
-								const symbolInfo = new DocumentSymbol(node.text, "function", SymbolKind.Function, fnRange, fnRange)
-								symbolInfoList.push(symbolInfo)
-							}
-						}
-					}
-					break;
-				default:
-					break;
-			}
+			nodeList.push(node)
 		}
-		return symbolInfoList
+		
+		return nodeList
   }
 }

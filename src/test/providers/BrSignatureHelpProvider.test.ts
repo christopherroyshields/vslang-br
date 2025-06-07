@@ -67,10 +67,10 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		console.log('Running signature help for internal function test...')
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
-			content: 'PRINT val('
+			content: 'PRINT val()'
 		})
 		
-		const position = new vscode.Position(0, 11) // After opening parenthesis
+		const position = new vscode.Position(0, 10) // After opening parenthesis
 		
 		const signatureProvider = new BrSignatureHelpProvider(projects, parser)
 		const signatureHelp = await signatureProvider.provideSignatureHelp(document, position, new vscode.CancellationTokenSource().token, {} as vscode.SignatureHelpContext)
@@ -204,6 +204,29 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		// Note: VAL function only takes one parameter, but this tests the parameter counting logic
 		assert.ok(signatureHelp, 'Should provide signature help')
 		// The active parameter should be 1 (second parameter) after the comma
+		
+		await vscode.window.showTextDocument(document)
+		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+	})
+
+	test('Signature help with unclosed parenthesis', async () => {
+		console.log('Running signature help with unclosed parenthesis test...')
+		const document = await vscode.workspace.openTextDocument({
+			language: 'br',
+			content: 'PRINT val('
+		})
+		
+		const position = new vscode.Position(0, 10) // After opening parenthesis
+		
+		const signatureProvider = new BrSignatureHelpProvider(projects, parser)
+		const signatureHelp = await signatureProvider.provideSignatureHelp(document, position, new vscode.CancellationTokenSource().token, {} as vscode.SignatureHelpContext)
+
+		assert.ok(signatureHelp, 'Should provide signature help for function with unclosed parenthesis')
+		assert.strictEqual(signatureHelp.signatures.length, 1, 'Should have one signature')
+		assert.ok(signatureHelp.signatures[0].label.includes('VAL'), 'Should contain VAL function signature')
+		assert.strictEqual(signatureHelp.activeParameter, 0, 'Should highlight first parameter')
+		
+		console.log('Unclosed parenthesis signature help test passed')
 		
 		await vscode.window.showTextDocument(document)
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
