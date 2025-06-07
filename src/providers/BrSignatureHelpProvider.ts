@@ -5,6 +5,12 @@ import { Project } from "../class/Project"
 import BrParser from "../parser"
 import { SyntaxNode } from "tree-sitter"
 
+/**
+ * Provides signature help for function calls in BR files.
+ * Implements the VS Code SignatureHelpProvider interface to show parameter info
+ * when typing function calls.
+ */
+
 export default class BrSignatureHelpProvider implements SignatureHelpProvider {
   configuredProjects: Map<WorkspaceFolder, Project>
   parser: BrParser
@@ -13,6 +19,12 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
     this.parser = parser
   }
 
+  /**
+   * Recursively searches up the syntax tree to find a parent node of the specified type(s)
+   * @param node The starting syntax node to search from
+   * @param type A string or array of strings specifying the node type(s) to find
+   * @returns The first matching parent node, or undefined if no match found
+   */
   getParentByType(node: SyntaxNode, type: string | string[]): SyntaxNode | undefined {
     const parent = node.parent
     if (parent){
@@ -152,8 +164,14 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
     }
   }
 
-  getActiveParameter(call: SyntaxNode, position: Position): number {
-    const args = call.childForFieldName("arguments")?.children
+  /**
+   * Gets the index of the active parameter based on cursor position in a function call
+   * @param callNode The syntax node representing the function call
+   * @param position The current cursor position
+   * @returns The zero-based index of the active parameter
+   */
+  getActiveParameter(callNode: SyntaxNode, position: Position): number {
+    const args = callNode.childForFieldName("arguments")?.children
     let activeParameter = 0
     if (args?.length) {
       for (let i = 0; i < args.length; i++) {
