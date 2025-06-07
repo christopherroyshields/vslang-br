@@ -6,6 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a VS Code extension providing language support for Business Rules! (BR), a BASIC-like programming language. The extension uses Tree-sitter for parsing and provides comprehensive IDE features including IntelliSense, hover information, syntax highlighting, and Lexi compiler integration.
 
+### Key Features
+- **Syntax Highlighting**: Full BR language syntax support
+- **IntelliSense**: Code completion for functions, statements, keywords, and variables
+- **Function Signatures**: Parameter hints and function documentation
+- **Hover Information**: Inline documentation for functions and symbols
+- **Symbol Navigation**: Go to definition, find references, workspace symbols
+- **Document Outline**: Hierarchical view of functions and line labels
+- **Diagnostics**: Real-time syntax error detection
+- **Renaming**: Safe symbol renaming across files
+- **Layout File Support**: Specialized features for BR layout files
+- **Lexi Integration**: Built-in compiler/runtime support with version switching
+- **Line Number Management**: Add/strip line numbers for legacy systems
+- **Library Management**: Library path configuration and function discovery
+- **Code Snippets**: Pre-defined code templates
+- **Symbol Highlighting**: Occurrence highlighting for selected symbols
+
 ## Development Commands
 
 ### Build and Test
