@@ -91,9 +91,9 @@ dim strArray$(5)`
 	test('Provide symbols for labels', async () => {
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
-			content: `start:
+			content: `start: !
 print "Begin"
-loop:
+loop: !
   print "In loop"
   if x > 0 then goto loop
 goto start`
@@ -156,11 +156,11 @@ end:`
 		)
 		const hasVariable = symbols.some(symbol => 
 			(symbol instanceof vscode.DocumentSymbol && symbol.kind === vscode.SymbolKind.Variable) ||
-			(!(symbol instanceof vscode.DocumentSymbol) && symbol.kind === vscode.SymbolKind.Variable)
+			(!(symbol instanceof vscode.DocumentSymbol) && typeof symbol === 'object' && symbol !== null && 'kind' in symbol && (symbol as any).kind === vscode.SymbolKind.Variable)
 		)
 		const hasLabel = symbols.some(symbol => 
 			(symbol instanceof vscode.DocumentSymbol && symbol.detail === 'label') ||
-			(!(symbol instanceof vscode.DocumentSymbol) && symbol.kind === vscode.SymbolKind.Null)
+			(!(symbol instanceof vscode.DocumentSymbol) && typeof symbol === 'object' && symbol !== null && 'kind' in symbol && (symbol as any).kind === vscode.SymbolKind.Null)
 		)
 		
 		assert.ok(hasFunction, 'Should find function symbols')
@@ -206,7 +206,7 @@ end:`
 	test('Empty document symbols', async () => {
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
-			content: `// Just a comment
+			content: `! Just a comment
 print "hello world"`
 		})
 		
