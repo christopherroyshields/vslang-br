@@ -122,31 +122,11 @@ export function deactivate() {
  * Sets up monitoring of project configuration
  */
 async function activateWorkspaceFolders(context: ExtensionContext, configuredProjects: Map<WorkspaceFolder, Project>, parser: BrParser): Promise<Map<WorkspaceFolder, Project>> {
-	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
-	context.subscriptions.push(statusBarItem)
-	let fileCount = 0
-	statusBarItem.text = `$(loading~spin) Loading project... (${fileCount} files)`
-	statusBarItem.show()
-
-	let lastUpdateTime = 0
-	const updateStatusBar = () => {
-		const now = Date.now()
-		if (now - lastUpdateTime >= 200) {
-			statusBarItem.text = `$(loading~spin) Loading project... (${fileCount} files)`
-			lastUpdateTime = now
-		}
-	}
-	
-	const incrementCounter = () => {
-		fileCount++
-		updateStatusBar()
-	}
-
 	const disposablesMap = new Map<WorkspaceFolder,Disposable[]>()
 	if (workspace.workspaceFolders){
 		for (const workspaceFolder of workspace.workspaceFolders) {
 			const disposables: Disposable[] = []
-			const project = await startWatchingFiles(workspaceFolder, disposables, parser, incrementCounter)
+			const project = await startWatchingFiles(workspaceFolder, disposables, parser, context)
 			configuredProjects.set(workspaceFolder, project)
 			disposablesMap.set(workspaceFolder, disposables)
 
@@ -154,7 +134,7 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 				if (e.affectsConfiguration("br", workspaceFolder)){
 					disposablesMap.get(workspaceFolder)?.forEach(d => d.dispose())	
 					const disposables: Disposable[] = []
-					const project = await startWatchingFiles(workspaceFolder, disposables, parser)
+					const project = await startWatchingFiles(workspaceFolder, disposables, parser, context)
 					configuredProjects.set(workspaceFolder, project)
 					disposablesMap.set(workspaceFolder, disposables)
 				}
@@ -162,13 +142,11 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 		}
 	}
 
-	statusBarItem.hide()
-
 	workspace.onDidChangeWorkspaceFolders(async ({ added, removed }: WorkspaceFoldersChangeEvent) => {
 		if (added) {
 			for (const workspaceFolder of added) {
 				const disposables: Disposable[] = []
-				const project = await startWatchingFiles(workspaceFolder,  disposables, parser)
+				const project = await startWatchingFiles(workspaceFolder, disposables, parser, context)
 				configuredProjects.set(workspaceFolder, project)
 				disposablesMap.set(workspaceFolder, disposables)
 			}
@@ -205,7 +183,7 @@ async function readSourceFileToTree(uri: Uri, workspaceFolder: WorkspaceFolder, 
 	}
 }
 
-async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables: Disposable[], parser: BrParser, updateStatusBar?: () => void): Promise<Project> {
+async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables: Disposable[], parser: BrParser, context: ExtensionContext): Promise<Project> {
 	const project: Project = {
 		sourceFiles: new Map<string, TreeSitterSourceDocument>(),
 		layouts: new Map<string, Layout>()
@@ -214,7 +192,7 @@ async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables:
 	const searchPath = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
 
 	await watchLayoutFiles(workspaceFolder, searchPath, project, disposables)
-	await watchSourceFiles(workspaceFolder, searchPath, project, disposables, parser, updateStatusBar)
+	await watchSourceFiles(workspaceFolder, searchPath, project, disposables, parser, context)
 
 	return project
 }
@@ -267,7 +245,7 @@ async function watchLayoutFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	}, undefined, disposables)
 }
 
-async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: string, project: Project, disposables: Disposable[], parser: BrParser, updateStatusBar?: () => void) {
+async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: string, project: Project, disposables: Disposable[], parser: BrParser, context: ExtensionContext) {
 	const sourceGlob = workspace.getConfiguration('br', workspaceFolder).get("sourceFileGlobPattern", "**/*.{brs,wbs}");
 	const sourceFileGlobPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath), sourceGlob)
 
@@ -275,13 +253,44 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	const sourceFiles = await workspace.findFiles(sourceFileGlobPattern)
 	const endTime = performance.now()
 	console.log(`sourc load: ${endTime - startTime} ms`);
+	
+	// Create status bar when we start reading files
+	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
+	context.subscriptions.push(statusBarItem)
+	let fileCount = 0
+	let lastUpdateTime = 0
+	let lastFileName = ""
+	
+	const updateStatusBar = () => {
+		const now = Date.now()
+		if (now - lastUpdateTime >= 200) {
+			statusBarItem.text = `$(loading~spin) Scanning for libraries (${fileCount}) ${lastFileName}`
+			lastUpdateTime = now
+		}
+	}
+	
+	const incrementCounter = (fileName: string) => {
+		fileCount++
+		lastFileName = fileName
+		updateStatusBar()
+	}
+	
+	// Show status bar only if we have files to load
+	if (sourceFiles.length > 0) {
+		statusBarItem.text = `$(loading~spin) Scanning for libraries (${fileCount})`
+		statusBarItem.show()
+	}
+	
 	for (const sourceUri of sourceFiles) {
 		const sourceLib = await readSourceFileToTree(sourceUri, workspaceFolder, parser)
 		if (sourceLib){
 			project.sourceFiles.set(sourceUri.toString(), sourceLib)
-			updateStatusBar?.()
+			incrementCounter(sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath)
 		}
 	}
+	
+	// Hide status bar when done loading
+	statusBarItem.hide()
 
 	const codeWatcher = workspace.createFileSystemWatcher(sourceFileGlobPattern)
 	codeWatcher.onDidChange(async (sourceUri: Uri) => {
