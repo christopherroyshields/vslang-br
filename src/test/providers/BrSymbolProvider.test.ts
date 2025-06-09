@@ -58,7 +58,7 @@ fnend`
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
 			content: `dim testVar
-dim anotherVar$
+dim anotherVar$*100
 dim numArray(10)
 dim strArray$(5)`
 		})

@@ -294,7 +294,7 @@ export default class BrParser implements Disposable {
 	}
 
 	async getErrors(uri: Uri, document: string): Promise<Diagnostic[]> {
-		const errorQuery = new Parser.Query(this.br, '(ERROR) @error')
+		const errorQuery = new Parser.Query(this.br, '(ERROR) @error (MISSING) @missing')
 		const diagnostics: Diagnostic[] = []
 		const tree = this.parser.parse(document)
 		if (tree){
@@ -302,9 +302,13 @@ export default class BrParser implements Disposable {
 			// collection.clear();
 			for (const error of errors) {
 				for (const capture of error.captures) {
+					let message = 'Syntax error'
+					if (capture.name === 'missing') {
+						message = 'Missing node'
+					}
 					diagnostics.push({
 						code: '',
-						message: 'Syntax error',
+						message: message,
 						range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
 						severity: DiagnosticSeverity.Error,
 						source: 'BR Syntax Scanner'
@@ -574,8 +578,10 @@ export default class BrParser implements Disposable {
 
 	getDiagnostics(document: TextDocument): Diagnostic[] {
 		const errorQuery = new Parser.Query(this.br, '(ERROR) @error')
+		const missingQuery = new Parser.Query(this.br, '(MISSING) @missing')
 		const tree = this.getDocumentTree(document)
 		const errors = errorQuery.matches(tree.rootNode);
+		const missings = missingQuery.matches(tree.rootNode);
 		const diagnostics: Diagnostic[] = []
 		// collection.clear();
 		for (const error of errors) {
@@ -589,6 +595,17 @@ export default class BrParser implements Disposable {
 					// relatedInformation: [
 					//   new DiagnosticRelatedInformation(new Location(document.uri, new Range(new Position(1, 8), new Position(1, 9))), 'first assignment to `x`')
 					// ]
+				})
+			}
+		}
+		for (const missing of missings) {
+			for (const capture of missing.captures) {
+				diagnostics.push({
+					code: '',
+					message: 'Missing node',
+					range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
+					severity: DiagnosticSeverity.Error,
+					source: 'BR Syntax Scanner',
 				})
 			}
 		}

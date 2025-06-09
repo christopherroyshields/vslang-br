@@ -91,7 +91,7 @@ print fnTestFunc(10)`
 	test('Rename label', async () => {
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
-			content: `start:
+			content: `start: !start
 print "Begin"
 goto start
 if x > 0 then goto start`

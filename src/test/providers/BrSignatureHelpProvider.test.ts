@@ -67,7 +67,7 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		console.log('Running signature help for internal function test...')
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
-			content: 'PRINT val()'
+			content: 'PRINT val("1")'
 		})
 		
 		const position = new vscode.Position(0, 10) // After opening parenthesis
