@@ -112,7 +112,7 @@ export default class BrParser implements Disposable {
 		const paramsNode = this.getCaptureByName(result, "params")
 		if (nameNode && defNode){
 			let isLibrary = false
-			if (defNode.descendantsOfType("library_keyword")){
+			if (defNode.descendantsOfType("library_keyword").length > 0){
 				isLibrary = true
 			}
 			const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))

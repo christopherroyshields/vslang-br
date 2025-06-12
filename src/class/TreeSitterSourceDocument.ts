@@ -52,14 +52,15 @@ export default class TreeSitterSourceDocument {
    * Get a function by name using tree-sitter queries
    */
   public async getFunctionByName(name: string): Promise<UserFunction | undefined> {
-    const fn = this.functions.get({
-      isLibrary: false,
-      name: name,
-    })
-    if (fn) {
-      return fn
+    const lowerName = name.toLowerCase();
+    let fn: UserFunction | undefined;
+    for (const [key, value] of this.functions) {
+      if (key.name.toLowerCase() === lowerName) {
+        fn = value;
+        break;
+      }
     }
-    return undefined;
+    return fn;
   }
 
   /**
