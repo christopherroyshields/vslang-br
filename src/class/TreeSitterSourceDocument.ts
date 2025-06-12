@@ -9,7 +9,10 @@ type FunctionKey = {
 };
 
 export default class TreeSitterSourceDocument {
-  functions: FunctionKey[] = [];
+  functions: Map<{
+    isLibrary: boolean;
+    name: string;
+  }, UserFunction> = new Map();
   buffer: ArrayBufferLike;
   parser: BrParser;
   tree: Parser.Tree | null = null;
@@ -33,7 +36,7 @@ export default class TreeSitterSourceDocument {
     const tree = this.parser.getBufferTree(this.uri, this.buffer);
     this.tree = tree || null;
     if (this.tree) {
-      this.indexFunctions();
+      this.functions = this.getAllFunctions();
     }
   }
 
@@ -49,33 +52,11 @@ export default class TreeSitterSourceDocument {
    * Get a function by name using tree-sitter queries
    */
   public async getFunctionByName(name: string): Promise<UserFunction | undefined> {
-    if (!this.tree) {
-      return undefined;
-    }
-
-    const name_match = name.replace(/[a-zA-Z]/g, c => {
-      return `[${c.toUpperCase()}${c.toLowerCase()}]`
-    }).replace("$","\\\\$")
-
-    const query = `(
-      (line (doc_comment) @doc_comment)?
-      .
-      (line
-      (def_statement 
-        [
-        (numeric_function_definition (function_name) @name
-          (parameter_list)? @params
-          ) @type
-          (string_function_definition (function_name) @name
-          (parameter_list)? @params
-          ) @type
-        ]) @def)
-        (#match? @name "^${name_match}$")
-      )`
-
-    const results = this.parser.match(query, this.tree.rootNode)
-    if (results.length) {
-      const fn = this.parser.toFn(results[0])
+    const fn = this.functions.get({
+      isLibrary: false,
+      name: name,
+    })
+    if (fn) {
       return fn
     }
     return undefined;
@@ -84,12 +65,19 @@ export default class TreeSitterSourceDocument {
   /**
    * Get all functions in this document
    */
-  public getAllFunctions(): UserFunction[] {
+  public getAllFunctions(): Map<{
+    isLibrary: boolean;
+    name: string;
+  }, UserFunction> {
     if (!this.tree) {
-      return [];
+      return new Map();
     }
 
-    const fnList: UserFunction[] = []
+    const fnList: Map<{
+      isLibrary: boolean;
+      name: string;
+    }, UserFunction> = new Map();
+
     const query = `(
       (line (doc_comment) @doc_comment)?
       .
@@ -109,40 +97,13 @@ export default class TreeSitterSourceDocument {
     for (const result of results) {
       const fn = this.parser.toFn(result)
       if (fn) {
-        fnList.push(fn)
+        fnList.set({
+          isLibrary: fn.isLibrary,
+          name: fn.name,
+        }, fn);
       }
     }
     return fnList
-  }
-
-  /**
-   * Index functions for quick lookup
-   */
-  private indexFunctions(): void {
-    this.functions = [];
-    if (!this.tree) {
-      return;
-    }
-
-    const query = `(def_statement 
-      (library_keyword)? @isLibrary
-      [
-        (numeric_function_definition (function_name) @name) @fn
-        (string_function_definition (function_name) @name) @fn
-      ])`
-
-    const results = this.parser.match(query, this.tree.rootNode);
-    for (const result of results) {
-      const nameNode = result.captures.find(c => c.name === "name")?.node;
-      const fnNode = result.captures.find(c => c.name === "fn")?.node;
-      const isLibrary: boolean = result.captures.find(c => c.name === "isLibrary")?.node !== undefined;
-      if (nameNode && fnNode) {
-        this.functions.push({
-          isLibrary: isLibrary,
-          name: nameNode.text,
-        });
-      }
-    }
   }
 
   /**
@@ -156,6 +117,6 @@ export default class TreeSitterSourceDocument {
    * Check if this document contains library functions
    */
   public hasLibraryFunctions(): boolean {
-    return this.functions.some(fn => fn.isLibrary);
+    return Array.from(this.functions.values()).some(fn => fn.isLibrary);
   }
 }

@@ -32,18 +32,18 @@ export default class LibLinkListProvider extends BaseCompletionProvider {
           if (project){
             for (const [uri,lib] of project.sourceFiles) {
               if (lib.linkPath?.toLowerCase() == libPath.toLowerCase().replace(/\.[^\\/.]+$/,"")){
-                for (const fn of lib.functions) {
-                  if (fn.isLibrary){
+                for (const [fnKey, userFn] of lib.functions) {
+                  if (fnKey.isLibrary){
                     if (match.groups.fnList){
-                      const lineSearch = new RegExp("\\b"+fn.name.replace("$","\\$")+"(,|\\s|$)", "i")
+                      const lineSearch = new RegExp("\\b"+fnKey.name.replace("$","\\$")+"(,|\\s|$)", "i")
                       if (!lineSearch.test(match.groups.fnList)){
                         completionItems.items.push({
-                          label: fn.name
+                          label: fnKey.name
                         })
                       }
                     } else {
                       completionItems.items.push({
-                        label: fn.name
+                        label: fnKey.name
                       })
                     }
                   }

@@ -35,15 +35,15 @@ export default class FuncCompletionProvider implements CompletionItemProvider<Fu
       if (project){
         for (const [uri, lib] of project.sourceFiles) {
           if (uri !== doc.uri.toString()){
-            for (const fn of lib.functions){
-              if (fn.isLibrary){
+            for (const [fnKey, userFn] of lib.functions){
+              if (fnKey.isLibrary){
                 completionItems.push({
-                  name: fn.name,
+                  name: fnKey.name,
                   kind: CompletionItemKind.Function,
                   isLibrary: true,
                   uri: lib.uri,
                   label: {
-                    label: fn.name,
+                    label: fnKey.name,
                     detail: ' (library function)',
                     description: path.basename(lib.uri.fsPath)
                   }

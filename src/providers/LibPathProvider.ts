@@ -46,8 +46,8 @@ export default class LibPathProvider extends BaseCompletionProvider {
               for (const [uri, lib] of project.sourceFiles) {
                 if (lib.uri.fsPath.indexOf(searchPath.fsPath) === 0){
                   let hasLib = false
-                  for (const fn of lib.functions) {
-                    if (fn.isLibrary) {
+                  for (const [fnKey, userFn] of lib.functions) {
+                    if (fnKey.isLibrary) {
                       hasLib = true
                       break;
                     }

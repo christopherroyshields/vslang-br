@@ -18,9 +18,9 @@ export default class BrWorkspaceSymbolProvider implements WorkspaceSymbolProvide
     this.configuredProjects.forEach(project => {
       if (project){
         for (const [uri, lib] of project.sourceFiles) {
-          for (const fn of lib.functions){
+          for (const [fnKey, userFn] of lib.functions){
             const loc = new Location(lib.uri,dummyRange)
-            const symbolInfo = new SymbolInformation(fn.name,SymbolKind.Function,"",loc)
+            const symbolInfo = new SymbolInformation(fnKey.name,SymbolKind.Function,"",loc)
             symbols.push(symbolInfo)
           }
         }

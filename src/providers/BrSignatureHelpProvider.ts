@@ -142,7 +142,7 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
         if (project){
           for (const [libUri,lib] of project.sourceFiles) {
             if (libUri !== doc.uri.toString()){
-              for (const fnKey of lib.functions) {
+              for (const [fnKey, userFn] of lib.functions) {
                 if (fnKey.isLibrary && fnKey.name.toLowerCase() == name.text.toLowerCase()){
                   const fn = await this.parser.getFunctionByName(fnKey.name, lib.uri)
                   if (fn){
