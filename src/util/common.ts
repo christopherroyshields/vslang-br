@@ -1,4 +1,7 @@
-import { Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
+import { Connection, Position, Range, WorkspaceFolder } from "vscode-languageserver/node"
+import { URI, URI as Uri } from "vscode-uri"
+import { TextDocument } from "vscode-languageserver-textdocument"
+
 import { VariableType } from "../types/VariableType"
 import Parser = require("tree-sitter")
 
@@ -14,26 +17,47 @@ export function indicesToRange(text: string, startOffset: number, endOffset: num
 	const endLine = startLine + rangeLines.length - 1
 	const endCol = rangeLines[rangeLines.length - 1].length
 
-	const range = new Range(startLine, startCol, endLine, endCol)
+	const range = {
+		start: {
+			line: startLine,
+			character: startCol
+		},
+		end: {
+			line: endLine,
+			character: endCol
+		}
+	}
 	return range
 }
 
 export function pointToPos(point: Parser.Point): Position {
-	return new Position(point.row, point.column)
+	return {
+		line: point.row,
+		character: point.column
+	}
 }
 
 export function nodeRange(node: Parser.SyntaxNode): Range {
-	return new Range(node.startPosition.row,node.startPosition.column,node.endPosition.row,node.endPosition.column)
+	return {
+		start: {
+			line: node.startPosition.row,
+			character: node.startPosition.column
+		},
+		end: {
+			line: node.endPosition.row,
+			character: node.endPosition.column
+		}
+	}
 }
 
 export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
-  func: F
+  func: F,
+  delay = 500
 ): (...args: Parameters<F>) => void {
   let timeout: NodeJS.Timeout;
   return (...args: Parameters<F>): void => {
-		const debounceTime = workspace.getConfiguration('br').get("diagnosticsDelay", 500);
 		clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), debounceTime);
+    timeout = setTimeout(() => func(...args), delay);
   };
 }
 
@@ -69,16 +93,7 @@ export function stripBalancedFunctions(line: string){
 	}
 	return line
 }
-
-export function getSearchPath(workspaceFolder: WorkspaceFolder): Uri {
-	const searchPath: string = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "")
-	if (searchPath){
-		return Uri.joinPath(workspaceFolder.uri, searchPath.replace("\\","/"))
-	} else {
-		return workspaceFolder.uri
-	}
-}
-
+	
 export const TypeLabel = Object.freeze(new Map<VariableType, string>([
   [VariableType.number, "Number"],
   [VariableType.string, "String"],

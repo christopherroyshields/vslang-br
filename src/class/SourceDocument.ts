@@ -1,5 +1,6 @@
-import { Uri, WorkspaceFolder, workspace } from "vscode";
-import BrParser from '../parser';
+import { WorkspaceFolder } from "vscode-languageserver/node";
+import { URI as Uri } from "vscode-uri";
+import BrParser from './BrParser';
 import Parser = require("tree-sitter");
 import UserFunction from './UserFunction';
 
@@ -8,11 +9,11 @@ type FunctionKey = {
   name: string;
 };
 
-export default class TreeSitterSourceDocument {
-  functions: Map<{
+export default class SourceDocument {
+  private _functions?: Map<{
     isLibrary: boolean;
     name: string;
-  }, UserFunction> = new Map();
+  }, UserFunction>;
   buffer: ArrayBufferLike;
   parser: BrParser;
   tree: Parser.Tree | null = null;
@@ -23,35 +24,29 @@ export default class TreeSitterSourceDocument {
   constructor(parser: BrParser, uri: Uri, buffer: ArrayBufferLike, workspaceFolder?: WorkspaceFolder) {
     this.parser = parser;
     this.uri = uri;
-    this.buffer = Buffer.from(buffer); // Convert ArrayBufferLike to Buffer
-    this.workspaceFolder = workspaceFolder;
-    this.linkPath = workspace.asRelativePath(uri, false).replace("/","\\").replace(/\.[^\\/.]+$/,"")
-    this.parse();
-  }
-
-  /**
-   * Parse the buffer content and update the tree
-   */
-  public parse(): void {
-    const tree = this.parser.getBufferTree(this.uri, this.buffer);
-    this.tree = tree || null;
-    if (this.tree) {
-      this.functions = this.getAllFunctions();
-    }
-  }
-
-  /**
-   * Update the buffer with new content and reparse
-   */
-  public updateBuffer(buffer: Buffer): void {
     this.buffer = buffer;
-    this.parse();
+    this.workspaceFolder = workspaceFolder;
+    this.linkPath = uri.fsPath.replace(/\\/g, "/").replace(/\.[^/.]+$/, "")
   }
+
+	public get functions(): Map<{ isLibrary: boolean; name: string; }, UserFunction> {
+    if (this._functions === undefined) {
+      this._functions = this.getAllFunctions();
+    }
+    return this._functions;
+	}
+
+	getTree(): Parser.Tree {
+    if (!this.tree) {
+      this.tree = this.parser.getBufferTree(this.uri, this.buffer)!;
+    }
+    return this.tree;
+	}
 
   /**
    * Get a function by name using tree-sitter queries
    */
-  public async getFunctionByName(name: string): Promise<UserFunction | undefined> {
+  public getFunctionByName(name: string): UserFunction | undefined {
     const lowerName = name.toLowerCase();
     let fn: UserFunction | undefined;
     for (const [key, value] of this.functions) {
@@ -66,11 +61,12 @@ export default class TreeSitterSourceDocument {
   /**
    * Get all functions in this document
    */
-  public getAllFunctions(): Map<{
+  private getAllFunctions(): Map<{
     isLibrary: boolean;
     name: string;
   }, UserFunction> {
-    if (!this.tree) {
+    const tree = this.getTree();
+    if (!tree) {
       return new Map();
     }
 
@@ -94,7 +90,7 @@ export default class TreeSitterSourceDocument {
         ]) @def)
       )`
 
-    const results = this.parser.match(query, this.tree.rootNode)
+    const results = this.parser.match(query, tree.rootNode)
     for (const result of results) {
       const fn = this.parser.toFn(result)
       if (fn) {

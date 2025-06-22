@@ -1,6 +1,5 @@
 import path = require("path");
 import { Uri, workspace, WorkspaceFolder } from "vscode"
-import { getSearchPath } from "../util/common"
 import BrSourceDocument from "./BrSourceDocument"
 
 export default class ProjectSourceDocument extends BrSourceDocument {
@@ -14,11 +13,4 @@ export default class ProjectSourceDocument extends BrSourceDocument {
     this.workspaceFolder = workspaceFolder
     this.linkPath = workspace.asRelativePath(uri, false).replace("/","\\").replace(/\.[^\\/.]+$/,"")
   }
-
-  private getLinkPath(workspaceFolder: WorkspaceFolder): string {
-		const searchPath = getSearchPath(workspaceFolder)
-		const parsedPath = path.parse(this.uri.fsPath.substring(searchPath.fsPath.length + 1))
-		const libPath = path.join(parsedPath.dir, parsedPath.name)
-		return libPath
-	}
 }
