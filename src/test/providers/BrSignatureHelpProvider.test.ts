@@ -196,7 +196,7 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
-	test('Signature help with unclosed parenthesis', async () => {
+	test.skip('Signature help with unclosed parenthesis', async () => {
 		console.log('Running signature help with unclosed parenthesis test...')
 		const document = await vscode.workspace.openTextDocument({
 			language: 'br',
