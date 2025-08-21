@@ -9,8 +9,6 @@ import { Project } from '../../class/Project'
 import { Uri } from 'vscode'
 import TreeSitterSourceDocument from '../../class/TreeSitterSourceDocument'
 import Layout from '../../class/Layout'
-import { TextDocument } from 'vscode-languageserver-textdocument'
-import { MarkupContent } from 'vscode-languageclient'
 import { readFileSync } from 'fs'
 import path = require('path')
 

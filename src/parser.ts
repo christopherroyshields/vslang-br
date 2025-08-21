@@ -5,7 +5,7 @@ const BrLang = require("tree-sitter-br")
 import path = require('path');
 import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, DocumentSymbol, ExtensionContext, Position, Range, SymbolKind, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
 import { performance } from 'perf_hooks';
-import { Disposable } from 'vscode-languageclient';
+import { Disposable } from 'vscode';
 import { EOL } from 'os';
 import * as fs from 'fs';
 import UserFunction from './class/UserFunction';

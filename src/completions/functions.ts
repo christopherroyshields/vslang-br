@@ -1,8 +1,5 @@
 import { EOL } from "os"
-import { CompletionItem, CompletionItemKind, InsertTextFormat } from "vscode-languageserver"
 import InternalFunction from "../class/InternalFunction"
-import BrFunction from "../interface/BrFunction"
-import { VariableType } from "../types/VariableType"
 
 export function getFunctionByName(name: string): InternalFunction | undefined {
   for (let fnIndex = 0; fnIndex < InternalFunctions.length; fnIndex++) {

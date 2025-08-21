@@ -1,7 +1,6 @@
 import { ExtensionContext, languages, workspace, Uri, window, WorkspaceFolder, Disposable, DocumentSelector, RelativePattern, WorkspaceFoldersChangeEvent, ConfigurationChangeEvent, TextDocument, commands, Diagnostic, Range, Position, DiagnosticSeverity, DiagnosticCollection, StatusBarAlignment } from 'vscode';
 import { activateLexi } from './lexi';
 import { activateNextPrev } from './next-prev';
-import { activateClient, deactivateClient } from './client'
 import BrSignatureHelpProvider from './providers/BrSignatureHelpProvider';
 import BrHoverProvider from './providers/BrHoverProvider';
 import LibLinkListProvider from './providers/LibLinkListProvider';
