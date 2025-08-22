@@ -51,12 +51,15 @@ Press **Ctrl+Space** to trigger suggestions:
 - **Signature Help**: Press **Ctrl+Shift+Space** while typing function parameters
 - **JSDoc Support**: Document your own functions with JSDoc-style comments:
   ```br
-  ! /**
-  !  * Calculate sales tax
-  !  * @param amount - Purchase amount
-  !  * @returns Tax amount
-  !  */
-  00100 DEF FNCALCTAX(amount)
+  00090 /**
+  00091  * Calculate sales tax
+  00092  * @param amount - Purchase amount
+  00093  * @returns Tax amount
+  00094  */
+  00100 DEF FNCALCTAX(AMOUNT)
+  00110   LET TAXRATE = 0.08
+  00120   LET FNCALCTAX = AMOUNT * TAXRATE
+  00130 FNEND
   ```
 
 ### 🔍 Code Navigation
