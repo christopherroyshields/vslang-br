@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx @vscode/vsce package:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

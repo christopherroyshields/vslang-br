@@ -287,7 +287,9 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
-    "package": "vsce package"
+    "package": "vsce package",
+    "package:clean": "package-clean.bat",
+    "vsce:ls": "npx @vscode/vsce ls --tree"
   },
   "devDependencies": {
     "@types/chai": "^5.2.2",

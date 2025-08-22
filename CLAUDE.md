@@ -64,6 +64,20 @@ npm run lint       # Run ESLint
 npm run test       # Run tests (requires compilation first)
 ```
 
+### Packaging for Distribution
+The extension uses optimized packaging to significantly reduce file size:
+```bash
+npm run package:clean  # Creates optimized .vsix file (~7.5 MB)
+npm run package        # Standard packaging (~16 MB, includes build artifacts)
+npm run vsce:ls        # Inspect package contents with tree view
+```
+
+**Packaging Details:**
+- The `package:clean` script (package-clean.bat) removes unnecessary build artifacts from node_modules/tree-sitter
+- Reduces package size from ~36MB to ~7.5MB by excluding .obj, .pdb, .iobj, .ipdb files
+- Preserves only the essential tree_sitter_runtime_binding.node file needed for runtime
+- The .vscodeignore file excludes source files, tests, and development artifacts
+
 ### Extension Development
 - Use F5 or the "Run Extension" launch configuration to open extension in new VS Code window
 - Use "Extension Tests" launch configuration to run tests

@@ -13,17 +13,17 @@ export default class TreeSitterSourceDocument {
     isLibrary: boolean;
     name: string;
   }, UserFunction> = new Map();
-  buffer: ArrayBufferLike;
+  buffer: Buffer;
   parser: BrParser;
   tree: Parser.Tree | null = null;
   uri: Uri;
   workspaceFolder: WorkspaceFolder | undefined;
   linkPath: string;
 
-  constructor(parser: BrParser, uri: Uri, buffer: ArrayBufferLike, workspaceFolder?: WorkspaceFolder) {
+  constructor(parser: BrParser, uri: Uri, buffer: Uint8Array | Buffer, workspaceFolder?: WorkspaceFolder) {
     this.parser = parser;
     this.uri = uri;
-    this.buffer = Buffer.from(buffer); // Convert ArrayBufferLike to Buffer
+    this.buffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer); // Convert Uint8Array to Buffer if needed
     this.workspaceFolder = workspaceFolder;
     this.linkPath = workspace.asRelativePath(uri, false).replace("/","\\").replace(/\.[^\\/.]+$/,"")
     this.parse();

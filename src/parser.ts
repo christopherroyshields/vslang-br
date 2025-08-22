@@ -187,7 +187,7 @@ export default class BrParser implements Disposable {
 		}
 	}
 
-  getBufferTree(uri: Uri, buffer: ArrayBufferLike) {
+  getBufferTree(uri: Uri, buffer: Buffer) {
 		try {
 			const tree: Parser.Tree = this.parser.parse(buffer.toString())
 			this.trees.set(uri.toString(),tree)
