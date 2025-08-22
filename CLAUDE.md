@@ -87,30 +87,32 @@ npm run vsce:ls        # Inspect package contents with tree view
 
 ### Core Components
 
-- **BrParser** (`src/parser.ts`): Tree-sitter based parser for BR language files. Maintains parse trees and provides querying capabilities.
-- **Project** (`src/class/Project.ts`): Container for workspace source files and layouts, maps URIs to TreeSitterSourceDocument instances.
+- **BrParser** (`src/parser.ts`): Tree-sitter based parser for BR language files. Maintains parse trees and provides querying capabilities. Enhanced with methods for retrieving syntax nodes at specific positions and finding nearest nodes of specific types.
+- **Project** (`src/class/Project.ts`): Type definition for workspace source files and layouts, maps URIs to TreeSitterSourceDocument instances. Improved file monitoring with status bar updates during project loading.
 - **Extension** (`src/extension.ts`): Main activation point, registers all language providers and sets up file watchers.
 
-### Language Server (Currently Inactive)
-- Server (`src/server.ts`) and Client (`src/client.ts`) provide language server protocol support
-- Currently commented out in extension activation but infrastructure exists
+### Language Server (Removed)
+- Language features implemented directly through VS Code extension API providers
+- No separate language server process required
 
 ### Provider Architecture
 All language features are implemented as separate providers in `src/providers/`:
 - **BrHoverProvider**: Function hover information with JSDoc support
-- **BrSignatureHelpProvider**: Parameter hints during function calls
+- **BrSignatureHelpProvider**: Parameter hints during function calls with improved handling of unclosed parentheses and detailed JSDoc documentation
 - **FuncCompletionProvider**: User-defined function completions
 - **StatementCompletionProvider**: BR language statements
 - **BrSymbolProvider**: Document symbol navigation
 - **BrReferenceProvider**: Find references functionality
 - **BrRenameProvider**: Symbol renaming
 - **LocalCompletionProvider**: Local variable completions
+- **LocalFunctionCompletionProvider**: Local function completions within current document
+- **InternalFunctionCompletionProvider**: Built-in BR function completions
+- **KeywordCompletionProvider**: BR keyword completions
+- **OccurenceHighlightProvider**: Highlight all occurrences of selected symbol
 - **LayoutSemanticTokenProvider**: Syntax highlighting for layout files
 
 ### Source Document Types
-- **TreeSitterSourceDocument**: Primary document parser using Tree-sitter
-- **ProjectSourceDocument**: Legacy regex-based parser (being phased out)
-- Both implement function extraction and variable analysis
+- **TreeSitterSourceDocument**: Primary document parser using Tree-sitter. Functions stored in a Map for improved lookups with case-insensitive retrieval
 
 ### File Watching System
 The extension monitors workspace changes for:
@@ -119,9 +121,10 @@ The extension monitors workspace changes for:
 - Configuration changes trigger re-parsing
 
 ### Tree-sitter Integration
-- Uses `tree-sitter-br` grammar for parsing
-- Query files in `tree-query/` define extraction patterns
+- Uses `tree-sitter-br` grammar for parsing (v0.25.3+)
+- Query files in `tree-query/` define extraction patterns for functions and libraries
 - Incremental parsing for performance on document changes
+- Enhanced diagnostics for missing nodes in addition to syntax errors
 
 ## Configuration
 Extension settings in `package.json` under `contributes.configuration`:
@@ -135,9 +138,14 @@ Extension settings in `package.json` under `contributes.configuration`:
 - Commands for compile, run, add/strip line numbers
 - Version switching (4.1, 4.2, 4.3)
 - Executable located in `Lexi/` directory
+- Keyboard shortcuts:
+  - Ctrl+Alt+1: Compile current BR file
+  - Ctrl+Alt+2: Run current BR program
+  - Ctrl+Alt+3: Add/Strip line numbers (context-aware)
 
 ## Testing
-- Tests use VS Code extension testing framework
-- BrHoverProvider tests demonstrate testing patterns
+- Tests use VS Code extension testing framework with new test CLI configuration (`.vscode-test.mjs`)
+- Comprehensive test suites for all completion providers in `src/test/providers/`
 - Tests require workspace setup with test files in `testcode/`
-- Tests validate IntelliSense, hover, and function detection
+- Run single test file: `npm test -- --grep "TestName"`
+- Tests validate IntelliSense, hover, function detection, and edge cases like unclosed parentheses
