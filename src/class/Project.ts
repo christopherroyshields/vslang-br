@@ -1,4 +1,3 @@
-import ProjectSourceDocument from './ProjectSourceDocument'
 import Layout from './Layout'
 import TreeSitterSourceDocument from './TreeSitterSourceDocument';
 

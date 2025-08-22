@@ -8,7 +8,6 @@ import LibPathProvider from './providers/LibPathProvider';
 import FuncCompletionProvider from './providers/FuncCompletionProvider';
 import StatementCompletionProvider from './providers/StatementCompletionProvider';
 import BrSourceSymbolProvider from './providers/BrSymbolProvider';
-import ProjectSourceDocument from './class/ProjectSourceDocument';
 import { performance } from 'perf_hooks';
 import Layout from './class/Layout';
 import { Project } from './class/Project';
