@@ -10,7 +10,7 @@ import StatementCompletionProvider from './providers/StatementCompletionProvider
 import BrSourceSymbolProvider from './providers/BrSymbolProvider';
 import { performance } from 'perf_hooks';
 import Layout from './class/Layout';
-import { Project } from './class/Project';
+import { Project, ProjectManager } from './class/Project';
 import LayoutSemanticTokenProvider, { LayoutLegend } from './providers/LayoutSemanticTokenProvider';
 import KeywordCompletionProvider from './providers/KeywordCompletionProvider';
 import BrParser from './parser';
@@ -121,19 +121,51 @@ export function deactivate() {
  */
 async function activateWorkspaceFolders(context: ExtensionContext, configuredProjects: Map<WorkspaceFolder, Project>, parser: BrParser): Promise<Map<WorkspaceFolder, Project>> {
 	const disposablesMap = new Map<WorkspaceFolder,Disposable[]>()
+	const projectManagers = new Map<WorkspaceFolder, ProjectManager>()
+	
+	// Check if lazy loading is enabled (default to true for better performance)
+	const useLazyLoading = workspace.getConfiguration('br').get("useLazyLoading", true);
+	
 	if (workspace.workspaceFolders){
 		for (const workspaceFolder of workspace.workspaceFolders) {
 			const disposables: Disposable[] = []
-			const project = await startWatchingFiles(workspaceFolder, disposables, parser, context)
-			configuredProjects.set(workspaceFolder, project)
+			
+			if (useLazyLoading) {
+				// Use new lazy loading approach
+				const projectManager = await startWatchingFilesLazy(workspaceFolder, disposables, parser, context);
+				projectManagers.set(workspaceFolder, projectManager);
+				// Create compatibility wrapper
+				const project: Project = {
+					sourceFiles: projectManager.sourceFiles,
+					layouts: projectManager.layouts
+				};
+				configuredProjects.set(workspaceFolder, project);
+			} else {
+				// Use old full parsing approach
+				const project = await startWatchingFiles(workspaceFolder, disposables, parser, context);
+				configuredProjects.set(workspaceFolder, project);
+			}
+			
 			disposablesMap.set(workspaceFolder, disposables)
 
 			workspace.onDidChangeConfiguration(async (e: ConfigurationChangeEvent) => {
 				if (e.affectsConfiguration("br", workspaceFolder)){
 					disposablesMap.get(workspaceFolder)?.forEach(d => d.dispose())	
 					const disposables: Disposable[] = []
-					const project = await startWatchingFiles(workspaceFolder, disposables, parser, context)
-					configuredProjects.set(workspaceFolder, project)
+					
+					if (useLazyLoading) {
+						const projectManager = await startWatchingFilesLazy(workspaceFolder, disposables, parser, context);
+						projectManagers.set(workspaceFolder, projectManager);
+						const project: Project = {
+							sourceFiles: projectManager.sourceFiles,
+							layouts: projectManager.layouts
+						};
+						configuredProjects.set(workspaceFolder, project);
+					} else {
+						const project = await startWatchingFiles(workspaceFolder, disposables, parser, context);
+						configuredProjects.set(workspaceFolder, project);
+					}
+					
 					disposablesMap.set(workspaceFolder, disposables)
 				}
 			})
@@ -144,17 +176,38 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 		if (added) {
 			for (const workspaceFolder of added) {
 				const disposables: Disposable[] = []
-				const project = await startWatchingFiles(workspaceFolder, disposables, parser, context)
-				configuredProjects.set(workspaceFolder, project)
+				
+				if (useLazyLoading) {
+					const projectManager = await startWatchingFilesLazy(workspaceFolder, disposables, parser, context);
+					projectManagers.set(workspaceFolder, projectManager);
+					const project: Project = {
+						sourceFiles: projectManager.sourceFiles,
+						layouts: projectManager.layouts
+					};
+					configuredProjects.set(workspaceFolder, project);
+				} else {
+					const project = await startWatchingFiles(workspaceFolder, disposables, parser, context);
+					configuredProjects.set(workspaceFolder, project);
+				}
+				
 				disposablesMap.set(workspaceFolder, disposables)
 			}
 		}
 		if (removed){
 			for (const workspaceFolder of removed) {
 				disposablesMap.get(workspaceFolder)?.forEach(d => d.dispose())
+				projectManagers.delete(workspaceFolder);
 			}
 		}
 	})
+	
+	// Store project managers in context for providers to use
+	context.subscriptions.push({
+		dispose: () => {
+			projectManagers.forEach(pm => pm.clearCaches());
+		}
+	});
+	(global as any).projectManagers = projectManagers;
 
 	return configuredProjects
 }
@@ -178,6 +231,18 @@ async function readSourceFileToTree(uri: Uri, workspaceFolder: WorkspaceFolder, 
 		}
 	} catch (error: any) {
 		window.showErrorMessage(`Error reading source: ${uri.fsPath}, ${error.message}`)
+	}
+}
+
+// New lightweight reading function
+async function readSourceFileLightweight(uri: Uri, projectManager: ProjectManager): Promise<void> {
+	try {
+		const content = await workspace.fs.readFile(uri);
+		if (content) {
+			projectManager.addLightweightDoc(uri, Buffer.from(content));
+		}
+	} catch (error: any) {
+		console.warn(`Error reading source: ${uri.fsPath}, ${error.message}`);
 	}
 }
 
@@ -321,5 +386,103 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 
 	console.log(`files watched`);
 
+}
+
+// New lazy-loading version using ProjectManager
+async function startWatchingFilesLazy(workspaceFolder: WorkspaceFolder, disposables: Disposable[], parser: BrParser, context: ExtensionContext): Promise<ProjectManager> {
+	const projectManager = new ProjectManager(parser, workspaceFolder);
+	const searchPath = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
+
+	// Watch layouts (still load fully as they're small)
+	await watchLayoutFilesLazy(workspaceFolder, searchPath, projectManager, disposables);
+	
+	// Watch source files with lazy loading
+	await watchSourceFilesLazy(workspaceFolder, searchPath, projectManager, disposables, context);
+
+	return projectManager;
+}
+
+async function watchLayoutFilesLazy(workspaceFolder: WorkspaceFolder, searchPath: string, projectManager: ProjectManager, disposables: Disposable[]) {
+	const layoutPath = workspace.getConfiguration('br', workspaceFolder).get("layoutPath", "filelay");
+	const layoutGlob = workspace.getConfiguration('br', workspaceFolder).get("layoutGlobPattern", "*.*");
+	const layoutFolderPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath, layoutPath), layoutGlob);
+	const layoutFiles = await workspace.findFiles(layoutFolderPattern);
+	
+	for (const uri of layoutFiles) {
+		const layout = await readLayout(uri);
+		if (layout) {
+			projectManager.layouts.set(uri.toString(), layout);
+		}
+	}
+
+	const layoutWatcher = workspace.createFileSystemWatcher(layoutFolderPattern);
+	layoutWatcher.onDidChange(async (uri: Uri) => {
+		const layout = await readLayout(uri);
+		if (layout) {
+			projectManager.layouts.set(uri.toString(), layout);
+		}
+	}, undefined, disposables);
+
+	layoutWatcher.onDidDelete((uri: Uri) => {
+		projectManager.layouts.delete(uri.toString());
+	}, undefined, disposables);
+
+	layoutWatcher.onDidCreate(async (uri: Uri) => {
+		const layout = await readLayout(uri);
+		if (layout) {
+			projectManager.layouts.set(uri.toString(), layout);
+		}
+	}, undefined, disposables);
+}
+
+async function watchSourceFilesLazy(workspaceFolder: WorkspaceFolder, searchPath: string, projectManager: ProjectManager, disposables: Disposable[], context: ExtensionContext) {
+	const sourceGlob = workspace.getConfiguration('br', workspaceFolder).get("sourceFileGlobPattern", "**/*.{brs,wbs}");
+	const sourceFileGlobPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath), sourceGlob);
+
+	const startTime = performance.now();
+	const sourceFiles = await workspace.findFiles(sourceFileGlobPattern);
+	console.log(`File discovery: ${performance.now() - startTime} ms`);
+
+	// Create status bar
+	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
+	context.subscriptions.push(statusBarItem);
+	let fileCount = 0;
+
+	// Show status bar
+	if (sourceFiles.length > 0) {
+		statusBarItem.text = `$(loading~spin) Indexing functions...`;
+		statusBarItem.show();
+	}
+
+	// Lightweight indexing (much faster!)
+	const indexStart = performance.now();
+	for (const sourceUri of sourceFiles) {
+		await readSourceFileLightweight(sourceUri, projectManager);
+		fileCount++;
+		if (fileCount % 10 === 0) {
+			statusBarItem.text = `$(loading~spin) Indexing functions (${fileCount}/${sourceFiles.length})`;
+		}
+	}
+	console.log(`Lightweight indexing: ${performance.now() - indexStart} ms for ${fileCount} files`);
+
+	// Hide status bar
+	statusBarItem.hide();
+
+	// Set up file watchers
+	const codeWatcher = workspace.createFileSystemWatcher(sourceFileGlobPattern);
+	
+	codeWatcher.onDidChange(async (sourceUri: Uri) => {
+		await projectManager.updateDocument(sourceUri);
+	}, undefined, disposables);
+
+	codeWatcher.onDidDelete((sourceUri: Uri) => {
+		projectManager.removeDocument(sourceUri);
+	}, undefined, disposables);
+
+	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
+		await readSourceFileLightweight(sourceUri, projectManager);
+	}, undefined, disposables);
+
+	console.log(`Lazy loading setup complete - indexed ${fileCount} files`);
 }
 

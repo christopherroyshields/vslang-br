@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx @vscode/vsce package:*)"
+      "Bash(npx @vscode/vsce package:*)",
+      "Bash(npm run compile:*)",
+      "Bash(npm test)",
+      "Bash(sed:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []

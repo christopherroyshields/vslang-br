@@ -2,7 +2,7 @@ import * as assert from 'assert'
 import * as vscode from 'vscode'
 import FuncCompletionProvider from '../../providers/FuncCompletionProvider'
 import BrParser from '../../parser'
-import { Project } from '../../class/Project'
+import { Project, ProjectManager } from '../../class/Project'
 import { Uri } from 'vscode'
 import TreeSitterSourceDocument from '../../class/TreeSitterSourceDocument'
 import Layout from '../../class/Layout'
@@ -22,6 +22,7 @@ suite('FuncCompletionProvider Test Suite', () => {
 	const projects = new Map<vscode.WorkspaceFolder, Project>()
 	let testWorkspaceFolder: vscode.WorkspaceFolder
 	let project: Project
+	let projectManager: ProjectManager
 
 	suiteSetup(async () => {
 		console.log('Starting FuncCompletionProvider test suite setup...')
@@ -42,6 +43,13 @@ suite('FuncCompletionProvider Test Suite', () => {
 		}
 		
 		projects.set(testWorkspaceFolder, project)
+		
+		// Set up ProjectManager for lazy loading tests
+		projectManager = new ProjectManager(parser, testWorkspaceFolder);
+		const projectManagers = new Map<vscode.WorkspaceFolder, ProjectManager>();
+		projectManagers.set(testWorkspaceFolder, projectManager);
+		(global as any).projectManagers = projectManagers;
+		
 		console.log('FuncCompletionProvider workspace folder set up')
 
 		// Set up library files in the mock project
@@ -53,6 +61,9 @@ suite('FuncCompletionProvider Test Suite', () => {
 			const testlibBuffer = Buffer.from(testlibContent)
 			const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
 			project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+			
+			// Also add to ProjectManager for lazy loading
+			projectManager.addLightweightDoc(testlibUri, testlibBuffer);
 			
 			console.log('Test library loaded successfully.')
 		} catch (error) {
@@ -80,6 +91,14 @@ suite('FuncCompletionProvider Test Suite', () => {
 		const document = await vscode.workspace.openTextDocument(testFileUri)
 		const position = new vscode.Position(0, 13) // After the equals sign
 		
+		// Debug workspace folder
+		console.log('Document URI:', document.uri.fsPath);
+		console.log('Workspace folder:', testWorkspaceFolder.uri.fsPath);
+		console.log('ProjectManager has docs:', projectManager.lightweightDocs.size);
+		for (const [uri, doc] of projectManager.lightweightDocs) {
+			console.log('  -', uri, 'library:', doc.isLibraryFile(), 'functions:', [...doc.libraryFunctions]);
+		}
+		
 		const funcCompletionProvider = new FuncCompletionProvider(projects, parser)
 		const completions = await funcCompletionProvider.provideCompletionItems(
 			document,
@@ -89,6 +108,11 @@ suite('FuncCompletionProvider Test Suite', () => {
 
 		assert.ok(completions, 'Should provide completion items')
 		assert.ok(Array.isArray(completions), 'Should return an array of completions')
+		
+		// Debug: Print all completions
+		console.log('Completions found:', completions.map(c => 
+			typeof c.label === 'string' ? c.label : c.label?.label
+		));
 		
 		// Look for the library function from testlib.brs
 		const libFunctionCompletion = completions.find(item => 
@@ -264,6 +288,15 @@ fnend`
 		const localProjects = new Map<vscode.WorkspaceFolder, Project>()
 		localProjects.set(testWorkspaceFolder, testProject)
 		
+		// Create and set up a local ProjectManager for this test
+		const localProjectManager = new ProjectManager(parser, testWorkspaceFolder);
+		localProjectManager.addLightweightDoc(mockUri, Buffer.from(mockContent));
+		const localProjectManagers = new Map<vscode.WorkspaceFolder, ProjectManager>();
+		localProjectManagers.set(testWorkspaceFolder, localProjectManager);
+		// Temporarily override global projectManagers
+		const originalProjectManagers = (global as any).projectManagers;
+		(global as any).projectManagers = localProjectManagers;
+		
 		// Add the mock document to project source files
 		const mockBuffer = Buffer.from(mockContent)
 		const mockDoc = new TreeSitterSourceDocument(parser, mockUri, mockBuffer, testWorkspaceFolder)
@@ -306,8 +339,11 @@ fnend`
 		assert.ok(!localFunctionCompletion, 'Should not include non-library functions')
 		
 		// Clean up
-		testProject.sourceFiles.delete(mockUri.toString())
-		testProject.sourceFiles.delete(testFileUri.toString())
+		testProject.sourceFiles.delete(mockUri.toString());
+		testProject.sourceFiles.delete(testFileUri.toString());
+		
+		// Restore original projectManagers
+		(global as any).projectManagers = originalProjectManagers;
 		
 		try {
 			await vscode.workspace.fs.delete(testFileUri)
@@ -336,6 +372,14 @@ fnend`
 		}
 		emptyProjects.set(testWorkspaceFolder, emptyProject)
 		
+		// Create an empty ProjectManager for this test
+		const emptyProjectManager = new ProjectManager(parser, testWorkspaceFolder);
+		const emptyProjectManagers = new Map<vscode.WorkspaceFolder, ProjectManager>();
+		emptyProjectManagers.set(testWorkspaceFolder, emptyProjectManager);
+		// Temporarily override global projectManagers
+		const originalProjectManagers = (global as any).projectManagers;
+		(global as any).projectManagers = emptyProjectManagers;
+		
 		// Open the document
 		const document = await vscode.workspace.openTextDocument(testFileUri)
 		
@@ -360,7 +404,10 @@ fnend`
 		console.log('Empty project test passed')
 		
 		// Clean up
-		emptyProject.sourceFiles.delete(testFileUri.toString())
+		emptyProject.sourceFiles.delete(testFileUri.toString());
+		
+		// Restore original projectManagers
+		(global as any).projectManagers = originalProjectManagers;
 		
 		try {
 			await vscode.workspace.fs.delete(testFileUri)

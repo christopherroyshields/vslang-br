@@ -50,6 +50,13 @@
           "type": "integer",
           "default": 500
         },
+        "br.useLazyLoading": {
+          "order": 0,
+          "scope": "application",
+          "type": "boolean",
+          "default": true,
+          "description": "Use lazy loading for improved startup performance. Files are indexed quickly and parsed only when needed."
+        },
         "br.searchPath": {
           "order": 1,
           "scope": "resource",

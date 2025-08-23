@@ -1,7 +1,7 @@
 import { MarkdownString, workspace, WorkspaceFolder } from 'vscode'
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode"
 import { getFunctionByName } from '../completions/functions'
-import { Project } from '../class/Project'
+import { Project, ProjectManager } from '../class/Project'
 import InternalFunction from '../class/InternalFunction'
 import BrParser from '../parser'
 
@@ -35,27 +35,60 @@ export default class BrHoverProvider implements HoverProvider {
               }
             }
             if (workspaceFolder){
-              const project = this.configuredProjects.get(workspaceFolder)
-              if (project){
+              // Check if we have a ProjectManager (lazy loading)
+              const projectManagers = (global as any).projectManagers as Map<WorkspaceFolder, ProjectManager> | undefined;
+              const projectManager = projectManagers?.get(workspaceFolder);
+              
+              if (projectManager) {
+                // Use lazy loading approach
                 // First check current document for local functions
-                const currentDocSource = project.sourceFiles.get(doc.uri.toString())
-                if (currentDocSource) {
-                  const fn = await currentDocSource.getFunctionByName(posNode.text)
+                const currentDoc = await projectManager.ensureFullyParsed(doc.uri);
+                if (currentDoc) {
+                  const fn = await currentDoc.getFunctionByName(posNode.text);
                   if (fn) {
-                    const hover = this.createHoverFromFunction(fn)
-                    hover.range = wordRange
-                    return hover
+                    const hover = this.createHoverFromFunction(fn);
+                    hover.range = wordRange;
+                    return hover;
                   }
                 }
                 
-                // Then check all other documents for library functions
-                for (const [uri, lib] of project.sourceFiles) {
-                  if (uri !== doc.uri.toString()) {
-                    const fn = await lib.getFunctionByName(posNode.text)
+                // Find which file has the function (library functions)
+                const functionUri = projectManager.findFunctionFile(posNode.text);
+                if (functionUri && functionUri.toString() !== doc.uri.toString()) {
+                  const libDoc = await projectManager.ensureFullyParsed(functionUri);
+                  if (libDoc) {
+                    const fn = await libDoc.getFunctionByName(posNode.text);
                     if (fn && fn.isLibrary) {
+                      const hover = this.createHoverFromFunction(fn);
+                      hover.range = wordRange;
+                      return hover;
+                    }
+                  }
+                }
+              } else {
+                // Fallback to old approach
+                const project = this.configuredProjects.get(workspaceFolder)
+                if (project){
+                  // First check current document for local functions
+                  const currentDocSource = project.sourceFiles.get(doc.uri.toString())
+                  if (currentDocSource) {
+                    const fn = await currentDocSource.getFunctionByName(posNode.text)
+                    if (fn) {
                       const hover = this.createHoverFromFunction(fn)
                       hover.range = wordRange
                       return hover
+                    }
+                  }
+                  
+                  // Then check all other documents for library functions
+                  for (const [uri, lib] of project.sourceFiles) {
+                    if (uri !== doc.uri.toString()) {
+                      const fn = await lib.getFunctionByName(posNode.text)
+                      if (fn && fn.isLibrary) {
+                        const hover = this.createHoverFromFunction(fn)
+                        hover.range = wordRange
+                        return hover
+                      }
                     }
                   }
                 }
