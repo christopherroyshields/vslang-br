@@ -319,6 +319,6 @@
   },
   "dependencies": {
     "tree-sitter": "^0.25.0",
-    "tree-sitter-br": "0.25.3"
+    "tree-sitter-br": "0.25.4"
   }
 }
