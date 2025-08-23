@@ -31,12 +31,30 @@ Or go to Help → Get Started → BR Language Extension
 ## Core Features for BR Development
 
 ### 🎨 Syntax Highlighting
-Full color-coding for BR syntax including:
-- Keywords (DIM, LET, IF, FOR, DO, etc.)
-- Functions (both built-in and user-defined)
-- Strings, numbers, and operators
-- Comments (REM and !)
-- Line labels
+```br
+00100 ! Program to demonstrate syntax highlighting
+00110 DIM NAMES$(100)*30, TOTAL
+00120 
+00130 DEF FNPROCESSDATA(AMOUNT, TAXRATE)
+00140   LET FNPROCESSDATA = AMOUNT * (1 + TAXRATE)
+00150 FNEND
+00160 
+00170 OPEN #1: "NAME=CUSTOMER.DAT", DISPLAY, INPUT
+00180 
+00190 FOR I = 1 TO 100
+00200   INPUT #1: NAMES$(I) ERROR 300
+00210   LET TOTAL = TOTAL + FNPROCESSDATA(250, 0.08)
+00220 NEXT I
+00230 
+00240 IF TOTAL > 1000 THEN 
+00250   PRINT "Total exceeds limit: "; TOTAL
+00260 ELSE
+00270   PRINT "Total within range"
+00280 END IF
+00290 
+00300 CLOSE #1
+00310 END
+```
 
 ### ✨ IntelliSense (Auto-Completion)
 Press **Ctrl+Space** to trigger suggestions:
@@ -52,17 +70,30 @@ Press **Ctrl+Space** to trigger suggestions:
 - **JSDoc Support**: Document your own functions with JSDoc-style comments:
   ```br
   00090 /**
-  00091  * Calculate sales tax
-  00092  * @param amount - Purchase amount
-  00093  * @returns Tax amount
-  00094  */
-  00100 DEF FNCALCTAX(AMOUNT)
-  00110   LET TAXRATE = 0.08
-  00120   LET FNCALCTAX = AMOUNT * TAXRATE
-  00130 FNEND
+  00091  * Calculate sales tax for a given amount
+  00092  * @param amount - The base purchase amount before tax
+  00093  * @param taxrate - Tax rate as a decimal (e.g., 0.08 for 8%)
+  00094  * @returns The calculated tax amount
+  00095  * @example
+  00096  *   LET TAX = FNCALCTAX(100, 0.08)  ! Returns 8.00
+  00097  * @see FNCALCTOTAL for total with tax included
+  00098  */
+  00100 DEF FNCALCTAX(AMOUNT, TAXRATE)
+  00110   LET FNCALCTAX = AMOUNT * TAXRATE
+  00120 FNEND
+  00130 
+  00140 /**
+  00141  * Calculate total amount including tax
+  00142  * @param amount - Base amount
+  00143  * @param taxrate - Tax rate (decimal)
+  00144  * @returns Total amount with tax
+  00145  */
+  00150 DEF FNCALCTOTAL(AMOUNT, TAXRATE)
+  00160   LET FNCALCTOTAL = AMOUNT + FNCALCTAX(AMOUNT, TAXRATE)
+  00170 FNEND
   ```
 
-### 🔍 Code Navigation
+### Code Navigation
 - **Symbol Search** (Ctrl+Shift+O): Quick navigation to any function or label
 - **Outline View**: See document structure in the Explorer sidebar
 - **Breadcrumbs**: Navigation trail at top of editor
