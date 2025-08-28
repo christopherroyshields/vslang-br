@@ -33,23 +33,24 @@ export default class FuncCompletionProvider implements CompletionItemProvider<Fu
     if (workspaceFolder){
       const project = this.configuredProjects.get(workspaceFolder)
       if (project){
-        for (const [uri, lib] of project.sourceFiles) {
-          if (uri !== doc.uri.toString()){
-            for (const [fnKey, userFn] of lib.functions){
-              if (fnKey.isLibrary){
-                completionItems.push({
-                  name: fnKey.name,
-                  kind: CompletionItemKind.Function,
-                  isLibrary: true,
-                  uri: lib.uri,
-                  label: {
-                    label: fnKey.name,
-                    detail: ' (library function)',
-                    description: path.basename(lib.uri.fsPath)
-                  }
-                })
+        // Use library index for fast access to all library functions
+        const allLibraryFunctions = project.libraryIndex.getAllFunctions()
+        for (const libFunc of allLibraryFunctions) {
+          // Don't include functions from the current document
+          if (libFunc.uri.toString() !== doc.uri.toString()) {
+            // Library functions should be displayed with 'fn' prefix
+            const displayName = 'fn' + libFunc.name;
+            completionItems.push({
+              name: displayName,
+              kind: CompletionItemKind.Function,
+              isLibrary: true,
+              uri: libFunc.uri,
+              label: {
+                label: displayName,
+                detail: ' (library function)',
+                description: path.basename(libFunc.uri.fsPath)
               }
-            }
+            })
           }
         }
       }

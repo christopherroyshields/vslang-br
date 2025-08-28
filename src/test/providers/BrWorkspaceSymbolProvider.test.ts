@@ -4,8 +4,9 @@ import BrWorkspaceSymbolProvider from '../../providers/BrWorkspaceSymbolProvider
 import BrParser from '../../parser'
 import { Project } from '../../class/Project'
 import { Uri } from 'vscode'
-import TreeSitterSourceDocument from '../../class/TreeSitterSourceDocument'
+import SourceDocument from '../../class/SourceDocument'
 import Layout from '../../class/Layout'
+import LibraryFunctionIndex from '../../class/LibraryFunctionIndex'
 import { readFileSync } from 'fs'
 import path = require('path')
 
@@ -37,8 +38,9 @@ suite('BrWorkspaceSymbolProvider Test Suite', () => {
 		}
 		
 		project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		
 		projects.set(testWorkspaceFolder, project)
@@ -51,16 +53,24 @@ suite('BrWorkspaceSymbolProvider Test Suite', () => {
 			const hovertestContent = readFileSync(hovertestPath, 'utf8')
 			const hovertestUri = Uri.file(hovertestPath)
 			const hovertestBuffer = Buffer.from(hovertestContent)
-			const hovertestDoc = new TreeSitterSourceDocument(parser, hovertestUri, hovertestBuffer, testWorkspaceFolder)
+			const hovertestDoc = new SourceDocument(parser, hovertestUri, hovertestBuffer, testWorkspaceFolder)
 			project.sourceFiles.set(hovertestUri.toString(), hovertestDoc)
+			// Add non-library functions to index if any
+			for (const libFunc of hovertestDoc.getLibraryFunctionsMetadata()) {
+				project.libraryIndex.addFunction(libFunc);
+			}
 
 			// Add testlib.brs
 			const testlibPath = path.join(testcodeDir, 'testlib.brs')
 			const testlibContent = readFileSync(testlibPath, 'utf8')
 			const testlibUri = Uri.file(testlibPath)
 			const testlibBuffer = Buffer.from(testlibContent)
-			const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+			const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
 			project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+			// Add library functions to index
+			for (const libFunc of testlibDoc.getLibraryFunctionsMetadata()) {
+				project.libraryIndex.addFunction(libFunc);
+			}
 			
 			console.log('Test files loaded successfully.')
 		} catch (error) {
@@ -171,15 +181,16 @@ suite('BrWorkspaceSymbolProvider Test Suite', () => {
 		}
 		
 		const project2 = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		
 		// Add a mock function to the second project
 		const mockUri = Uri.file('/test/workspace2/mock.brs')
 		const mockContent = `def fnMockFunc(x)\n  return x\nfnend`
 		const mockBuffer = Buffer.from(mockContent)
-		const mockDoc = new TreeSitterSourceDocument(parser, mockUri, mockBuffer, testWorkspaceFolder2)
+		const mockDoc = new SourceDocument(parser, mockUri, mockBuffer, testWorkspaceFolder2)
 		project2.sourceFiles.set(mockUri.toString(), mockDoc)
 		
 		additionalProjects.set(testWorkspaceFolder2, project2)
@@ -203,8 +214,9 @@ suite('BrWorkspaceSymbolProvider Test Suite', () => {
 	test('Empty workspace', async () => {
 		const emptyProjects = new Map<vscode.WorkspaceFolder, Project>()
 		const emptyProject = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		emptyProjects.set(testWorkspaceFolder, emptyProject)
 		

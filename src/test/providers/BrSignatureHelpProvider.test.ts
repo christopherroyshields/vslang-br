@@ -4,8 +4,9 @@ import BrSignatureHelpProvider from '../../providers/BrSignatureHelpProvider'
 import BrParser from '../../parser'
 import { Project } from '../../class/Project'
 import { Uri } from 'vscode'
-import TreeSitterSourceDocument from '../../class/TreeSitterSourceDocument'
+import SourceDocument from '../../class/SourceDocument'
 import Layout from '../../class/Layout'
+import LibraryFunctionIndex from '../../class/LibraryFunctionIndex'
 import { readFileSync } from 'fs'
 import path = require('path')
 
@@ -37,8 +38,9 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		}
 		
 		project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		
 		projects.set(testWorkspaceFolder, project)
@@ -51,8 +53,13 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 			const testlibContent = readFileSync(testlibPath, 'utf8')
 			const testlibUri = Uri.file(testlibPath)
 			const testlibBuffer = Buffer.from(testlibContent)
-			const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+			const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
 			project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+			
+			// Add library functions to index
+			for (const libFunc of testlibDoc.getLibraryFunctionsMetadata()) {
+				project.libraryIndex.addFunction(libFunc);
+			}
 			
 			console.log('Test library loaded successfully.')
 		} catch (error) {
@@ -95,7 +102,9 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		
 		const projects = new Map<vscode.WorkspaceFolder, Project>()
 		const project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		} as Project
 		
 		if (!testWorkspaceFolder) {
@@ -107,7 +116,7 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		// Add the current document to project source files for local function lookup
 		const documentContent = document.getText()
 		const documentBuffer = Buffer.from(documentContent)
-		const documentSource = new TreeSitterSourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
+		const documentSource = new SourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
 		project.sourceFiles.set(uri.toString(), documentSource)
 		
 		const position = new vscode.Position(0, 14) // After opening parenthesis
@@ -135,7 +144,9 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		
 		const projects = new Map<vscode.WorkspaceFolder, Project>()
 		const project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		} as Project
 		
 		if (!testWorkspaceFolder) {
@@ -147,7 +158,7 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		// Add the current document to project source files
 		const documentContent = document.getText()
 		const documentBuffer = Buffer.from(documentContent)
-		const documentSource = new TreeSitterSourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
+		const documentSource = new SourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
 		project.sourceFiles.set(uri.toString(), documentSource)
 
 		const testcodeDir = path.join(__dirname, '../../../testcode')
@@ -155,8 +166,13 @@ suite('BrSignatureHelpProvider Test Suite', () => {
 		const testlibContent = readFileSync(testlibPath, 'utf8')
 		const testlibUri = Uri.file(testlibPath)
 		const testlibBuffer = Buffer.from(testlibContent)
-		const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+		const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
 		project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+		
+		// Add library functions to index
+		for (const libFunc of testlibDoc.getLibraryFunctionsMetadata()) {
+			project.libraryIndex.addFunction(libFunc);
+		}
 		
 		// Create a test document with library function call
 		const testDocument = document

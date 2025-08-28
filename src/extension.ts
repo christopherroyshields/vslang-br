@@ -24,7 +24,8 @@ import LocalVariableCompletionProvider from './providers/LocalCompletionProvider
 import LocalFunctionCompletionProvider from './providers/LocalFunctionCompletionProvider';
 import InternalFunctionCompletionProvider from './providers/InternalFunctionCompletionProvider';
 import BrReferenceProvder from './providers/BrReferenceProvider';
-import TreeSitterSourceDocument from './class/TreeSitterSourceDocument';
+import SourceDocument from './class/SourceDocument';
+import LibraryFunctionIndex from './class/LibraryFunctionIndex';
 
 export async function activate(context: ExtensionContext) {
 	const subscriptions = context.subscriptions
@@ -159,7 +160,7 @@ async function activateWorkspaceFolders(context: ExtensionContext, configuredPro
 	return configuredProjects
 }
 
-async function readSourceFileToTree(uri: Uri, workspaceFolder: WorkspaceFolder, parser: BrParser): Promise<TreeSitterSourceDocument | undefined> {
+async function readSourceFile(uri: Uri, workspaceFolder: WorkspaceFolder, parser: BrParser): Promise<SourceDocument | undefined> {
 	try {
 		const libText = await workspace.fs.readFile(uri)
 		if (libText){
@@ -169,10 +170,10 @@ async function readSourceFileToTree(uri: Uri, workspaceFolder: WorkspaceFolder, 
 			// console.log(`Regex Parse: ${endTime - startTime} milliseconds`)
 
 			const startTime = performance.now()
-			// const tree = parser.parser.parse(libText.toString())
-			const treeDoc = new TreeSitterSourceDocument(parser, uri, libText, workspaceFolder)
+			// Create SourceDocument with lazy parsing
+			const treeDoc = new SourceDocument(parser, uri, libText, workspaceFolder)
 			const endTime = performance.now()
-			console.log(`Tree Parse: ${endTime - startTime} milliseconds`)
+			// console.log(`Library scan: ${endTime - startTime} milliseconds`)
 
 			return treeDoc
 		}
@@ -183,8 +184,9 @@ async function readSourceFileToTree(uri: Uri, workspaceFolder: WorkspaceFolder, 
 
 async function startWatchingFiles(workspaceFolder: WorkspaceFolder, disposables: Disposable[], parser: BrParser, context: ExtensionContext): Promise<Project> {
 	const project: Project = {
-		sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-		layouts: new Map<string, Layout>()
+		sourceFiles: new Map<string, SourceDocument>(),
+		layouts: new Map<string, Layout>(),
+		libraryIndex: new LibraryFunctionIndex()
 	}
 
 	const searchPath = workspace.getConfiguration('br', workspaceFolder).get("searchPath", "");
@@ -203,7 +205,7 @@ async function readLayout(uri: Uri): Promise<Layout | undefined> {
 			return layout
 		}
 	} catch {
-		window.showWarningMessage(`Library source not found ${uri.fsPath}`)
+		window.showWarningMessage(`Layout file could not be read: ${uri.fsPath}`)
 	}
 }
 
@@ -275,29 +277,51 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	
 	// Show status bar only if we have files to load
 	if (sourceFiles.length > 0) {
-		statusBarItem.text = `$(loading~spin) Scanning for libraries (${fileCount})`
+		statusBarItem.text = `$(loading~spin) Indexing libraries (${fileCount})`
 		statusBarItem.show()
 	}
 	
+	const scanStartTime = performance.now()
 	for (const sourceUri of sourceFiles) {
-		const sourceLib = await readSourceFileToTree(sourceUri, workspaceFolder, parser)
+		const sourceLib = await readSourceFile(sourceUri, workspaceFolder, parser)
 		if (sourceLib){
 			project.sourceFiles.set(sourceUri.toString(), sourceLib)
+			// Add library functions to the index
+			const libFunctions = sourceLib.getLibraryFunctionsMetadata()
+			if (libFunctions.length > 0) {
+				const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
+				const functionNames = libFunctions.map(f => f.name).join(', ')
+				console.log(`  ${fileName}: [${functionNames}]`)
+			}
+			for (const libFunc of libFunctions) {
+				project.libraryIndex.addFunction(libFunc);
+			}
 			incrementCounter(sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath)
 		}
 	}
+	const scanEndTime = performance.now()
+	const totalScanTime = scanEndTime - scanStartTime
+	const averagePerFile = sourceFiles.length > 0 ? (totalScanTime / sourceFiles.length).toFixed(2) : 0
+	console.log(`Total library scanning time: ${totalScanTime.toFixed(2)}ms for ${sourceFiles.length} files (avg: ${averagePerFile}ms/file)`)
 	
 	// Hide status bar when done loading
 	statusBarItem.hide()
 
 	const codeWatcher = workspace.createFileSystemWatcher(sourceFileGlobPattern)
 	codeWatcher.onDidChange(async (sourceUri: Uri) => {
-		const brSource = await readSourceFileToTree(sourceUri, workspaceFolder, parser)
+		const brSource = await readSourceFile(sourceUri, workspaceFolder, parser)
 		if (brSource){
+			// Remove old functions from index
+			project.libraryIndex.removeFunctionsFromUri(sourceUri);
+			// Update source file
 			for (const [uri] of project.sourceFiles) {
 				if (uri === sourceUri.toString()){
 					project.sourceFiles.set(sourceUri.toString(), brSource)
 				}
+			}
+			// Add new functions to index
+			for (const libFunc of brSource.getLibraryFunctionsMetadata()) {
+				project.libraryIndex.addFunction(libFunc);
 			}
 			if (parser.trees.has(sourceUri.toString())){
 				parser.getUriTree(sourceUri,true)
@@ -307,15 +331,20 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 
 	codeWatcher.onDidDelete(async (sourceUri: Uri) => {
 		project.sourceFiles.delete(sourceUri.toString())
+		project.libraryIndex.removeFunctionsFromUri(sourceUri);
 		if (parser.trees.has(sourceUri.toString())){
 			parser.trees.delete(sourceUri.toString())
 		}
 	}, undefined, disposables)
 
 	codeWatcher.onDidCreate(async (sourceUri: Uri) => {
-		const sourceLib = await readSourceFileToTree(sourceUri, workspaceFolder, parser)
+		const sourceLib = await readSourceFile(sourceUri, workspaceFolder, parser)
 		if (sourceLib){
 			project.sourceFiles.set(sourceUri.toString(), sourceLib)
+			// Add library functions to the index
+			for (const libFunc of sourceLib.getLibraryFunctionsMetadata()) {
+				project.libraryIndex.addFunction(libFunc);
+			}
 		}
 	}, undefined, disposables)
 

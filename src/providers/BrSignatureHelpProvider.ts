@@ -140,23 +140,28 @@ export default class BrSignatureHelpProvider implements SignatureHelpProvider {
       if (workspaceFolder){
         const project = this.configuredProjects.get(workspaceFolder)
         if (project){
-          for (const [libUri,lib] of project.sourceFiles) {
-            if (libUri !== doc.uri.toString()){
-              for (const [fnKey, userFn] of lib.functions) {
-                if (fnKey.isLibrary && fnKey.name.toLowerCase() == name.text.toLowerCase()){
-                  const fn = await this.parser.getFunctionByName(fnKey.name, lib.uri)
-                  if (fn){
-                    const params: ParameterInformation[] = []
-                    const sigLabel = fn.generateSignature(params)
-                    sigHelp.signatures.push({
-                      documentation: fn.documentation,
-                      label: sigLabel,
-                      parameters: params,
-                      activeParameter: activeParameter
-                    })
-                    sigHelp.activeParameter = activeParameter
-                  }
-                }
+          // Check library index for library functions (fast, no parsing)
+          // Try both with and without 'fn' prefix since library functions are stored without it
+          let libFuncMetadata = project.libraryIndex.getFunction(name.text)
+          if (!libFuncMetadata && name.text.toLowerCase().startsWith('fn')) {
+            // Try without the 'fn' prefix
+            libFuncMetadata = project.libraryIndex.getFunction(name.text.substring(2))
+          }
+          if (libFuncMetadata) {
+            // Found in index, now get the full function from the source document
+            const sourceDoc = project.sourceFiles.get(libFuncMetadata.uri.toString())
+            if (sourceDoc) {
+              const fn = await sourceDoc.getFunctionByName(name.text)
+              if (fn){
+                const params: ParameterInformation[] = []
+                const sigLabel = fn.generateSignature(params)
+                sigHelp.signatures.push({
+                  documentation: fn.documentation,
+                  label: sigLabel,
+                  parameters: params,
+                  activeParameter: activeParameter
+                })
+                sigHelp.activeParameter = activeParameter
               }
             }
           }

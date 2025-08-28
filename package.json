@@ -76,7 +76,7 @@
           "scope": "resource",
           "type": "string",
           "default": "*",
-          "description": "The glob pattern used to find project layouts."
+          "description": "The glob pattern used to find project layouts (non-recursive, in layout folder only)."
         }
       }
     },

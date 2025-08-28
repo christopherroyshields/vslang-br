@@ -4,8 +4,9 @@ import FuncCompletionProvider from '../../providers/FuncCompletionProvider'
 import BrParser from '../../parser'
 import { Project } from '../../class/Project'
 import { Uri } from 'vscode'
-import TreeSitterSourceDocument from '../../class/TreeSitterSourceDocument'
+import SourceDocument from '../../class/SourceDocument'
 import Layout from '../../class/Layout'
+import LibraryFunctionIndex from '../../class/LibraryFunctionIndex'
 import { readFileSync } from 'fs'
 import path = require('path')
 
@@ -37,8 +38,9 @@ suite('FuncCompletionProvider Test Suite', () => {
 		}
 		
 		project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		
 		projects.set(testWorkspaceFolder, project)
@@ -51,8 +53,13 @@ suite('FuncCompletionProvider Test Suite', () => {
 			const testlibContent = readFileSync(testlibPath, 'utf8')
 			const testlibUri = Uri.file(testlibPath)
 			const testlibBuffer = Buffer.from(testlibContent)
-			const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+			const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
 			project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+			
+			// Add library functions to index
+			for (const libFunc of testlibDoc.getLibraryFunctionsMetadata()) {
+				project.libraryIndex.addFunction(libFunc);
+			}
 			
 			console.log('Test library loaded successfully.')
 		} catch (error) {
@@ -178,7 +185,9 @@ suite('FuncCompletionProvider Test Suite', () => {
 		// Use the existing testWorkspaceFolder from the suite setup
 		// instead of creating a new one with getWorkspaceFolder
 		const testProject = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		} as Project
 		
 		const localProjects = new Map<vscode.WorkspaceFolder, Project>()
@@ -187,7 +196,7 @@ suite('FuncCompletionProvider Test Suite', () => {
 		// Add the current document to project source files
 		const documentContent = document.getText()
 		const documentBuffer = Buffer.from(documentContent)
-		const documentSource = new TreeSitterSourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
+		const documentSource = new SourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
 		testProject.sourceFiles.set(uri.toString(), documentSource)
 
 		// Add test library
@@ -196,8 +205,13 @@ suite('FuncCompletionProvider Test Suite', () => {
 		const testlibContent = readFileSync(testlibPath, 'utf8')
 		const testlibUri = Uri.file(testlibPath)
 		const testlibBuffer = Buffer.from(testlibContent)
-		const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+		const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
 		testProject.sourceFiles.set(testlibUri.toString(), testlibDoc)
+		
+		// Add library functions from testlib to index
+		for (const libFunc of testlibDoc.getLibraryFunctionsMetadata()) {
+			testProject.libraryIndex.addFunction(libFunc);
+		}
 		
 		const position = new vscode.Position(1, 0) // Empty line
 		
@@ -258,16 +272,22 @@ fnend`
 		
 		// Create a new test project
 		const testProject = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		const localProjects = new Map<vscode.WorkspaceFolder, Project>()
 		localProjects.set(testWorkspaceFolder, testProject)
 		
 		// Add the mock document to project source files
 		const mockBuffer = Buffer.from(mockContent)
-		const mockDoc = new TreeSitterSourceDocument(parser, mockUri, mockBuffer, testWorkspaceFolder)
+		const mockDoc = new SourceDocument(parser, mockUri, mockBuffer, testWorkspaceFolder)
 		testProject.sourceFiles.set(mockUri.toString(), mockDoc)
+		
+		// Add library functions from mock document to index
+		for (const libFunc of mockDoc.getLibraryFunctionsMetadata()) {
+			testProject.libraryIndex.addFunction(libFunc);
+		}
 		
 		// Open the test document
 		const document = await vscode.workspace.openTextDocument(testFileUri)
@@ -275,7 +295,7 @@ fnend`
 		// Add the test document to project source files
 		const testContent = document.getText()
 		const testBuffer = Buffer.from(testContent)
-		const testDoc = new TreeSitterSourceDocument(parser, testFileUri, testBuffer, testWorkspaceFolder)
+		const testDoc = new SourceDocument(parser, testFileUri, testBuffer, testWorkspaceFolder)
 		testProject.sourceFiles.set(testFileUri.toString(), testDoc)
 		
 		const position = new vscode.Position(0, 13)
@@ -331,8 +351,9 @@ fnend`
 		
 		const emptyProjects = new Map<vscode.WorkspaceFolder, Project>()
 		const emptyProject = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		emptyProjects.set(testWorkspaceFolder, emptyProject)
 		
@@ -342,7 +363,7 @@ fnend`
 		// Add the document to the empty project (to simulate a file with no functions)
 		const testContent = document.getText()
 		const testBuffer = Buffer.from(testContent)
-		const testDoc = new TreeSitterSourceDocument(parser, testFileUri, testBuffer, testWorkspaceFolder)
+		const testDoc = new SourceDocument(parser, testFileUri, testBuffer, testWorkspaceFolder)
 		emptyProject.sourceFiles.set(testFileUri.toString(), testDoc)
 		
 		const position = new vscode.Position(0, 13)

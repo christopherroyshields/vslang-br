@@ -37,26 +37,34 @@ export default class BrHoverProvider implements HoverProvider {
             if (workspaceFolder){
               const project = this.configuredProjects.get(workspaceFolder)
               if (project){
-                // First check current document for local functions
-                const currentDocSource = project.sourceFiles.get(doc.uri.toString())
-                if (currentDocSource) {
-                  const fn = await currentDocSource.getFunctionByName(posNode.text)
-                  if (fn) {
-                    const hover = this.createHoverFromFunction(fn)
-                    hover.range = wordRange
-                    return hover
-                  }
+                // First check library index for library functions (fast, no parsing)
+                // Try both with and without 'fn' prefix since library functions are stored without it
+                let libFuncMetadata = project.libraryIndex.getFunction(posNode.text)
+                if (!libFuncMetadata && posNode.text.toLowerCase().startsWith('fn')) {
+                  // Try without the 'fn' prefix
+                  libFuncMetadata = project.libraryIndex.getFunction(posNode.text.substring(2))
                 }
-                
-                // Then check all other documents for library functions
-                for (const [uri, lib] of project.sourceFiles) {
-                  if (uri !== doc.uri.toString()) {
-                    const fn = await lib.getFunctionByName(posNode.text)
-                    if (fn && fn.isLibrary) {
+                if (libFuncMetadata) {
+                  // Found in index, now get the full function from the source document
+                  const sourceDoc = project.sourceFiles.get(libFuncMetadata.uri.toString())
+                  if (sourceDoc) {
+                    const fn = await sourceDoc.getFunctionByName(posNode.text)
+                    if (fn) {
                       const hover = this.createHoverFromFunction(fn)
                       hover.range = wordRange
                       return hover
                     }
+                  }
+                }
+                
+                // If not a library function, check current document for local functions
+                const currentDocSource = project.sourceFiles.get(doc.uri.toString())
+                if (currentDocSource) {
+                  const fn = await currentDocSource.getFunctionByName(posNode.text)
+                  if (fn && !fn.isLibrary) {
+                    const hover = this.createHoverFromFunction(fn)
+                    hover.range = wordRange
+                    return hover
                   }
                 }
               }

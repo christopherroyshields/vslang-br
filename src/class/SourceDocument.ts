@@ -2,20 +2,24 @@ import { Uri, WorkspaceFolder, workspace } from "vscode";
 import BrParser from '../parser';
 import Parser = require("tree-sitter");
 import UserFunction from './UserFunction';
+import { LibraryFunctionMetadata } from './LibraryFunctionIndex';
+import { scanLibraryFunctions } from '../util/libraryScanner';
 
 type FunctionKey = {
   isLibrary: boolean;
   name: string;
 };
 
-export default class TreeSitterSourceDocument {
+export default class SourceDocument {
   functions: Map<{
     isLibrary: boolean;
     name: string;
   }, UserFunction> = new Map();
+  libraryFunctions: LibraryFunctionMetadata[] = [];
   buffer: Buffer;
   parser: BrParser;
-  tree: Parser.Tree | null = null;
+  private tree: Parser.Tree | null = null;
+  private isTreeParsed = false;
   uri: Uri;
   workspaceFolder: WorkspaceFolder | undefined;
   linkPath: string;
@@ -26,18 +30,36 @@ export default class TreeSitterSourceDocument {
     this.buffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer); // Convert Uint8Array to Buffer if needed
     this.workspaceFolder = workspaceFolder;
     this.linkPath = workspace.asRelativePath(uri, false).replace("/","\\").replace(/\.[^\\/.]+$/,"")
-    this.parse();
+    // Don't parse immediately - just scan for library functions
+    this.scanLibraryFunctions();
   }
 
   /**
-   * Parse the buffer content and update the tree
+   * Scan for library functions using regex (fast)
+   */
+  public scanLibraryFunctions(): void {
+    this.libraryFunctions = scanLibraryFunctions(this.buffer, this.uri);
+  }
+
+  /**
+   * Ensure the tree is parsed (lazy loading)
+   */
+  private ensureTreeParsed(): void {
+    if (!this.isTreeParsed) {
+      const tree = this.parser.getBufferTree(this.uri, this.buffer);
+      this.tree = tree || null;
+      this.isTreeParsed = true;
+      if (this.tree) {
+        this.functions = this.getAllFunctions();
+      }
+    }
+  }
+
+  /**
+   * Parse the buffer content and update the tree (for compatibility)
    */
   public parse(): void {
-    const tree = this.parser.getBufferTree(this.uri, this.buffer);
-    this.tree = tree || null;
-    if (this.tree) {
-      this.functions = this.getAllFunctions();
-    }
+    this.ensureTreeParsed();
   }
 
   /**
@@ -45,7 +67,10 @@ export default class TreeSitterSourceDocument {
    */
   public updateBuffer(buffer: Buffer): void {
     this.buffer = buffer;
-    this.parse();
+    this.isTreeParsed = false;
+    this.tree = null;
+    this.functions.clear();
+    this.scanLibraryFunctions();
   }
 
   /**
@@ -53,6 +78,17 @@ export default class TreeSitterSourceDocument {
    */
   public async getFunctionByName(name: string): Promise<UserFunction | undefined> {
     const lowerName = name.toLowerCase();
+    
+    // Check if it's a library function first (no parsing needed)
+    const libFunc = this.libraryFunctions.find(f => f.name.toLowerCase() === lowerName);
+    if (libFunc) {
+      // Need to parse to get full UserFunction object
+      this.ensureTreeParsed();
+    } else {
+      // For non-library functions, we need to parse
+      this.ensureTreeParsed();
+    }
+    
     let fn: UserFunction | undefined;
     for (const [key, value] of this.functions) {
       if (key.name.toLowerCase() === lowerName) {
@@ -64,12 +100,28 @@ export default class TreeSitterSourceDocument {
   }
 
   /**
+   * Get the parse tree (triggers parsing if needed)
+   */
+  public getTree(): Parser.Tree | null {
+    this.ensureTreeParsed();
+    return this.tree;
+  }
+
+  /**
+   * Check if the tree has been parsed
+   */
+  public isParsed(): boolean {
+    return this.isTreeParsed;
+  }
+
+  /**
    * Get all functions in this document
    */
   public getAllFunctions(): Map<{
     isLibrary: boolean;
     name: string;
   }, UserFunction> {
+    this.ensureTreeParsed();
     if (!this.tree) {
       return new Map();
     }
@@ -118,6 +170,14 @@ export default class TreeSitterSourceDocument {
    * Check if this document contains library functions
    */
   public hasLibraryFunctions(): boolean {
-    return Array.from(this.functions.values()).some(fn => fn.isLibrary);
+    // Use the fast scan result instead of parsing
+    return this.libraryFunctions.length > 0;
+  }
+
+  /**
+   * Get library functions without parsing (fast)
+   */
+  public getLibraryFunctionsMetadata(): LibraryFunctionMetadata[] {
+    return this.libraryFunctions;
   }
 }

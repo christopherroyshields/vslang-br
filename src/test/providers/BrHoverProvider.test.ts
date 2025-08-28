@@ -7,8 +7,9 @@ import BrHoverProvider from '../../providers/BrHoverProvider'
 import BrParser from '../../parser'
 import { Project } from '../../class/Project'
 import { Uri } from 'vscode'
-import TreeSitterSourceDocument from '../../class/TreeSitterSourceDocument'
+import SourceDocument from '../../class/SourceDocument'
 import Layout from '../../class/Layout'
+import LibraryFunctionIndex from '../../class/LibraryFunctionIndex'
 import { readFileSync } from 'fs'
 import path = require('path')
 
@@ -42,8 +43,9 @@ suite('BrHoverProvider Test Suite', () => {
 		}
 		
 		project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>(),
-			layouts: new Map<string, Layout>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		}
 		
 		projects.set(testWorkspaceFolder, project)
@@ -56,9 +58,14 @@ suite('BrHoverProvider Test Suite', () => {
 			const testlibContent = readFileSync(testlibPath, 'utf8')
 			const testlibUri = Uri.file(testlibPath)
 			const testlibBuffer = Buffer.from(testlibContent)
-			const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+			const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+			project.sourceFiles.set(testlibUri.toString(), testlibDoc)
 			
-			console.log('Test library loaded successfully. Functions found:', testlibDoc.functions)
+			// Add library functions to index
+			const libFuncs = testlibDoc.getLibraryFunctionsMetadata();
+			for (const libFunc of libFuncs) {
+				project.libraryIndex.addFunction(libFunc);
+			}
 		} catch (error) {
 			console.error('Failed to load test library:', error)
 			throw error
@@ -109,7 +116,9 @@ suite('BrHoverProvider Test Suite', () => {
 		// Mock projects map for testing
 		const projects = new Map<vscode.WorkspaceFolder, Project>()
 		const project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		} as Project
 		
 		if (!testWorkspaceFolder) {
@@ -121,7 +130,7 @@ suite('BrHoverProvider Test Suite', () => {
 		// Add the current document to project source files for local function lookup
 		const documentContent = document.getText()
 		const documentBuffer = Buffer.from(documentContent)
-		const documentSource = new TreeSitterSourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
+		const documentSource = new SourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
 		project.sourceFiles.set(uri.toString(), documentSource)
 		
 		const position = new vscode.Position(0, 10)
@@ -161,7 +170,9 @@ suite('BrHoverProvider Test Suite', () => {
 		// Mock projects map for testing
 		const projects = new Map<vscode.WorkspaceFolder, Project>()
 		const project = {
-			sourceFiles: new Map<string, TreeSitterSourceDocument>()
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
 		} as Project
 		
 		if (!testWorkspaceFolder) {
@@ -173,7 +184,7 @@ suite('BrHoverProvider Test Suite', () => {
 		// Add the current document to project source files
 		const documentContent = document.getText()
 		const documentBuffer = Buffer.from(documentContent)
-		const documentSource = new TreeSitterSourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
+		const documentSource = new SourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
 		project.sourceFiles.set(uri.toString(), documentSource)
 
 		const testcodeDir = path.join(__dirname, '../../../testcode')
@@ -182,8 +193,14 @@ suite('BrHoverProvider Test Suite', () => {
 		const testlibContent = readFileSync(testlibPath, 'utf8')
 		const testlibUri = Uri.file(testlibPath)
 		const testlibBuffer = Buffer.from(testlibContent)
-		const testlibDoc = new TreeSitterSourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+		const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
 		project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+		
+		// Add library functions to index
+		const libFuncs = testlibDoc.getLibraryFunctionsMetadata();
+		for (const libFunc of libFuncs) {
+			project.libraryIndex.addFunction(libFunc);
+		}
 		
 		const position = new vscode.Position(16, 7)
 		
