@@ -205,7 +205,7 @@ async function readLayout(uri: Uri): Promise<Layout | undefined> {
 			return layout
 		}
 	} catch {
-		window.showWarningMessage(`Layout file could not be read: ${uri.fsPath}`)
+		console.error(`Layout file could not be read: ${uri.fsPath}`)
 	}
 }
 
