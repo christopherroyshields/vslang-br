@@ -20,6 +20,27 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "vslang-br.compiledBREditor",
+        "displayName": "BR Compiled File Handler",
+        "selector": [
+          {
+            "filenamePattern": "*.br"
+          },
+          {
+            "filenamePattern": "*.bro"
+          },
+          {
+            "filenamePattern": "*.wb"
+          },
+          {
+            "filenamePattern": "*.wbo"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "semanticTokenScopes": [
       {
         "language": "lay",
@@ -77,6 +98,21 @@
           "type": "string",
           "default": "*",
           "description": "The glob pattern used to find project layouts (non-recursive, in layout folder only)."
+        },
+        "br.decompile.sourceExtensions": {
+          "order": 5,
+          "scope": "application",
+          "type": "object",
+          "default": {
+            ".br": ".brs",
+            ".bro": ".brs",
+            ".wb": ".wbs",
+            ".wbo": ".wbs"
+          },
+          "description": "Map of compiled BR file extensions to their source file extensions for decompilation.",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -164,10 +200,22 @@
         "title": "BR: Scan All Project Source"
       },
       {
+        "command": "vslang-br.Decompile",
+        "title": "Lexi: Decompile BR Program"
+      },
+      {
         "command": "vslang-br.openWalkthrough",
         "title": "BR: Open Getting Started Walkthrough"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "vslang-br.Decompile",
+          "group": "7_modification"
+        }
+      ]
+    },
     "snippets": [
       {
         "language": "br",
@@ -287,7 +335,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
-    "package": "vsce package",
+    "package": "npx @vscode/vsce package",
     "package:clean": "package-clean.bat",
     "vsce:ls": "npx @vscode/vsce ls --tree"
   },
