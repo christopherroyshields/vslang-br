@@ -296,35 +296,57 @@ async function decompileAndOpen(activeFilename: string, showSuccessMessage: bool
 		cwd: LexiPath
 	});
 	
-	// Execute the decompilation
-	exec(`brnative proc decompile.prc`, {
-		cwd: LexiPath
-	}, (error, stdout, stderr) => {
-		if (error) {
-			vscode.window.showErrorMessage(`Decompilation failed: ${error.message}`);
-			return;
-		}
-		
-		// Copy the decompiled file back to the original location
-		const tempFilePath = path.join(LexiPath, 'tmp', outputFileName);
-		
-		if (fs.existsSync(tempFilePath)) {
-			fs.copyFileSync(tempFilePath, finalOutputPath);
-			fs.unlinkSync(tempFilePath); // Delete temp file
-			
-			// Open the decompiled file in VS Code
-			vscode.workspace.openTextDocument(finalOutputPath).then(doc => {
-				vscode.window.showTextDocument(doc);
-				if (showSuccessMessage) {
-					vscode.window.showInformationMessage(`Successfully decompiled to ${outputFileName}`);
+	// Wait a moment for lexitip to start, then execute the decompilation
+	await new Promise<void>((resolve, reject) => {
+		setTimeout(() => {
+			exec(`brnative proc decompile.prc`, {
+				cwd: LexiPath
+			}, (error, stdout, stderr) => {
+				if (error) {
+					vscode.window.showErrorMessage(`Decompilation failed: ${error.message}`);
+					reject(error);
+					return;
 				}
+				
+				// Copy the decompiled file back to the original location
+				const tempFilePath = path.join(LexiPath, 'tmp', outputFileName);
+				
+				// Wait for the file to be created (sometimes there's a delay)
+				let attempts = 0;
+				const maxAttempts = 10;
+				const checkFile = () => {
+					if (fs.existsSync(tempFilePath)) {
+						fs.copyFileSync(tempFilePath, finalOutputPath);
+						fs.unlinkSync(tempFilePath); // Delete temp file
+						
+						// Open the decompiled file in VS Code
+						vscode.workspace.openTextDocument(finalOutputPath).then(doc => {
+							vscode.window.showTextDocument(doc);
+							if (showSuccessMessage) {
+								vscode.window.showInformationMessage(`Successfully decompiled to ${outputFileName}`);
+							}
+						});
+						
+						// Clean up the .prc file
+						if (fs.existsSync(prcFilePath)) {
+							fs.unlinkSync(prcFilePath);
+						}
+						resolve();
+					} else if (attempts < maxAttempts) {
+						attempts++;
+						setTimeout(checkFile, 200); // Check again in 200ms
+					} else {
+						vscode.window.showErrorMessage(`Decompiled file not found: ${tempFilePath}`);
+						// Clean up the .prc file even on failure
+						if (fs.existsSync(prcFilePath)) {
+							fs.unlinkSync(prcFilePath);
+						}
+						reject(new Error('Decompiled file not found'));
+					}
+				};
+				checkFile();
 			});
-		}
-		
-		// Clean up the .prc file
-		if (fs.existsSync(prcFilePath)) {
-			fs.unlinkSync(prcFilePath);
-		}
+		}, 500); // Wait 500ms for lexitip to start
 	});
 }
 
