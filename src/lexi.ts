@@ -283,6 +283,13 @@ async function decompileAndOpen(activeFilename: string, showSuccessMessage: bool
 	// Create the .prc file content
 	let prcContent = '';
 	prcContent += 'proc noecho\n';
+	
+	// Add STYLE command from configuration
+	const styleCommand = vscode.workspace.getConfiguration('br.decompile').get('styleCommand', 'indent 2 45 keywords lower labels mixed comments mixed');
+	if (styleCommand && styleCommand.trim().length > 0) {
+		prcContent += `config STYLE ${styleCommand}\n`;
+	}
+	
 	prcContent += `load ":${activeFilename}"\n`;
 	prcContent += `list >":${path.join(LexiPath, 'tmp', outputFileName)}"\n`;
 	prcContent += 'system\n';

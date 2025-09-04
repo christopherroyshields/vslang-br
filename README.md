@@ -114,8 +114,23 @@ Common Lexi Features Supported:
 - **Ctrl+Alt+4**: Switch to BR 4.1
 - **Ctrl+Alt+5**: Switch to BR 4.2
 - **Ctrl+Alt+6**: Switch to BR 4.3
+- **Auto-Compile**: Enable automatic compilation on save (toggle in status bar)
+- **Decompile**: Convert compiled BR programs (.br, .bro, .wb, .wbo) back to source
 
 Access all Lexi commands through Command Palette (Ctrl+Shift+P) → type "Lexi"
+
+#### 🔄 Automatic Decompilation
+When you click on a compiled BR file (.br, .bro, .wb, .wbo):
+- The extension automatically decompiles it to source code
+- Opens the source file (.brs or .wbs) instead of the binary
+- If source already exists, opens it immediately
+- If not, decompiles on-the-fly and opens the result
+- Never shows binary content - always shows readable source!
+
+#### ⚙️ Auto-Compile Feature
+- **Status Bar Toggle**: Click "Auto-Compile" in status bar to enable/disable
+- **Per-File Setting**: Each file remembers its auto-compile preference
+- **Save Triggers Compile**: When enabled, saving automatically compiles the file
 
 ### 📋 Layout File Support
 - Automatic recognition of files in `filelay/` directory
@@ -153,6 +168,9 @@ Access through: File → Preferences → Settings → Search "BR"
 - **Source Pattern**: File pattern for BR sources (default: `**/*.{brs,wbs}`)
 - **Layout Path**: Directory containing file layouts (default: `filelay`)
 - **Diagnostics Delay**: Milliseconds before checking syntax (default: 500ms)
+- **Decompile Extensions**: Customize file extension mappings for decompilation
+  - Default mappings: `.br`→`.brs`, `.bro`→`.brs`, `.wb`→`.wbs`, `.wbo`→`.wbs`
+  - Add custom mappings through settings
 
 ## Tips for BR Developers
 
@@ -177,6 +195,13 @@ Type these prefixes and press Tab:
 - Automatic detection of LIBRARY statements
 - Function discovery from external libraries
 - IntelliSense for library functions
+
+### Decompilation Features
+- **Context Menu**: Right-click compiled files → "Lexi: Decompile BR Program"
+- **Automatic Handling**: Click any compiled file to see source code instantly
+- **Overwrite Protection**: Warns before overwriting existing source files
+- **Custom Extensions**: Configure which file types can be decompiled
+- **Seamless Workflow**: Never see binary content - always work with source
 
 ### Project-Wide Features
 - **Global Symbol Search** (Ctrl+T): Search functions/variables across all files

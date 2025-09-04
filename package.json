@@ -113,6 +113,13 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "br.decompile.styleCommand": {
+          "order": 6,
+          "scope": "application",
+          "type": "string",
+          "default": "indent 2 45 keywords lower labels mixed comments mixed",
+          "description": "STYLE command parameters to apply when decompiling BR programs. Controls formatting of the decompiled source code."
         }
       }
     },
@@ -247,8 +254,25 @@
         ],
         "configuration": "./language-configuration.json",
         "icon": {
-          "light": "./icons/br-light.svg",
-          "dark": "./icons/br-dark.svg"
+          "light": "./icons/BR File Explorer Icon.svg",
+          "dark": "./icons/BR File Explorer Icon.svg"
+        }
+      },
+      {
+        "id": "br-compiled",
+        "aliases": [
+          "Business Rules! Compiled",
+          "BR Compiled"
+        ],
+        "extensions": [
+          ".br",
+          ".bro",
+          ".wb",
+          ".wbo"
+        ],
+        "icon": {
+          "light": "./icons/BR File Explorer Icon - Compiled.svg",
+          "dark": "./icons/BR File Explorer Icon - Compiled.svg"
         }
       },
       {

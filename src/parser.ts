@@ -302,9 +302,9 @@ export default class BrParser implements Disposable {
 			// collection.clear();
 			for (const error of errors) {
 				for (const capture of error.captures) {
-					let message = 'Syntax error'
+					let message = 'Parsing Error: Invalid Sequence'
 					if (capture.name === 'missing') {
-						message = 'Missing node'
+						message = 'Parsing Error: Missing Node'
 					}
 					diagnostics.push({
 						code: '',
@@ -588,7 +588,7 @@ export default class BrParser implements Disposable {
 			for (const capture of error.captures) {
 				diagnostics.push({
 					code: '',
-					message: 'Syntax error',
+					message: 'Parsing Error: Invalid Sequence',
 					range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
 					severity: DiagnosticSeverity.Error,
 					source: 'BR Syntax Scanner',
@@ -602,7 +602,7 @@ export default class BrParser implements Disposable {
 			for (const capture of missing.captures) {
 				diagnostics.push({
 					code: '',
-					message: 'Missing node',
+					message: 'Parsing Error: Missing Node',
 					range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
 					severity: DiagnosticSeverity.Error,
 					source: 'BR Syntax Scanner',
