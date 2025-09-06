@@ -10,9 +10,6 @@ Welcome BR programmers! This extension brings modern IDE features to Business Ru
 3. **Open your BR project**: File → Open Folder → Select your BR project directory
 4. **Start coding**: Create or open `.brs` or `.wbs` files - the extension activates automatically!
 
-### Interactive Tutorial
-**In VS Code**: Press `Ctrl+Shift+P` and type "BR: Open Getting Started Walkthrough" for a guided tour!
-Or go to Help → Get Started → BR Language Extension
 
 ## Essential VS Code Concepts for BR Developers
 
@@ -211,7 +208,6 @@ Type these prefixes and press Tab:
 ## Getting Help
 
 - **Command Palette** (Ctrl+Shift+P): Your gateway to all commands
-- **Interactive Walkthrough**: Help → Get Started → BR Language Extension
 - **VS Code Docs**: [code.visualstudio.com/docs](https://code.visualstudio.com/docs)
 - **Report Issues**: [GitHub Issues](https://github.com/christopherroyshields/vslang-br/issues)
 

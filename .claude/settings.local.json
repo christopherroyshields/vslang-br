@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npx @vscode/vsce package:*)",
       "Bash(git mv:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(curl:*)",
+      "Bash(npm run compile:*)"
     ],
     "deny": [],
     "ask": []

@@ -209,10 +209,6 @@
       {
         "command": "vslang-br.Decompile",
         "title": "Lexi: Decompile BR Program"
-      },
-      {
-        "command": "vslang-br.openWalkthrough",
-        "title": "BR: Open Getting Started Walkthrough"
       }
     ],
     "menus": {
@@ -294,63 +290,6 @@
         "scopeName": "source.br",
         "path": "./syntaxes/br.tmLanguage.json"
       }
-    ],
-    "walkthroughs": [
-      {
-        "id": "brLanguageExtension",
-        "title": "Get Started with BR Language Extension",
-        "description": "Discover the powerful features for Business Rules! development in VS Code",
-        "steps": [
-          {
-            "id": "createBrFile",
-            "title": "Create a BR File",
-            "description": "Start by creating a new Business Rules! source file to explore the language features.\n[Create New BR File](command:workbench.action.files.newUntitledFile?%7B%22languageId%22%3A%22br%22%7D)",
-            "media": {
-              "markdown": "walkthroughs/step1-create-file.md"
-            }
-          },
-          {
-            "id": "exploreIntelliSense",
-            "title": "Experience IntelliSense",
-            "description": "See how the extension provides intelligent code completion, hover information, and function signatures.",
-            "media": {
-              "markdown": "walkthroughs/step2-intellisense.md"
-            }
-          },
-          {
-            "id": "navigateSymbols",
-            "title": "Navigate Your Code",
-            "description": "Learn how to quickly navigate functions, variables, and labels in your BR code.",
-            "media": {
-              "markdown": "walkthroughs/step3-navigation.md"
-            }
-          },
-          {
-            "id": "libraryFunctions",
-            "title": "Work with Library Functions",
-            "description": "Discover how to create and use library functions across your project.",
-            "media": {
-              "markdown": "walkthroughs/step4-libraries.md"
-            }
-          },
-          {
-            "id": "lexiIntegration",
-            "title": "Compile and Run with Lexi",
-            "description": "Use the integrated Lexi commands to compile and run your BR programs directly from VS Code.",
-            "media": {
-              "markdown": "walkthroughs/step5-lexi.md"
-            }
-          },
-          {
-            "id": "advancedFeatures",
-            "title": "Advanced Development Features",
-            "description": "Explore refactoring tools like rename, find references, and syntax highlighting.",
-            "media": {
-              "markdown": "walkthroughs/step6-advanced.md"
-            }
-          }
-        ]
-      }
     ]
   },
   "scripts": {
@@ -359,6 +298,7 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
+    "build:prebuilds": "node scripts/build-prebuilds.js",
     "package": "npx @vscode/vsce package",
     "package:clean": "package-clean.bat",
     "vsce:ls": "npx @vscode/vsce ls --tree"
@@ -376,14 +316,13 @@
     "@vscode/test-electron": "^2.5.2",
     "chai": "^5.2.0",
     "electron": "^19.1.9",
-    "electron-rebuild": "^3.2.9",
+    "@electron/rebuild": "^3.2.9",
     "eslint": "^8.20.0",
     "glob": "^8.0.3",
     "mocha": "^10.8.2",
     "typescript": "^4.8.0"
   },
   "dependencies": {
-    "tree-sitter": "^0.25.0",
-    "tree-sitter-br": "0.25.3"
+    "tree-sitter-br": "0.25.5"
   }
 }
