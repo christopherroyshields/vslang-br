@@ -101,7 +101,7 @@
         },
         "br.decompile.sourceExtensions": {
           "order": 5,
-          "scope": "application",
+          "scope": "resource",
           "type": "object",
           "default": {
             ".br": ".brs",
@@ -116,7 +116,7 @@
         },
         "br.decompile.styleCommand": {
           "order": 6,
-          "scope": "application",
+          "scope": "resource",
           "type": "string",
           "default": "indent 2 45 keywords lower labels mixed comments mixed",
           "description": "STYLE command parameters to apply when decompiling BR programs. Controls formatting of the decompiled source code."
