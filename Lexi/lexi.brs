@@ -23,7 +23,7 @@ dim multicomment$*5000,backstring$*5000
 
 dim BRProgram$(1)*2000
 
-def library fnApplyLexi(InFile$*255,OutFile$*255;DontAddLineNumbers,SourceMapFile$*255,___,InFile,OutFile,Increment,LabelIncrement,SourceMapFile,SourceMap,RealCount,LineCount)
+def library fnApplyLexi(InFile$*255,OutFile$*255;DontAddLineNumbers,SourceMapFile$*255,___,InFile,OutFile,Increment,LabelIncrement,SourceMapFile,SourceMap,RealCount,LineCount,MaxLineLength)
    let fnSetLexiConstants
 
    let Increment=1
@@ -32,8 +32,15 @@ def library fnApplyLexi(InFile$*255,OutFile$*255;DontAddLineNumbers,SourceMapFil
    mat Const$(0)
    str2mat('=|+|-|+=|-=|*|/|,|&|(| and| or',mat continuations$,'|')
 
+   ! Detect BR version to determine maximum line length
+   if val(WBVersion$(1:3)) >= 4.2 then
+      let MaxLineLength = 2000
+   else
+      let MaxLineLength = 800
+   end if
+
    open #(InFile:=FngetfileNo): "name="&Infile$, display, input
-   open #(OutFile:=fnGetFileNo): "name="&Outfile$&", recl=800, replace", display, output
+   open #(OutFile:=fnGetFileNo): "name="&Outfile$&", recl="&str$(MaxLineLength)&", replace", display, output
    if len(SourceMapFile$) then
       open #(SourceMapFile:=fnGetFileNo): "name="&SourceMapFile$&", recl=800, replace", display, output error Ignore
       let SourceMap=1
@@ -306,6 +313,17 @@ def library fnApplyLexi(InFile$*255,OutFile$*255;DontAddLineNumbers,SourceMapFil
       end if
    PRINTLINE: !
       if Trim$(String$)(Len(Trim$(String$))-1:Len(Trim$(String$))) = "!:" then let Skipnextone=1
+      ! Check if line exceeds maximum length
+      if len(String$) > MaxLineLength then
+         print "WARNING: Line exceeds maximum length of "&str$(MaxLineLength)&" characters!"
+         print "Line number: "&str$(LineCount)
+         print "Line length: "&str$(len(String$))
+         print "BR Version: "&WBVersion$
+         print String$(1:min(100,len(String$)))&"..."
+         print "Press any key to continue or Ctrl+C to abort..."
+         print bell
+         pause
+      end if
       print #OutFile: String$
    goto READLINE
 
@@ -374,10 +392,18 @@ def FngetfileNo(;___,I)
    let FngetfileNo=(I)
 fnend
 
-def library fnUndoLexi(InFile$*255,OutFile$*255)
+def library fnUndoLexi(InFile$*255,OutFile$*255;___,MaxLineLength)
    let fnSetLexiConstants
-   open #(InFile:=FngetfileNo): "name="&Infile$&", recl=800", display, input
-   open #(OutFile:=fnGetFileNo): "name="&Outfile$&", recl=800, replace", display, output
+
+   ! Detect BR version to determine maximum line length
+   if val(WBVersion$(1:3)) >= 4.2 then
+      let MaxLineLength = 2000
+   else
+      let MaxLineLength = 800
+   end if
+
+   open #(InFile:=FngetfileNo): "name="&Infile$&", recl="&str$(MaxLineLength), display, input
+   open #(OutFile:=fnGetFileNo): "name="&Outfile$&", recl="&str$(MaxLineLength)&", replace", display, output
 
 READLINEUNDO: linput #InFile: String$ eof DONEREADINGUNDO
    for Constindex=1 to Udim(Mat Const$)
