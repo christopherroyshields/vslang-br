@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { exec } from 'child_process';
+import { BrFileExtensions } from './util/brFileExtensions';
 
 const LexiPath = path.normalize(__dirname+"\\..\\Lexi")
 let autoCompileStatusBarItem: vscode.StatusBarItem;
@@ -107,23 +108,14 @@ export function activateLexi(context: vscode.ExtensionContext) {
     }
     
     const targetFile = fileUri.fsPath;
-    
+
     if (targetFile) {
-      // Get configured extensions
-      const config = vscode.workspace.getConfiguration('br.decompile');
-      const extensionMap = config.get<Record<string, string>>('sourceExtensions', {
-        '.br': '.brs',
-        '.bro': '.brs',
-        '.wb': '.wbs',
-        '.wbo': '.wbs'
-      });
-      
       // Check if the file is a compiled BR program
       const ext = path.extname(targetFile).toLowerCase();
-      if (ext in extensionMap) {
+      if (BrFileExtensions.isCompiledBrFile(ext)) {
         decompileBrProgram(targetFile);
       } else {
-        const supportedExts = Object.keys(extensionMap).join(', ');
+        const supportedExts = BrFileExtensions.getSupportedCompiledExtensions();
         vscode.window.showErrorMessage(`Please select a compiled BR program file (${supportedExts})`);
       }
     } else {
@@ -138,9 +130,136 @@ async function decompileBrProgram(activeFilename: string) {
 	await decompileAndOpen(activeFilename, true, true);
 }
 
-function compileBrProgram(activeFilename: string) {
-	exec(`${LexiPath}\\ConvStoO.cmd ${activeFilename}`, {
-		cwd: `${LexiPath}`
+async function compileBrProgram(activeFilename: string) {
+	const parsedPath = path.parse(activeFilename);
+
+	// Determine output extension based on input
+	const inputExt = parsedPath.ext.toLowerCase();
+	const outputExt = BrFileExtensions.getCompiledExtension(inputExt) || inputExt.substring(0, 3);
+
+	const npneName = parsedPath.name;
+	const folder = parsedPath.dir;
+	const npName = parsedPath.base;
+	const outputFileName = npneName + outputExt;
+	const finalOutputPath = path.join(folder, outputFileName);
+
+	// Ensure tmp directory exists
+	const tmpDir = path.join(LexiPath, 'tmp');
+	if (!fs.existsSync(tmpDir)) {
+		fs.mkdirSync(tmpDir, { recursive: true });
+	}
+
+	// Copy source file to tmp directory
+	const tmpSourcePath = path.join(tmpDir, npName);
+	try {
+		fs.copyFileSync(activeFilename, tmpSourcePath);
+	} catch (error: any) {
+		vscode.window.showErrorMessage(`Failed to copy source file: ${error.message}`);
+		return;
+	}
+
+	// Create the .prc file content
+	let prcContent = '';
+	prcContent += 'proc noecho\n';
+	prcContent += `00002 Infile$="tmp\\${npName}"\n`;
+	prcContent += `00003 Outfile$="tmp\\tempfile"\n`;
+	prcContent += 'subproc linenum.brs\n';
+	prcContent += 'run\n';
+	prcContent += 'clear\n';
+	prcContent += 'subproc tmp\\tempfile\n';
+	prcContent += `skip PROGRAM_REPLACE if exists("tmp\\${npneName}")\n`;
+	prcContent += `skip PROGRAM_REPLACE if exists("tmp\\${npneName}${outputExt}")\n`;
+	prcContent += `save "tmp\\${npneName}${outputExt}"\n`;
+	prcContent += 'skip XIT\n';
+	prcContent += ':PROGRAM_REPLACE\n';
+	prcContent += `replace "tmp\\${npneName}${outputExt}"\n`;
+	prcContent += 'skip XIT\n';
+	prcContent += ':XIT\n';
+	prcContent += 'system\n';
+
+	// Write the .prc file
+	const prcFilePath = path.join(LexiPath, 'convert.prc');
+	try {
+		fs.writeFileSync(prcFilePath, prcContent);
+	} catch (error: any) {
+		vscode.window.showErrorMessage(`Failed to create procedure file: ${error.message}`);
+		return;
+	}
+
+	// Start lexitip first - don't wait for it to finish
+	exec(`start lexitip`, {
+		cwd: LexiPath
+	});
+
+	// Execute the compilation
+	await new Promise<void>((resolve, reject) => {
+		exec(`brnative proc convert.prc`, {
+			cwd: LexiPath
+		}, (error, stdout, stderr) => {
+			// Clean up the .prc file
+			try {
+				if (fs.existsSync(prcFilePath)) {
+					fs.unlinkSync(prcFilePath);
+				}
+			} catch (e) {
+				// Ignore cleanup errors
+			}
+
+			// Clean up tempfile
+			try {
+				const tempFilePath = path.join(LexiPath, 'tmp', 'tempfile');
+				if (fs.existsSync(tempFilePath)) {
+					fs.unlinkSync(tempFilePath);
+				}
+			} catch (e) {
+				// Ignore cleanup errors
+			}
+
+			if (error) {
+				vscode.window.showErrorMessage(`Compilation failed: ${error.message}`);
+				reject(error);
+				return;
+			}
+
+			// Copy the compiled file back to the original location
+			const tmpCompiledPath = path.join(LexiPath, 'tmp', outputFileName);
+			const tmpCompiledPathNoExt = path.join(LexiPath, 'tmp', npneName);
+
+			// Try both with and without extension (script checks both)
+			let sourceFile: string | null = null;
+			if (fs.existsSync(tmpCompiledPath)) {
+				sourceFile = tmpCompiledPath;
+			} else if (fs.existsSync(tmpCompiledPathNoExt)) {
+				sourceFile = tmpCompiledPathNoExt;
+			}
+
+			if (sourceFile) {
+				try {
+					fs.copyFileSync(sourceFile, finalOutputPath);
+					fs.unlinkSync(sourceFile); // Delete temp compiled file
+					vscode.window.showInformationMessage(`Successfully compiled to ${outputFileName}`);
+				} catch (copyError: any) {
+					vscode.window.showErrorMessage(`Failed to copy compiled file: ${copyError.message}`);
+					reject(copyError);
+					return;
+				}
+			} else {
+				vscode.window.showErrorMessage(`Compiled file not found in tmp directory`);
+				reject(new Error('Compiled file not found'));
+				return;
+			}
+
+			// Clean up the source file from tmp
+			try {
+				if (fs.existsSync(tmpSourcePath)) {
+					fs.unlinkSync(tmpSourcePath);
+				}
+			} catch (e) {
+				// Ignore cleanup errors
+			}
+
+			resolve();
+		});
 	});
 }
 
@@ -197,23 +316,17 @@ class CompiledBRFileProvider implements vscode.CustomReadonlyEditorProvider {
 	}
 	
 	private async handleCompiledFile(uri: vscode.Uri): Promise<void> {
-		// Get configured extensions
-		const config = vscode.workspace.getConfiguration('br.decompile');
-		const extensionMap = config.get<Record<string, string>>('sourceExtensions', {
-			'.br': '.brs',
-			'.bro': '.brs',
-			'.wb': '.wbs',
-			'.wbo': '.wbs'
-		});
-		
 		const filePath = uri.fsPath;
 		const ext = path.extname(filePath).toLowerCase();
-		
+
 		// Check if this is a compiled BR file
-		if (ext in extensionMap) {
+		if (BrFileExtensions.isCompiledBrFile(ext)) {
 			// Determine the source file path
 			const parsedPath = path.parse(filePath);
-			const sourceExt = extensionMap[ext];
+			const sourceExt = BrFileExtensions.getSourceExtension(ext);
+			if (!sourceExt) {
+				return; // Should never happen if isCompiledBrFile returned true
+			}
 			const sourceFilePath = path.join(parsedPath.dir, parsedPath.name + sourceExt);
 			
 			// Check if source file already exists
@@ -242,19 +355,10 @@ class CompiledBRDocument implements vscode.CustomDocument {
 
 async function decompileAndOpen(activeFilename: string, showSuccessMessage: boolean, checkOverwrite: boolean) {
 	const parsedPath = path.parse(activeFilename);
-	
-	// Get extension mapping from configuration
-	const config = vscode.workspace.getConfiguration('br.decompile');
-	const extensionMap = config.get<Record<string, string>>('sourceExtensions', {
-		'.br': '.brs',
-		'.bro': '.brs',
-		'.wb': '.wbs',
-		'.wbo': '.wbs'
-	});
-	
+
 	// Determine output extension based on input
 	const inputExt = parsedPath.ext.toLowerCase();
-	const outputExt = extensionMap[inputExt] || '.brs';
+	const outputExt = BrFileExtensions.getSourceExtension(inputExt) || '.brs';
 	
 	const npneName = parsedPath.name;
 	const folder = parsedPath.dir;
