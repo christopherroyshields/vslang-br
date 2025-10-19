@@ -237,7 +237,7 @@ async function compileBrProgram(activeFilename: string) {
 				try {
 					fs.copyFileSync(sourceFile, finalOutputPath);
 					fs.unlinkSync(sourceFile); // Delete temp compiled file
-					vscode.window.showInformationMessage(`Successfully compiled to ${outputFileName}`);
+					vscode.window.setStatusBarMessage(`Successfully compiled to ${outputFileName}`, 3000);
 				} catch (copyError: any) {
 					vscode.window.showErrorMessage(`Failed to copy compiled file: ${copyError.message}`);
 					reject(copyError);
