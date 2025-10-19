@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    width="32"
    height="32"
    viewBox="0 0 32 32"
-   fill="none"
    version="1.1"
-   id="svg13"
-   sodipodi:docname="BR File Explorer Icon.svg"
+   id="svg1"
    inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   sodipodi:docname="BR File Explorer Icon.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs13" />
   <sodipodi:namedview
-     id="namedview13"
+     id="namedview1"
      pagecolor="#505050"
      bordercolor="#ffffff"
      borderopacity="1"
@@ -23,127 +23,64 @@
      inkscape:pageopacity="0"
      inkscape:pagecheckerboard="1"
      inkscape:deskcolor="#505050"
-     showgrid="false"
-     inkscape:zoom="20.379828"
-     inkscape:cx="14.401496"
-     inkscape:cy="13.665474"
+     inkscape:document-units="px"
+     inkscape:zoom="25.21875"
+     inkscape:cx="16"
+     inkscape:cy="16"
      inkscape:window-width="2560"
      inkscape:window-height="1009"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="svg13" />
-  <rect
-     width="23.093187"
-     height="23.191324"
-     fill="#1e1e1e"
-     id="rect1"
-     x="8.9068127"
-     y="8.8086767"
-     style="stroke-width:0.826507" />
-  <rect
-     x="9.7315693"
-     y="9.6369381"
-     width="21.443674"
-     height="21.5348"
-     fill="#d0cdcd"
-     stroke="#5d5c5c"
-     stroke-width="1.65301"
-     id="rect2" />
-  <rect
-     x="9.7315693"
-     y="9.6369381"
-     width="21.443674"
-     height="4.9695692"
-     stroke="#666666"
-     stroke-width="1.65301"
-     id="rect3" />
-  <rect
-     x="10.556326"
-     y="10.465199"
-     width="3.2990267"
-     height="3.3130462"
-     fill="#ffff00"
-     id="rect4"
-     style="stroke-width:0.826507" />
-  <line
-     x1="10.556326"
-     y1="27.03043"
-     x2="30.350487"
-     y2="27.03043"
-     stroke="#5d5d5d"
-     stroke-width="1.65301"
-     id="line4" />
-  <line
-     x1="13.855353"
-     y1="27.858692"
-     x2="13.855353"
-     y2="30.343477"
-     stroke="#636363"
-     stroke-width="1.65301"
-     id="line5" />
-  <line
-     x1="23.752434"
-     y1="27.858692"
-     x2="23.752434"
-     y2="30.343477"
-     stroke="#595959"
-     stroke-width="1.65301"
-     id="line6" />
-  <line
-     x1="27.05146"
-     y1="27.858692"
-     x2="27.05146"
-     y2="30.343477"
-     stroke="#5d5c5c"
-     stroke-width="1.65301"
-     id="line7" />
-  <line
-     x1="17.979136"
-     y1="29.101084"
-     x2="22.102921"
-     y2="29.101084"
-     stroke="#2f2f2f"
-     id="line8"
-     style="stroke-width:0.826507" />
-  <line
-     x1="14.68011"
-     y1="12.121723"
-     x2="19.628651"
-     y2="12.121723"
-     stroke="#2f2f2f"
-     stroke-width="1.65301"
-     id="line9" />
-  <line
-     x1="16.329622"
-     y1="16.677162"
-     x2="24.57719"
-     y2="16.677162"
-     stroke="#2f2f2f"
-     id="line10"
-     style="stroke-width:0.826507" />
-  <line
-     x1="16.329622"
-     y1="24.131516"
-     x2="24.57719"
-     y2="24.131516"
-     stroke="#2f2f2f"
-     id="line11"
-     style="stroke-width:0.826507" />
-  <line
-     x1="16.329622"
-     y1="21.64673"
-     x2="24.57719"
-     y2="21.64673"
-     stroke="#2f2f2f"
-     id="line12"
-     style="stroke-width:0.826507" />
-  <line
-     x1="16.329622"
-     y1="19.161945"
-     x2="24.57719"
-     y2="19.161945"
-     stroke="#2f2f2f"
-     id="line13"
-     style="stroke-width:0.826507" />
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <linearGradient
+       id="swatch1"
+       inkscape:swatch="solid">
+      <stop
+         style="stop-color:#0e365c;stop-opacity:1;"
+         offset="0"
+         id="stop1" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#swatch1"
+       id="linearGradient1"
+       x1="6.9702601"
+       y1="20.520446"
+       x2="30.819084"
+       y2="20.520446"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.1745817,0,0,1.1745817,-4.1995308,-4.7118636)" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:url(#linearGradient1);stroke:#0e365c;stroke-width:2.34916;stroke-linecap:butt;stroke-linejoin:round;paint-order:stroke markers fill"
+       id="rect1"
+       width="25.663229"
+       height="22.868685"
+       x="5.1621909"
+       y="7.9567351"
+       rx="3.2"
+       ry="3.2" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.2348px;font-family:System-ui;-inkscape-font-specification:'System-ui Bold';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#ffcc00;fill-opacity:1;stroke:#0e365c;stroke-width:4.61122;stroke-linecap:butt;stroke-linejoin:round;paint-order:stroke markers fill"
+       x="10.500656"
+       y="28.350805"
+       id="text1"><tspan
+         sodipodi:role="line"
+         id="tspan1"
+         x="10.500656"
+         y="28.350805"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.2347px;font-family:System-ui;-inkscape-font-specification:'System-ui Bold';stroke:none;stroke-width:4.61122"><tspan
+           style="fill:#999999;stroke-width:4.61122"
+           id="tspan2">B</tspan><tspan
+           style="fill:#d40000;stroke-width:4.61122"
+           id="tspan3">R</tspan></tspan></text>
+  </g>
 </svg>
