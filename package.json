@@ -209,12 +209,21 @@
       {
         "command": "vslang-br.Decompile",
         "title": "Lexi: Decompile BR Program"
+      },
+      {
+        "command": "vslang-br.DecompileFolder",
+        "title": "Lexi: Decompile All BR Programs in Folder"
       }
     ],
     "menus": {
       "explorer/context": [
         {
           "command": "vslang-br.Decompile",
+          "group": "7_modification"
+        },
+        {
+          "command": "vslang-br.DecompileFolder",
+          "when": "explorerResourceIsFolder",
           "group": "7_modification"
         }
       ]
@@ -323,6 +332,6 @@
     "typescript": "^4.8.0"
   },
   "dependencies": {
-    "tree-sitter-br": "0.25.5"
+    "tree-sitter-br": "0.25.6"
   }
 }

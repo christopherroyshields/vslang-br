@@ -106,7 +106,7 @@ export function activateLexi(context: vscode.ExtensionContext) {
       vscode.window.showErrorMessage('Please use this command from the file explorer context menu');
       return;
     }
-    
+
     const targetFile = fileUri.fsPath;
 
     if (targetFile) {
@@ -120,6 +120,39 @@ export function activateLexi(context: vscode.ExtensionContext) {
       }
     } else {
       vscode.window.showErrorMessage('Please select a file to decompile');
+    }
+  }))
+
+  context.subscriptions.push(vscode.commands.registerCommand('vslang-br.DecompileFolder', async (folderUri: vscode.Uri) => {
+    let targetFolder: string | undefined;
+
+    if (folderUri) {
+      // Called from explorer context menu
+      targetFolder = folderUri.fsPath;
+
+      // Verify it's a directory
+      if (!fs.existsSync(targetFolder) || !fs.statSync(targetFolder).isDirectory()) {
+        vscode.window.showErrorMessage('Please select a folder');
+        return;
+      }
+    } else {
+      // Called from command palette - prompt for folder selection
+      const result = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: 'Select Folder to Decompile'
+      });
+
+      if (result && result.length > 0) {
+        targetFolder = result[0].fsPath;
+      } else {
+        return; // User cancelled
+      }
+    }
+
+    if (targetFolder) {
+      await decompileFolderBatch(targetFolder);
     }
   }))
 }
@@ -458,6 +491,225 @@ async function decompileAndOpen(activeFilename: string, showSuccessMessage: bool
 				checkFile();
 			});
 		}, 500); // Wait 500ms for lexitip to start
+	});
+}
+
+// Helper function to recursively find files with specific extensions
+function findFilesRecursive(dir: string, extensions: string[]): string[] {
+	const results: string[] = [];
+
+	try {
+		const items = fs.readdirSync(dir);
+
+		for (const item of items) {
+			const fullPath = path.join(dir, item);
+
+			try {
+				const stat = fs.statSync(fullPath);
+
+				if (stat.isDirectory()) {
+					// Recursively search subdirectories
+					results.push(...findFilesRecursive(fullPath, extensions));
+				} else if (stat.isFile()) {
+					// Check if file has one of the target extensions
+					const ext = path.extname(fullPath).toLowerCase();
+					if (extensions.includes(ext)) {
+						results.push(fullPath);
+					}
+				}
+			} catch (statError) {
+				// Skip files we can't stat (permission issues, etc.)
+				continue;
+			}
+		}
+	} catch (readError) {
+		// Skip directories we can't read
+	}
+
+	return results;
+}
+
+async function decompileFolderBatch(folderPath: string): Promise<void> {
+	return vscode.window.withProgress({
+		location: vscode.ProgressLocation.Notification,
+		title: "Decompiling BR Programs",
+		cancellable: false
+	}, async (progress) => {
+		progress.report({ message: "Scanning for compiled BR files..." });
+
+		// Get extension mapping from configuration
+		const config = vscode.workspace.getConfiguration('br.decompile');
+		const extensionMap = config.get<Record<string, string>>('sourceExtensions', {
+			'.br': '.brs',
+			'.bro': '.brs',
+			'.wb': '.wbs',
+			'.wbo': '.wbs'
+		});
+
+		// Find all compiled BR files recursively
+		const compiledExtensions = Object.keys(extensionMap); // Keep the dots
+		const compiledFiles = findFilesRecursive(folderPath, compiledExtensions);
+
+		if (compiledFiles.length === 0) {
+			vscode.window.showInformationMessage('No compiled BR files found in folder.');
+			return;
+		}
+
+		// Determine which files need decompiling (source doesn't exist)
+		interface FileToDecompile {
+			compiledPath: string;
+			sourcePath: string;
+			sourceFileName: string;
+			tmpOutputPath: string;
+		}
+
+		const filesToDecompile: FileToDecompile[] = [];
+		let skippedCount = 0;
+
+		for (const compiledPath of compiledFiles) {
+			const parsedPath = path.parse(compiledPath);
+			const inputExt = parsedPath.ext.toLowerCase();
+			const outputExt = extensionMap[inputExt] || '.brs';
+			const sourceFileName = parsedPath.name + outputExt;
+			const sourcePath = path.join(parsedPath.dir, sourceFileName);
+
+			// Skip if source already exists
+			if (fs.existsSync(sourcePath)) {
+				skippedCount++;
+				continue;
+			}
+
+			filesToDecompile.push({
+				compiledPath,
+				sourcePath,
+				sourceFileName,
+				tmpOutputPath: path.join(LexiPath, 'tmp', sourceFileName)
+			});
+		}
+
+		if (filesToDecompile.length === 0) {
+			vscode.window.showInformationMessage(
+				`All ${compiledFiles.length} file(s) already have source files. Nothing to decompile.`
+			);
+			return;
+		}
+
+		progress.report({
+			message: `Decompiling ${filesToDecompile.length} file(s)...`
+		});
+
+		// Ensure tmp directory exists
+		const tmpDir = path.join(LexiPath, 'tmp');
+		if (!fs.existsSync(tmpDir)) {
+			fs.mkdirSync(tmpDir, { recursive: true });
+		}
+
+		// Build the .prc file content
+		let prcContent = '';
+		prcContent += 'proc noecho\n';
+
+		// Add STYLE command from configuration
+		const styleCommand = config.get('styleCommand', 'indent 2 45 keywords lower labels mixed comments mixed');
+		if (styleCommand && styleCommand.trim().length > 0) {
+			prcContent += `config STYLE ${styleCommand}\n`;
+		}
+
+		// Add load/list commands for each file
+		for (const file of filesToDecompile) {
+			prcContent += `load ":${file.compiledPath}"\n`;
+			prcContent += `list >":${file.tmpOutputPath}"\n`;
+		}
+
+		prcContent += 'system\n';
+
+		// Write the .prc file
+		const prcFilePath = path.join(LexiPath, 'batch-decompile.prc');
+		try {
+			fs.writeFileSync(prcFilePath, prcContent);
+		} catch (error: any) {
+			vscode.window.showErrorMessage(`Failed to create batch procedure file: ${error.message}`);
+			return;
+		}
+
+		// Start lexitip
+		exec(`start lexitip`, {
+			cwd: LexiPath
+		});
+
+		// Execute the batch decompilation
+		await new Promise<void>((resolve, reject) => {
+			setTimeout(() => {
+				exec(`brnative proc batch-decompile.prc`, {
+					cwd: LexiPath
+				}, async (error, stdout, stderr) => {
+					// Clean up the .prc file
+					try {
+						if (fs.existsSync(prcFilePath)) {
+							fs.unlinkSync(prcFilePath);
+						}
+					} catch (e) {
+						// Ignore cleanup errors
+					}
+
+					if (error) {
+						vscode.window.showErrorMessage(`Batch decompilation failed: ${error.message}`);
+						reject(error);
+						return;
+					}
+
+					// Copy all decompiled files back to their original locations
+					let successCount = 0;
+					let failCount = 0;
+					const errors: string[] = [];
+
+					for (const file of filesToDecompile) {
+						// Wait for file to exist (with retries)
+						let fileExists = false;
+						for (let i = 0; i < 10; i++) {
+							if (fs.existsSync(file.tmpOutputPath)) {
+								fileExists = true;
+								break;
+							}
+							await new Promise(r => setTimeout(r, 200));
+						}
+
+						if (fileExists) {
+							try {
+								fs.copyFileSync(file.tmpOutputPath, file.sourcePath);
+								fs.unlinkSync(file.tmpOutputPath); // Clean up temp file
+								successCount++;
+							} catch (copyError: any) {
+								errors.push(`${file.sourceFileName}: ${copyError.message}`);
+								failCount++;
+							}
+						} else {
+							errors.push(`${file.sourceFileName}: Decompiled file not created`);
+							failCount++;
+						}
+					}
+
+					// Show summary
+					let summary = `Decompiled ${successCount} file(s)`;
+					if (skippedCount > 0) {
+						summary += `, skipped ${skippedCount} existing`;
+					}
+					if (failCount > 0) {
+						summary += `, ${failCount} failed`;
+					}
+
+					if (failCount > 0) {
+						vscode.window.showWarningMessage(summary);
+						if (errors.length > 0) {
+							vscode.window.showErrorMessage(`Errors:\n${errors.join('\n')}`);
+						}
+					} else {
+						vscode.window.showInformationMessage(summary);
+					}
+
+					resolve();
+				});
+			}, 500); // Wait 500ms for lexitip to start
+		});
 	});
 }
 
