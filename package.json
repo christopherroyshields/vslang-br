@@ -163,6 +163,10 @@
       {
         "command": "vslang-br.prevOccurrence",
         "key": "ctrl-shift-up"
+      },
+      {
+        "command": "br.searchFiles",
+        "key": "ctrl-alt-f"
       }
     ],
     "commands": [
@@ -213,6 +217,10 @@
       {
         "command": "vslang-br.DecompileFolder",
         "title": "Lexi: Decompile All BR Programs in Folder"
+      },
+      {
+        "command": "br.searchFiles",
+        "title": "BR: Proc Search"
       }
     ],
     "menus": {
@@ -225,6 +233,23 @@
           "command": "vslang-br.DecompileFolder",
           "when": "explorerResourceIsFolder",
           "group": "7_modification"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "br-search",
+          "title": "Proc Search",
+          "icon": "$(search)"
+        }
+      ]
+    },
+    "views": {
+      "br-search": [
+        {
+          "id": "brSearchResults",
+          "name": "Proc Search Results"
         }
       ]
     },

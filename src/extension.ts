@@ -26,6 +26,7 @@ import InternalFunctionCompletionProvider from './providers/InternalFunctionComp
 import BrReferenceProvder from './providers/BrReferenceProvider';
 import SourceDocument from './class/SourceDocument';
 import LibraryFunctionIndex from './class/LibraryFunctionIndex';
+import { initializeSearchOutputChannel, executeSearch } from './brSearch';
 
 export async function activate(context: ExtensionContext) {
 	const subscriptions = context.subscriptions
@@ -111,6 +112,14 @@ export async function activate(context: ExtensionContext) {
 		})
 	}))
 
+	// Initialize BR search feature
+	initializeSearchOutputChannel(context)
+
+	// Register BR search command
+	subscriptions.push(commands.registerCommand('br.searchFiles', async () => {
+		await executeSearch()
+	}))
+
 }
 
 export function deactivate() {
@@ -178,6 +187,7 @@ async function readSourceFile(uri: Uri, workspaceFolder: WorkspaceFolder, parser
 			return treeDoc
 		}
 	} catch (error: any) {
+		console.error(`Error reading source file: ${uri.fsPath}, ${error.message}`)
 		window.showErrorMessage(`Error reading source: ${uri.fsPath}, ${error.message}`)
 	}
 }
