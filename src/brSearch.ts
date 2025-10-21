@@ -1,3 +1,20 @@
+/**
+ * Proc Search - Advanced search for Business Rules! compiled programs
+ *
+ * This module implements a search feature that uses BR's native LIST command
+ * to search compiled BR programs (.br, .bro, .wb, .wbo) using dynamically
+ * generated procedure files.
+ *
+ * Features:
+ * - Case-insensitive multi-term search
+ * - Tree view results grouped by file
+ * - Automatic decompilation when needed
+ * - Smart navigation to internal BR line numbers
+ * - Integration with Lexi compiler
+ *
+ * @module brSearch
+ */
+
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -10,6 +27,13 @@ let searchTreeView: vscode.TreeView<vscode.TreeItem>;
 
 /**
  * URI Handler for opening BR files at specific internal line numbers
+ *
+ * Handles custom URIs in the format:
+ * vscode://crs-dev.vslang-br/open?file=<path>&line=<number>
+ *
+ * @example
+ * // Triggered when user clicks a search result link
+ * vscode://crs-dev.vslang-br/open?file=C%3A%5Cpath%5Cprogram.br&line=100
  */
 export class BrSearchUriHandler implements vscode.UriHandler {
     handleUri(uri: vscode.Uri): vscode.ProviderResult<void> {
@@ -27,6 +51,20 @@ export class BrSearchUriHandler implements vscode.UriHandler {
 
 /**
  * Open a BR file at the line containing the specified internal line number
+ *
+ * This function handles the mapping between BR internal line numbers (e.g., 00100, 00200)
+ * and actual file line positions. It automatically decompiles compiled files if needed.
+ *
+ * @param filePath - Full path to the BR file (compiled or source)
+ * @param internalLineNumber - BR internal line number (e.g., 100, 200, 1000)
+ *
+ * @example
+ * // Open program.br at internal line 100
+ * await openAtInternalLine('C:\\path\\program.br', 100);
+ * // This will:
+ * // 1. Check if program.brs exists, decompile if not
+ * // 2. Search for line starting with "00100"
+ * // 3. Open program.brs at that actual line position
  */
 async function openAtInternalLine(filePath: string, internalLineNumber: number): Promise<void> {
     try {
@@ -183,7 +221,8 @@ class SearchMatchItem extends vscode.TreeItem {
             title: 'Open Search Result',
             arguments: [filePath, internalLineNumber]
         };
-        this.iconPath = new vscode.ThemeIcon('go-to-file');
+        // Use a simple arrow icon for match items
+        this.iconPath = new vscode.ThemeIcon('arrow-right');
     }
 }
 
@@ -198,8 +237,10 @@ class SearchFileItem extends vscode.TreeItem {
         super(path.basename(filePath), vscode.TreeItemCollapsibleState.Expanded);
         this.tooltip = filePath;
         this.description = `${matches.length} match${matches.length !== 1 ? 'es' : ''}`;
-        // Use resourceUri to get the correct file icon based on extension
-        this.resourceUri = vscode.Uri.file(filePath);
+
+        // Use binary file icon for BR compiled programs
+        this.iconPath = new vscode.ThemeIcon('file-binary');
+
         this.contextValue = 'searchFile';
     }
 }
@@ -280,7 +321,24 @@ export function initializeSearchOutputChannel(context: vscode.ExtensionContext) 
 }
 
 /**
- * Execute BR search across workspace files
+ * Execute BR Proc Search across workspace files
+ *
+ * Main entry point for the Proc Search feature. This function:
+ * 1. Prompts user for search terms (comma-separated)
+ * 2. Scans workspace for compiled BR programs (.br, .bro, .wb, .wbo)
+ * 3. Generates a dynamic BR procedure file with LOAD and LIST commands
+ * 4. Executes the search via brnative
+ * 5. Parses results and displays in tree view
+ * 6. Handles cleanup of temporary files
+ *
+ * @async
+ * @returns Promise that resolves when search is complete
+ *
+ * @example
+ * // Triggered by Ctrl+Alt+F or command palette
+ * await executeSearch();
+ * // User enters: "LET, FNEND"
+ * // Results appear in Proc Search sidebar panel
  */
 export async function executeSearch() {
     try {
@@ -427,6 +485,32 @@ export async function executeSearch() {
 
 /**
  * Generate the BR procedure file for searching
+ *
+ * Creates a dynamic .prc file that uses BR's LOAD and LIST commands to search
+ * compiled programs. For each file and search term, generates appropriate commands.
+ *
+ * Generated procedure file structure:
+ * ```
+ * proc noecho
+ * PROCERR RETURN
+ * LOAD ":C:\path\file.br"
+ * LIST searchterm1 >":results.txt"
+ * LIST searchterm2 >>":results.txt"
+ * system
+ * ```
+ *
+ * @param prcFile - Path where the procedure file will be written
+ * @param files - Array of BR file URIs to search
+ * @param searchTerms - Array of search terms to look for
+ * @param tmpPath - Temporary directory for result files
+ *
+ * @example
+ * await generateProcedureFile(
+ *     'C:\\Lexi\\tmp\\brSearch.prc',
+ *     [Uri.file('program.br')],
+ *     ['LET', 'FNEND'],
+ *     'C:\\Lexi\\tmp'
+ * );
  */
 async function generateProcedureFile(
     prcFile: string,

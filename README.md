@@ -129,6 +129,59 @@ When you click on a compiled BR file (.br, .bro, .wb, .wbo):
 - **Per-File Setting**: Each file remembers its auto-compile preference
 - **Save Triggers Compile**: When enabled, saving automatically compiles the file
 
+### 🔍 Proc Search
+**Advanced search using BR's native LIST command** - Search compiled BR programs using procedure files for powerful, accurate results.
+
+**Quick Start:**
+- **Ctrl+Alt+F**: Open Proc Search
+- Enter comma-separated search terms: `LET, FNEND, OPEN`
+- Results appear in the **Proc Search** sidebar panel
+- Click any result to navigate to that line
+
+**How It Works:**
+1. **Enter Search Terms**: Type multiple search terms separated by commas
+2. **Automatic Execution**: Generates a BR procedure file with LIST commands
+3. **Native BR Search**: Uses BR's built-in LIST command for accurate results
+4. **Tree View Results**: Files grouped with expandable match lists
+5. **Smart Navigation**: Click any match to:
+   - Automatically decompile if source doesn't exist
+   - Map internal BR line numbers (00100, 00200) to actual file positions
+   - Open source file centered on the exact line
+
+**Features:**
+- **Case-Insensitive**: Searches ignore case (BR standard)
+- **Compiled Programs**: Searches .br, .bro, .wb, .wbo files
+- **Hierarchical View**: Results grouped by file with match counts
+- **Auto-Decompile**: Automatically creates source files when needed
+- **Line Number Mapping**: Finds BR internal line numbers in source files
+- **Tree Navigation**: Expand/collapse files, navigate with keyboard
+- **Error Handling**: Continues searching even if individual files fail
+
+**Example Searches:**
+- `LET` - Find all LET statements
+- `OPEN, CLOSE` - Find file operations
+- `DEF, FNEND` - Find function definitions
+- `PRINT, INPUT` - Find I/O statements
+
+**Panel Features:**
+- **Sidebar Icon**: Click the search icon (🔍) in the activity bar
+- **Match Counts**: Each file shows number of matches found
+- **File Icons**: Uses proper BR file icons from your theme
+- **Keyboard Navigation**: Use arrow keys to browse results
+- **Status Updates**: Progress shown in output channel
+
+**Technical Details:**
+The Proc Search feature generates dynamic BR procedure files that use the LOAD and LIST commands:
+```
+proc noecho
+PROCERR RETURN
+LOAD ":C:\path\to\program.br"
+LIST searchterm >":results.txt"
+system
+```
+
+Results are parsed and displayed in a native VS Code tree view with full navigation support.
+
 ### 📋 Layout File Support
 - Automatic recognition of files in `filelay/` directory
 - Specialized syntax highlighting for layout files
@@ -149,6 +202,7 @@ When you click on a compiled BR file (.br, .bro, .wb, .wbo):
 | **BR 4.2** | Ctrl+Alt+5 | Switch to BR version 4.2 |
 | **BR 4.3** | Ctrl+Alt+6 | Switch to BR version 4.3 |
 | **Scan Project** | Ctrl+Alt+7 | Re-scan all BR source files |
+| **Proc Search** | Ctrl+Alt+F | Search compiled BR programs |
 | **Toggle Comment** | Ctrl+/ | Comment/uncomment selected lines |
 | **Next Match** | Ctrl+Shift+Down | Jump to next occurrence of symbol |
 | **Previous Match** | Ctrl+Shift+Up | Jump to previous occurrence |
