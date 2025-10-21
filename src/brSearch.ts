@@ -321,6 +321,116 @@ export function initializeSearchOutputChannel(context: vscode.ExtensionContext) 
 }
 
 /**
+ * Validate BR LIST command search parameters
+ *
+ * Valid formats (BR LIST native syntax):
+ * - 'string' - case-insensitive search
+ * - "string" - case-sensitive search
+ * - ~'string' - NOT case-insensitive
+ * - ~"string" - NOT case-sensitive
+ * - Up to 3 search terms allowed (BR LIST limitation)
+ *
+ * @param input - User input string
+ * @returns Validation result with error message if invalid
+ *
+ * @example
+ * validateListParameters("'LET'") → { }
+ * validateListParameters("'LET' 'FNEND'") → { }
+ * validateListParameters("LET") → { error: "..." }
+ */
+function validateListParameters(input: string): { error?: string } {
+    const trimmed = input.trim();
+
+    // Must contain quotes
+    if (!/['"]/.test(trimmed)) {
+        return { error: 'Search terms must be quoted. Use \'term\' for case-insensitive or "term" for case-sensitive' };
+    }
+
+    // Try to parse as LIST parameters
+    const parseResult = parseListSyntax(trimmed);
+
+    if (parseResult.error) {
+        return { error: parseResult.error };
+    }
+
+    if (parseResult.terms.length > 3) {
+        return { error: 'Maximum 3 search terms allowed (BR LIST limitation)' };
+    }
+
+    return {};
+}
+
+/**
+ * Parse search input into BR LIST command parameters
+ *
+ * Only accepts BR LIST format: 'term1' "term2" ~'term3'
+ *
+ * @param input - User input string in BR LIST format
+ * @returns Parsed terms or error message
+ */
+function parseSearchInput(input: string): { terms: string[], error?: string } {
+    return parseListSyntax(input.trim());
+}
+
+/**
+ * Parse BR LIST command syntax
+ *
+ * Matches BR LIST search parameter formats:
+ * - 'string' - case-insensitive search
+ * - "string" - case-sensitive search
+ * - ~'string' - NOT case-insensitive
+ * - ~"string" - NOT case-sensitive
+ *
+ * @param input - User input in BR LIST format
+ * @returns Parsed terms array or error message
+ *
+ * @example
+ * parseListSyntax("'LET'") → { terms: ["'LET'"] }
+ * parseListSyntax("'LET' \"OPEN\"") → { terms: ["'LET'", "\"OPEN\""] }
+ * parseListSyntax("~'test'") → { terms: ["~'test'"] }
+ */
+function parseListSyntax(input: string): { terms: string[], error?: string } {
+    const terms: string[] = [];
+
+    // Regex to match BR LIST search parameters
+    // Matches: ~?['"].*?['"]
+    const pattern = /(~?)(['"])((?:(?!\2).)*)\2/g;
+    let match;
+
+    while ((match = pattern.exec(input)) !== null) {
+        const notOp = match[1];      // ~ or empty
+        const quote = match[2];      // ' or "
+        const term = match[3];       // the search term
+
+        if (!term) {
+            return { terms: [], error: 'Empty search term not allowed' };
+        }
+
+        // Reconstruct the full parameter as it should appear in LIST command
+        terms.push(`${notOp}${quote}${term}${quote}`);
+    }
+
+    // Check if we parsed everything (no leftover non-whitespace characters)
+    const reconstructed = terms.join(' ');
+    const cleanInput = input.replace(/\s+/g, ' ').trim();
+    const cleanReconstructed = reconstructed.replace(/\s+/g, ' ').trim();
+
+    if (cleanInput !== cleanReconstructed && terms.length > 0) {
+        // There are characters that weren't parsed
+        return {
+            terms: [],
+            error: 'Invalid syntax. Use BR LIST format: \'term\' "term" ~\'term\''
+        };
+    }
+
+    if (terms.length === 0) {
+        return { terms: [], error: 'No valid search terms found. Use quoted strings: \'term\' or "term"' };
+    }
+
+    return { terms };
+}
+
+/**
  * Execute BR Proc Search across workspace files
  *
  * Main entry point for the Proc Search feature. This function:
@@ -344,13 +454,16 @@ export async function executeSearch() {
     try {
         // Get search terms from user
         const input = await vscode.window.showInputBox({
-            prompt: 'Enter search terms (comma-separated)',
-            placeHolder: 'e.g., LET, FNEND, OPEN',
+            prompt: 'Enter BR LIST search parameters (up to 3 terms)',
+            placeHolder: 'e.g., \'LET\' or "OPEN" or \'LET\' "FNEND" ~\'test\'',
             validateInput: (value) => {
                 if (!value || value.trim().length === 0) {
-                    return 'Please enter at least one search term';
+                    return 'Please enter at least one search parameter';
                 }
-                return null;
+
+                // Validate BR LIST command syntax
+                const validation = validateListParameters(value);
+                return validation.error || null;
             }
         });
 
@@ -358,8 +471,15 @@ export async function executeSearch() {
             return; // User cancelled
         }
 
-        // Parse search terms
-        const searchTerms = input.split(',').map(term => term.trim()).filter(term => term.length > 0);
+        // Parse and validate search terms
+        const parseResult = parseSearchInput(input);
+
+        if (parseResult.error) {
+            vscode.window.showErrorMessage(`Invalid search parameters: ${parseResult.error}`);
+            return;
+        }
+
+        const searchTerms = parseResult.terms;
 
         if (searchTerms.length === 0) {
             vscode.window.showWarningMessage('No valid search terms provided');
@@ -538,7 +658,7 @@ async function generateProcedureFile(
             lines.push(`LOAD ":${filePath}"`);
 
             for (let j = 0; j < searchTerms.length; j++) {
-                const term = searchTerms[j];
+                const term = searchTerms[j];  // Already formatted: 'term' or "term" or ~'term'
                 const appendMode = j === 0 ? '>' : '>>';
                 const listCommand = `LIST ${term} ${appendMode}":${resultFile}"`;
                 lines.push(listCommand);
@@ -546,7 +666,7 @@ async function generateProcedureFile(
         } else {
             // For source files, use input redirection
             for (let j = 0; j < searchTerms.length; j++) {
-                const term = searchTerms[j];
+                const term = searchTerms[j];  // Already formatted: 'term' or "term" or ~'term'
                 const appendMode = j === 0 ? '>' : '>>';
                 const listCommand = `LIST <":${filePath}" ${term} ${appendMode}":${resultFile}"`;
                 lines.push(listCommand);

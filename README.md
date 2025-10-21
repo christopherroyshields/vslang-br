@@ -134,12 +134,12 @@ When you click on a compiled BR file (.br, .bro, .wb, .wbo):
 
 **Quick Start:**
 - **Ctrl+Alt+F**: Open Proc Search
-- Enter comma-separated search terms: `LET, FNEND, OPEN`
+- Enter BR LIST search parameters: `'LET'` or `'LET' "FNEND" ~'test'`
 - Results appear in the **Proc Search** sidebar panel
 - Click any result to navigate to that line
 
 **How It Works:**
-1. **Enter Search Terms**: Type multiple search terms separated by commas
+1. **Enter Search Terms**: Type BR LIST parameters using quoted strings
 2. **Automatic Execution**: Generates a BR procedure file with LIST commands
 3. **Native BR Search**: Uses BR's built-in LIST command for accurate results
 4. **Tree View Results**: Files grouped with expandable match lists
@@ -148,8 +148,15 @@ When you click on a compiled BR file (.br, .bro, .wb, .wbo):
    - Map internal BR line numbers (00100, 00200) to actual file positions
    - Open source file centered on the exact line
 
+**Search Syntax (BR LIST Format):**
+- `'term'` - Case-insensitive search (single quotes)
+- `"term"` - Case-sensitive search (double quotes)
+- `~'term'` - NOT case-insensitive (exclude lines with term)
+- `~"term"` - NOT case-sensitive (exclude lines with term)
+- Multiple terms: `'LET' 'FNEND'` or `'OPEN' ~'test'` (up to 3 terms)
+
 **Features:**
-- **Case-Insensitive**: Searches ignore case (BR standard)
+- **BR Native Syntax**: Uses exact BR LIST command format
 - **Compiled Programs**: Searches .br, .bro, .wb, .wbo files
 - **Hierarchical View**: Results grouped by file with match counts
 - **Auto-Decompile**: Automatically creates source files when needed
@@ -158,10 +165,11 @@ When you click on a compiled BR file (.br, .bro, .wb, .wbo):
 - **Error Handling**: Continues searching even if individual files fail
 
 **Example Searches:**
-- `LET` - Find all LET statements
-- `OPEN, CLOSE` - Find file operations
-- `DEF, FNEND` - Find function definitions
-- `PRINT, INPUT` - Find I/O statements
+- `'LET'` - Find all LET statements (case-insensitive)
+- `"OPEN"` - Find OPEN statements (case-sensitive)
+- `'OPEN' 'CLOSE'` - Find file operations
+- `'DEF' 'FNEND'` - Find function definitions
+- `'PRINT' ~'test'` - Find PRINT statements but exclude lines with "test"
 
 **Panel Features:**
 - **Sidebar Icon**: Click the search icon (🔍) in the activity bar
