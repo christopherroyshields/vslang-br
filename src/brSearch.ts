@@ -223,6 +223,8 @@ class SearchMatchItem extends vscode.TreeItem {
         };
         // Use a simple arrow icon for match items
         this.iconPath = new vscode.ThemeIcon('arrow-right');
+        // Set context value for menu items
+        this.contextValue = 'searchMatch';
     }
 }
 
@@ -318,6 +320,85 @@ export function initializeSearchOutputChannel(context: vscode.ExtensionContext) 
             await openAtInternalLine(filePath, internalLineNumber);
         })
     );
+
+    // Register command to list line in compiled program
+    context.subscriptions.push(
+        vscode.commands.registerCommand('br.listLine', async (item: SearchMatchItem) => {
+            await listLineInCompiledProgram(item.filePath, item.internalLineNumber);
+        })
+    );
+}
+
+/**
+ * List a specific line in a compiled BR program
+ *
+ * This function compiles the source file, loads the compiled program,
+ * and runs a LIST command for the specific line number. The output is
+ * displayed on screen and the BR console remains open for debugging.
+ *
+ * @param compiledFilePath - Path to the compiled BR file
+ * @param internalLineNumber - BR internal line number to list
+ */
+async function listLineInCompiledProgram(compiledFilePath: string, internalLineNumber: number): Promise<void> {
+    try {
+        // Determine source file path
+        const parsedPath = path.parse(compiledFilePath);
+        const ext = parsedPath.ext.toLowerCase();
+        const sourceExt = ext.startsWith('.br') ? '.brs' : '.wbs';
+        const sourceFilePath = path.join(parsedPath.dir, parsedPath.name + sourceExt);
+
+        // Check if source file exists
+        if (!fs.existsSync(sourceFilePath)) {
+            vscode.window.showErrorMessage(`Source file not found: ${sourceFilePath}`);
+            return;
+        }
+
+        // Format line number as BR expects (00100, 00200, etc.)
+        const lineNumberStr = String(internalLineNumber).padStart(5, '0');
+
+        // Create output file for results
+        const tmpPath = path.join(LexiPath, 'tmp');
+        if (!fs.existsSync(tmpPath)) {
+            fs.mkdirSync(tmpPath, { recursive: true });
+        }
+
+        // Create procedure file
+        let prcContent = '';
+        prcContent += 'PROCERR RETURN\n';
+        prcContent += `LOAD ":${compiledFilePath}"\n`;
+        prcContent += `LIST -${lineNumberStr}\n`;  // No output redirection - display to screen
+        // No 'system' command - leave console open for debugging
+
+        const prcFilePath = path.join(tmpPath, 'listLine.prc');
+        fs.writeFileSync(prcFilePath, prcContent, 'utf8');
+
+        // Start lexitip
+        exec(`start lexitip`, { cwd: LexiPath });
+
+        // Execute the procedure in a new console window that stays open
+        setTimeout(() => {
+            const relativePrcFile = path.relative(LexiPath, prcFilePath);
+            // Use 'start' with /wait to keep the console window open
+            exec(`brnative proc ${relativePrcFile}`, {
+                cwd: LexiPath
+            });
+
+            // Cleanup procedure file after a delay
+            setTimeout(() => {
+                try {
+                    if (fs.existsSync(prcFilePath)) {
+                        fs.unlinkSync(prcFilePath);
+                    }
+                } catch (e) {
+                    // Ignore cleanup errors
+                }
+            }, 2000); // Wait 2 seconds before cleanup
+        }, 500); // Wait for lexitip to start
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`Failed to list line: ${errorMessage}`);
+    }
 }
 
 /**

@@ -221,6 +221,10 @@
       {
         "command": "br.searchFiles",
         "title": "BR: Proc Search"
+      },
+      {
+        "command": "br.listLine",
+        "title": "BR: List Line in Compiled Program"
       }
     ],
     "menus": {
@@ -233,6 +237,12 @@
           "command": "vslang-br.DecompileFolder",
           "when": "explorerResourceIsFolder",
           "group": "7_modification"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "br.listLine",
+          "when": "view == brSearchResults && viewItem == searchMatch"
         }
       ]
     },
