@@ -1,5 +1,5 @@
 // import * as Parser from "web-tree-sitter";
-import * as Parser from "tree-sitter"
+import * as Parser from "../vendor/tree-sitter"
 // const Parser = require("tree-sitter")
 const BrLang = require("tree-sitter-br")
 import path = require('path');

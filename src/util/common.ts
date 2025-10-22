@@ -1,6 +1,6 @@
 import { Position, Range, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
 import { VariableType } from "../types/VariableType"
-import Parser = require("tree-sitter")
+import Parser = require("../../vendor/tree-sitter")
 
 export const FUNCTION_CALL_CONTEXT = /(?<isDef>def\s+)?(?<name>[a-zA-Z][a-zA-Z0-9_]*?\$?)\((?<params>[^(]*)?$/i
 export const STRING_OR_COMMENT = /(\/\*[\s\S]*?\*\/|!.*|(?:}}|`)[^`]*?(?:{{|`|$)|"(?:[^"]|"")*("|$)|'(?:[^']|'')*('|$))/g

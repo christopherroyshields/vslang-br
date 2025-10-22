@@ -3,7 +3,7 @@ import { getFunctionsByName } from "../completions/functions"
 import { escapeRegExpCharacters, FUNCTION_CALL_CONTEXT, nodeRange, STRING_OR_COMMENT, stripBalancedFunctions } from "../util/common"
 import { Project } from "../class/Project"
 import BrParser from "../parser"
-import { SyntaxNode } from "tree-sitter"
+import { SyntaxNode } from "../../vendor/tree-sitter"
 
 /**
  * Provides signature help for function calls in BR files.

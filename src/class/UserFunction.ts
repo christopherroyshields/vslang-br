@@ -3,7 +3,7 @@ import BrFunction from "../interface/BrFunction"
 import { EntityOffset } from "./EntityOffset"
 import UserFunctionParameter from "./UserFunctionParameter"
 import { ParameterInformation, Range } from "vscode"
-import { SyntaxNode } from "tree-sitter"
+import { SyntaxNode } from "../../vendor/tree-sitter"
 import { nodeRange } from "../util/common"
 import { VariableType } from "../types/VariableType"
 
