@@ -336,17 +336,6 @@
       }
     ]
   },
-  "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "vscode-test",
-    "build:prebuilds": "node scripts/build-prebuilds.js",
-    "package": "npx @vscode/vsce package",
-    "package:clean": "package-clean.bat",
-    "vsce:ls": "npx @vscode/vsce ls --tree"
-  },
   "devDependencies": {
     "@types/chai": "^5.2.2",
     "@types/emscripten": "^1.40.0",
@@ -368,5 +357,18 @@
   },
   "dependencies": {
     "tree-sitter-br": "0.25.6"
+  },
+  "scripts": {
+    "postinstall": "node -e \"try { require('fs').unlinkSync('node_modules/tree-sitter/tree-sitter.d.ts'); } catch(e) {}\"",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test",
+    "build:prebuilds": "node scripts/build-prebuilds.js",
+    "package": "npx @vscode/vsce package",
+    "publish": "npx @vscode/vsce publish",
+    "package:clean": "package-clean.bat",
+    "vsce:ls": "npx @vscode/vsce ls --tree"
   }
 }

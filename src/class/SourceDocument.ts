@@ -1,6 +1,6 @@
 import { Uri, WorkspaceFolder, workspace } from "vscode";
 import BrParser from '../parser';
-import Parser = require("tree-sitter");
+import Parser = require("../../vendor/tree-sitter");
 import UserFunction from './UserFunction';
 import { LibraryFunctionMetadata } from './LibraryFunctionIndex';
 import { scanLibraryFunctions } from '../util/libraryScanner';
