@@ -1,10 +1,6 @@
 import path = require("path");
 import { CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, CompletionItemLabel, CompletionItemProvider, CompletionList, MarkdownString, Position, ProviderResult, TextDocument, Uri, workspace, WorkspaceFolder } from "vscode"
-import BrSourceDocument from "../class/BrSourceDocument"
-import BaseCompletionProvider from "./BaseCompletionProvider"
-import { TypeLabel } from "../util/common"
 import { Project } from "../class/Project"
-import { InternalFunctions } from "../completions/functions";
 import BrParser from "../parser";
 
 class FunctionCompletionItem extends CompletionItem {
@@ -26,27 +22,35 @@ export default class FuncCompletionProvider implements CompletionItemProvider<Fu
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken): FunctionCompletionItem[] {
     const completionItems: FunctionCompletionItem[] = []
 
-    const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
+    let workspaceFolder: WorkspaceFolder | undefined = undefined;
+    for (const [folder] of this.configuredProjects) {
+      if (doc.uri.fsPath.startsWith(folder.uri.fsPath)) {
+        workspaceFolder = folder;
+        break;
+      }
+    }
+
     if (workspaceFolder){
       const project = this.configuredProjects.get(workspaceFolder)
       if (project){
-        for (const [uri, lib] of project.sourceFiles) {
-          if (uri !== doc.uri.toString()){
-            for (const fn of lib.functions){
-              if (fn.isLibrary){
-                completionItems.push({
-                  name: fn.name,
-                  kind: CompletionItemKind.Function,
-                  isLibrary: true,
-                  uri: lib.uri,
-                  label: {
-                    label: fn.name,
-                    detail: ' (library function)',
-                    description: path.basename(lib.uri.fsPath)
-                  }
-                })
+        // Use library index for fast access to all library functions
+        const allLibraryFunctions = project.libraryIndex.getAllFunctions()
+        for (const libFunc of allLibraryFunctions) {
+          // Don't include functions from the current document
+          if (libFunc.uri.toString() !== doc.uri.toString()) {
+            // Library functions should be displayed with 'fn' prefix
+            const displayName = 'fn' + libFunc.name;
+            completionItems.push({
+              name: displayName,
+              kind: CompletionItemKind.Function,
+              isLibrary: true,
+              uri: libFunc.uri,
+              label: {
+                label: displayName,
+                detail: ' (library function)',
+                description: path.basename(libFunc.uri.fsPath)
               }
-            }
+            })
           }
         }
       }

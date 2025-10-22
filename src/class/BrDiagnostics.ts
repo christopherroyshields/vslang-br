@@ -47,7 +47,8 @@ export default class BrDiagnostics implements Disposable {
   }
 
   async scanAll() {
-    const sourceFiles = await workspace.findFiles("**/*.brs")
+    const globPattern = workspace.getConfiguration('br').get('sourceFileGlobPattern', '**/*.{brs,wbs}')
+    const sourceFiles = await workspace.findFiles(globPattern)
     for (const sourceUri of sourceFiles) {
       const libText = await workspace.fs.readFile(sourceUri)
       if (libText){

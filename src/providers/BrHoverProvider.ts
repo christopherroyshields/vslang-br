@@ -1,11 +1,7 @@
 import { MarkdownString, workspace, WorkspaceFolder } from 'vscode'
 import { CancellationToken, Hover, HoverProvider, Position, ProviderResult, TextDocument } from "vscode"
-import BrSourceDocument from "../class/BrSourceDocument"
 import { getFunctionByName } from '../completions/functions'
-import BrFunction from '../interface/BrFunction'
-import { isComment } from "../util/common"
 import { Project } from '../class/Project'
-import UserFunction from '../class/UserFunction'
 import InternalFunction from '../class/InternalFunction'
 import BrParser from '../parser'
 
@@ -16,13 +12,13 @@ export default class BrHoverProvider implements HoverProvider {
     this.configuredProjects = configuredProjects
     this.parser = parser
   }
-  async provideHover(doc: TextDocument, position: Position, token: CancellationToken): Promise<Hover | undefined> {
+  async provideHover(doc: TextDocument, position: Position): Promise<Hover | undefined> {
     const wordRange = doc.getWordRangeAtPosition(position, /\w+\$?/)
     if (wordRange){
       const posNode = this.parser.getNodeAtPosition(doc, wordRange.start)
       if (posNode){
         if (posNode.type === "function_name"){
-          // local functions
+          // Internal/system functions
           if (posNode.parent?.type === "numeric_system_function" || posNode.parent?.type === "string_system_function"){
             const internalFunction = getFunctionByName(posNode.text)
             if (internalFunction){
@@ -31,29 +27,44 @@ export default class BrHoverProvider implements HoverProvider {
               return hover
             }
           } else {
-            const fn = await this.parser.getFunctionByName(posNode.text, doc.uri)
-
-            if (fn) {
-              const hover = this.createHoverFromFunction(fn)
-              hover.range = wordRange
-              return hover
+            let workspaceFolder: WorkspaceFolder | undefined = undefined;
+            for (const [folder] of this.configuredProjects) {
+              if (doc.uri.fsPath.startsWith(folder.uri.fsPath)) {
+                workspaceFolder = folder;
+                break;
+              }
             }
-
-            // library functions
-            const workspaceFolder = workspace.getWorkspaceFolder(doc.uri)
             if (workspaceFolder){
               const project = this.configuredProjects.get(workspaceFolder)
               if (project){
-                for (const [uri,lib] of project.sourceFiles) {
-                  for (const fn of lib.functions) {
-                    if (fn.isLibrary && fn.name.toLowerCase() === posNode.text.toLocaleLowerCase()){
-                      const fn = await this.parser.getFunctionByName(posNode.text, lib.uri)
-                      if (fn){
-                        const hover = this.createHoverFromFunction(fn)
-                        hover.range = wordRange
-                        return hover
-                      }
+                // First check library index for library functions (fast, no parsing)
+                // Try both with and without 'fn' prefix since library functions are stored without it
+                let libFuncMetadata = project.libraryIndex.getFunction(posNode.text)
+                if (!libFuncMetadata && posNode.text.toLowerCase().startsWith('fn')) {
+                  // Try without the 'fn' prefix
+                  libFuncMetadata = project.libraryIndex.getFunction(posNode.text.substring(2))
+                }
+                if (libFuncMetadata) {
+                  // Found in index, now get the full function from the source document
+                  const sourceDoc = project.sourceFiles.get(libFuncMetadata.uri.toString())
+                  if (sourceDoc) {
+                    const fn = await sourceDoc.getFunctionByName(posNode.text)
+                    if (fn) {
+                      const hover = this.createHoverFromFunction(fn)
+                      hover.range = wordRange
+                      return hover
                     }
+                  }
+                }
+                
+                // If not a library function, check current document for local functions
+                const currentDocSource = project.sourceFiles.get(doc.uri.toString())
+                if (currentDocSource) {
+                  const fn = await currentDocSource.getFunctionByName(posNode.text)
+                  if (fn && !fn.isLibrary) {
+                    const hover = this.createHoverFromFunction(fn)
+                    hover.range = wordRange
+                    return hover
                   }
                 }
               }
@@ -62,24 +73,23 @@ export default class BrHoverProvider implements HoverProvider {
         }
       }
     }
-  
   }
-
+  
   createHoverFromFunction<T extends InternalFunction>(fn: T): Hover {
     let markDownString = '```br\n' + fn.generateSignature() + '\n```\n---'
-  
+    
     if (markDownString && fn.documentation){
       markDownString += '\n' + fn.documentation
     }
-  
+    
     fn.params?.forEach((param)=>{
       if (param.documentation){
         markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`
       }
     })
-  
+    
     const markup = new MarkdownString(markDownString)
-  
+    
     return new Hover(markup)
   }
 }

@@ -9,12 +9,19 @@ export default class KeywordCompletionProvider {
   provideCompletionItems(doc: TextDocument, position: Position, token: CancellationToken): CompletionItem[] {
     const word = doc.getText(doc.getWordRangeAtPosition(position))
     const isLower = !/[A-Z]/.test(word)
+    const isUpper = !/[a-z]/.test(word)
     
     return Keywords.map((s)=>{
       const md = new MarkdownString()
+      let label = s.name
+      if (isLower){
+        label=label.toLowerCase()
+      } else if (isUpper){
+        label=label.toUpperCase()
+      }
       const item: CompletionItem = {
         label: {
-          label: isLower ? s.name.toLocaleLowerCase() : s.name,
+          label: label,
           description: 'keyword'
         },
         detail: s.description,

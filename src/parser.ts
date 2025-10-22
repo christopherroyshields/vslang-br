@@ -5,7 +5,7 @@ const BrLang = require("tree-sitter-br")
 import path = require('path');
 import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, DocumentSymbol, ExtensionContext, Position, Range, SymbolKind, TextDocument, TextDocumentChangeEvent, Uri, workspace} from 'vscode';
 import { performance } from 'perf_hooks';
-import { Disposable } from 'vscode-languageclient';
+import { Disposable } from 'vscode';
 import { EOL } from 'os';
 import * as fs from 'fs';
 import UserFunction from './class/UserFunction';
@@ -15,7 +15,7 @@ import DocComment from './class/DocComment';
 import { VariableType } from './types/VariableType';
 const fnQuery = fs.readFileSync(path.join(__dirname,"..","tree-query","function_def.scm")).toString()
 
-export default class BrParser implements Disposable {	
+export default class BrParser implements Disposable {
 	br!: Parser.Language
 	parser!: Parser
 	trees: Map<string, Parser.Tree> = new Map<string, Parser.Tree>()
@@ -23,7 +23,7 @@ export default class BrParser implements Disposable {
 		// this.trees.forEach(t => t.delete())
 	}
 
-	async activate(context: ExtensionContext): Promise<void> {
+	activate(context: ExtensionContext): void {
 		// await Parser.Parser.init();
 		// this.br = await Parser.Language.load(path.resolve(__dirname, "..", 'tree-sitter-br.wasm'))
 		this.parser = new Parser()
@@ -31,7 +31,7 @@ export default class BrParser implements Disposable {
 		this.br = BrLang
 
 		context.subscriptions.push(workspace.onDidChangeTextDocument(e => {
-			const document  = e.document;
+			const document = e.document;
 			if (document.languageId === "br"){
 				this.updateTree(e);
 			}
@@ -48,7 +48,7 @@ export default class BrParser implements Disposable {
 			const query = `(
 				(line (doc_comment) @doc_comment)?
 				.
-				(line (statement
+				(line
 				(def_statement 
 					[
 					(numeric_function_definition (function_name) @name
@@ -57,7 +57,7 @@ export default class BrParser implements Disposable {
 						(string_function_definition (function_name) @name
 						(parameter_list)? @params
 						) @type
-					]) @def))
+					]) @def)
 					(#match? @name "^${name_match}$")
 				)`
 	
@@ -75,7 +75,7 @@ export default class BrParser implements Disposable {
 		const query = `(
 			(line (doc_comment) @doc_comment)?
 			.
-			(line (statement
+			(line
 			(def_statement 
 				[
 				(numeric_function_definition (function_name) @name
@@ -84,7 +84,7 @@ export default class BrParser implements Disposable {
 					(string_function_definition (function_name) @name
 					(parameter_list)? @params
 					) @type
-				]) @def))
+				]) @def)
 			)`
 
 		const results = this.match(query, tree.rootNode)
@@ -112,7 +112,7 @@ export default class BrParser implements Disposable {
 		const paramsNode = this.getCaptureByName(result, "params")
 		if (nameNode && defNode){
 			let isLibrary = false
-			if (defNode.descendantsOfType("library_keyword")){
+			if (defNode.descendantsOfType("library_keyword").length > 0){
 				isLibrary = true
 			}
 			const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
@@ -176,25 +176,37 @@ export default class BrParser implements Disposable {
 
 	getDocumentTree(document: TextDocument):  Parser.Tree {
 		const startTime = performance.now()
-		let tree: Parser.Tree | undefined | null = this.trees.get(document.uri.toString())
+		const tree = this.parser.parse(document.getText())
+		const endTime = performance.now()
+		console.log(`Parse: ${endTime - startTime} milliseconds`)
+		
 		if (tree){
 			return tree
 		} else {
-			const startTime = performance.now()
-			tree = this.parser.parse(document.getText())
-			const endTime = performance.now()
-			console.log(`Parse: ${endTime - startTime} milliseconds`)
-			
-			if (tree){
-				this.trees.set(document.uri.toString(),tree)
-			} else {
-				throw new Error("Could not parse document text.");
-			}
-
-			return tree
+			throw new Error("Could not parse document text.");
 		}
 	}
 
+  getBufferTree(uri: Uri, buffer: Buffer) {
+		try {
+			const tree: Parser.Tree = this.parser.parse(buffer.toString())
+			this.trees.set(uri.toString(),tree)
+			return tree
+		}	catch (error) {
+			console.error("Error parsing text:", error)
+		}
+  }	
+
+	getTextTree(uri: Uri, text: string): Parser.Tree | undefined {
+		try {
+			const tree: Parser.Tree = this.parser.parse(text)
+			this.trees.set(uri.toString(),tree)
+			return tree
+		}	catch (error) {
+			console.error("Error parsing text:", error)
+		}
+	}
+	
 	async getUriTree(uri: Uri, update = false): Promise<Parser.Tree | undefined> {
 		const document = this.getOpenDocument(uri)
 		if (document){
@@ -282,7 +294,7 @@ export default class BrParser implements Disposable {
 	}
 
 	async getErrors(uri: Uri, document: string): Promise<Diagnostic[]> {
-		const errorQuery = new Parser.Query(this.br, '(ERROR) @error')
+		const errorQuery = new Parser.Query(this.br, '(ERROR) @error (MISSING) @missing')
 		const diagnostics: Diagnostic[] = []
 		const tree = this.parser.parse(document)
 		if (tree){
@@ -290,9 +302,13 @@ export default class BrParser implements Disposable {
 			// collection.clear();
 			for (const error of errors) {
 				for (const capture of error.captures) {
+					let message = 'Parsing Error: Invalid Sequence'
+					if (capture.name === 'missing') {
+						message = 'Parsing Error: Missing Node'
+					}
 					diagnostics.push({
 						code: '',
-						message: 'Syntax error',
+						message: message,
 						range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
 						severity: DiagnosticSeverity.Error,
 						source: 'BR Syntax Scanner'
@@ -429,11 +445,63 @@ export default class BrParser implements Disposable {
 		return null
 	}
 
+	/**
+	 * Get the syntax node at a specific position in the document.
+	 * @param document The text document to search in.
+	 * @param position The position to find the node at.
+	 * @returns The syntax node at the specified position, or null if not found.
+	 */
+
 	getNodeAtPosition(document: TextDocument, position: Position): Parser.SyntaxNode | null {
 		const tree = this.getDocumentTree(document)
 		const node = tree.rootNode.namedDescendantForPosition(this.getPoint(position))
 		return node
 	}
+
+	/**
+	 * Find the nearest node of a specific type by walking backwards through the tree.
+	 * Checks current node and parents, then walks through prior siblings of each parent.
+	 * @param node The starting node to search from.
+	 * @param nodeType The type of node to find.
+	 * @returns The nearest node of the specified type, or null if not found.
+	 */
+	findNearestNodeOfType(node: Parser.SyntaxNode, nodeType: string): Parser.SyntaxNode | null {
+		// Check if current node matches
+		if (node.type === nodeType) {
+			return node;
+		}
+		
+		// Check ancestors and their prior siblings
+		let currentNode: Parser.SyntaxNode | null = node;
+		while (currentNode) {
+			// Check prior siblings of current node
+			let sibling = currentNode.previousSibling;
+			while (sibling) {
+				if (sibling.type === nodeType) {
+					return sibling;
+				}
+				// Move on to the next sibling
+				sibling = sibling.previousSibling;
+			}
+			
+			// Move up to parent
+			currentNode = currentNode.parent;
+			
+			// Stop the search if we reach a line node
+			if (currentNode?.type === 'line') {
+				break;
+			}
+			
+			// Check if current parent matches
+			if (currentNode?.type === nodeType) {
+				return currentNode;
+			}
+		}
+		
+		return null;
+	}
+
+
 
 	getOccurences(word: string, document: TextDocument, range: Range): Range[] {
 		const occurrences: Range[] = []
@@ -441,6 +509,8 @@ export default class BrParser implements Disposable {
 		const tree = this.getDocumentTree(document)
 		
 		const node = tree.rootNode.descendantForPosition(this.getPoint(range.start))
+
+		console.log("Node Type:" + node.type)
 
 		if (node){
 			
@@ -476,18 +546,17 @@ export default class BrParser implements Disposable {
 					});
 				}
 				break;
-				
-				default: {
-					if (node.text.toLocaleLowerCase().substring(0,3)!=="mat"){
-						const selector = `${node.parent?.type} name: (_) @occurrence`
-						const predicate = `(#match? @occurrence "^${name_match}$")`
-						const query = `(${selector} ${predicate})`
-						let results = this.match(query, tree.rootNode)
-						results = this.filterOccurrences(node, tree, results)
-						results.forEach(r => {
-							occurrences.push(this.getNodeRange(r.captures[0].node))
-						});
-					}
+
+				case "stringidentifier":
+				case "numberidentifier": {
+					const selector = `${node.parent?.type} name: (_) @occurrence`
+					const predicate = `(#match? @occurrence "^${name_match}$")`
+					const query = `(${selector} ${predicate})`
+					let results = this.match(query, tree.rootNode)
+					results = this.filterOccurrences(node, tree, results)
+					results.forEach(r => {
+						occurrences.push(this.getNodeRange(r.captures[0].node))
+					});
 				}
 				break;
 			}
@@ -509,15 +578,17 @@ export default class BrParser implements Disposable {
 
 	getDiagnostics(document: TextDocument): Diagnostic[] {
 		const errorQuery = new Parser.Query(this.br, '(ERROR) @error')
+		const missingQuery = new Parser.Query(this.br, '(MISSING) @missing')
 		const tree = this.getDocumentTree(document)
 		const errors = errorQuery.matches(tree.rootNode);
+		const missings = missingQuery.matches(tree.rootNode);
 		const diagnostics: Diagnostic[] = []
 		// collection.clear();
 		for (const error of errors) {
 			for (const capture of error.captures) {
 				diagnostics.push({
 					code: '',
-					message: 'Syntax error',
+					message: 'Parsing Error: Invalid Sequence',
 					range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
 					severity: DiagnosticSeverity.Error,
 					source: 'BR Syntax Scanner',
@@ -527,51 +598,38 @@ export default class BrParser implements Disposable {
 				})
 			}
 		}
+		for (const missing of missings) {
+			for (const capture of missing.captures) {
+				diagnostics.push({
+					code: '',
+					message: 'Parsing Error: Missing Node',
+					range: new Range(new Position(capture.node.startPosition.row, capture.node.startPosition.column), new Position(capture.node.endPosition.row, capture.node.endPosition.column)),
+					severity: DiagnosticSeverity.Error,
+					source: 'BR Syntax Scanner',
+				})
+			}
+		}
 		return diagnostics
 	}
 
-  getSymbols(document: TextDocument): DocumentSymbol[] {
+  getSymbols(document: TextDocument): Parser.SyntaxNode[] {
+		const nodeList = new Array<Parser.SyntaxNode>()
 		const tree = this.getDocumentTree(document)
 		const query = `(def_statement) @def
-		(dim_statement
-			(_
-				name: (_) @dim)*)
+		(dim_statement [
+			(numberreference)
+				(stringreference)
+				(numberarray)
+				(stringarray)
+				] @symbol)
 		(label) @label`
 		const results = this.match(query, tree.rootNode)
-		
-		const symbolInfoList: DocumentSymbol[] = []
+
 		for (const result of results) {
 			const node = result.captures[0].node
-			switch (node.type) {
-				case 'label': {
-						const labelRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
-						const symbolInfo = new DocumentSymbol(node.text, 'label', SymbolKind.Null, labelRange, labelRange)
-						symbolInfoList.push(symbolInfo)
-					}
-					break;
-				case 'stringidentifier':
-				case 'numberidentifier': {
-						const dimRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
-						const symbolInfo = new DocumentSymbol(node.text, node.parent?.type ?? "", SymbolKind.Variable, dimRange, dimRange)
-						symbolInfoList.push(symbolInfo)
-					}
-					break;
-				case 'def_statement': {
-						const name = node.descendantsOfType("function_name")
-						if (name.length){
-							const node = name[0]
-							if (node){
-								const fnRange = new Range(document.positionAt(node.startIndex),document.positionAt(node.endIndex))
-								const symbolInfo = new DocumentSymbol(node.text, "function", SymbolKind.Function, fnRange, fnRange)
-								symbolInfoList.push(symbolInfo)
-							}
-						}
-					}
-					break;
-				default:
-					break;
-			}
+			nodeList.push(node)
 		}
-		return symbolInfoList
+		
+		return nodeList
   }
 }

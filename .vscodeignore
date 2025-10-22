@@ -1,11 +1,48 @@
 .vscode/**
 .vscode-test/**
 .gitignore
-node_modules/
-!node_modules/tree-sitter
-!node_modules/tree-sitter-br
-!node_modules/node-gyp-build
-!node_modules/node-addon-api
 vsc-extension-quickstart.md
-src
+src/**
 *.vsix
+.vscodeignore
+package-clean.bat
+tsconfig.json
+.eslintrc.json
+.gitattributes
+**/*.ts
+**/*.map
+**/.gitignore
+
+# Exclude all node_modules except what we need
+node_modules/**
+!node_modules/tree-sitter/**
+!node_modules/tree-sitter-br/**
+!node_modules/node-gyp-build/**
+
+# Exclude tree-sitter build artifacts
+node_modules/tree-sitter/build/**/*.obj
+node_modules/tree-sitter/build/**/*.pdb
+node_modules/tree-sitter/build/**/*.iobj
+node_modules/tree-sitter/build/**/*.ipdb
+node_modules/tree-sitter/build/**/*.lib
+node_modules/tree-sitter/build/**/*.exp
+node_modules/tree-sitter/build/**/*.tlog
+node_modules/tree-sitter/build/**/*.recipe
+node_modules/tree-sitter/build/**/*.xml
+node_modules/tree-sitter/build/**/*.sln
+node_modules/tree-sitter/build/**/*.vcxproj
+node_modules/tree-sitter/build/**/*.vcxproj.filters
+node_modules/tree-sitter/build/**/*.lastbuildstate
+node_modules/tree-sitter/build/**/*.gypi
+node_modules/tree-sitter/build/**/obj/**
+
+# Exclude tree-sitter source files  
+node_modules/tree-sitter/src/**
+node_modules/tree-sitter/vendor/**
+node_modules/tree-sitter/binding.gyp
+node_modules/tree-sitter/node_modules/**
+
+# Test files
+**/*.test.js
+**/*.test.js.map
+testcode/
