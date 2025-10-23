@@ -225,6 +225,16 @@
       {
         "command": "br.listLine",
         "title": "BR: List Line in Compiled Program"
+      },
+      {
+        "command": "br.clearSearch",
+        "title": "Clear Search Results",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "br.modifySearch",
+        "title": "Modify Search",
+        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -243,6 +253,18 @@
         {
           "command": "br.listLine",
           "when": "view == brSearchResults && viewItem == searchMatch"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "br.modifySearch",
+          "when": "view == brSearchResults",
+          "group": "navigation@1"
+        },
+        {
+          "command": "br.clearSearch",
+          "when": "view == brSearchResults",
+          "group": "navigation@2"
         }
       ]
     },

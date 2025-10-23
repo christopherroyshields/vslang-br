@@ -259,10 +259,10 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	const sourceGlob = workspace.getConfiguration('br', workspaceFolder).get("sourceFileGlobPattern", "**/*.{brs,wbs}");
 	const sourceFileGlobPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath), sourceGlob)
 
-	const startTime = performance.now()
+	// const startTime = performance.now()
 	const sourceFiles = await workspace.findFiles(sourceFileGlobPattern)
-	const endTime = performance.now()
-	console.log(`sourc load: ${endTime - startTime} ms`);
+	// const endTime = performance.now()
+	// console.log(`sourc load: ${endTime - startTime} ms`);
 	
 	// Create status bar when we start reading files
 	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
@@ -301,7 +301,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 			if (libFunctions.length > 0) {
 				const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
 				const functionNames = libFunctions.map(f => f.name).join(', ')
-				console.log(`  ${fileName}: [${functionNames}]`)
+				// console.log(`  ${fileName}: [${functionNames}]`)
 			}
 			for (const libFunc of libFunctions) {
 				project.libraryIndex.addFunction(libFunc);
@@ -312,7 +312,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	const scanEndTime = performance.now()
 	const totalScanTime = scanEndTime - scanStartTime
 	const averagePerFile = sourceFiles.length > 0 ? (totalScanTime / sourceFiles.length).toFixed(2) : 0
-	console.log(`Total library scanning time: ${totalScanTime.toFixed(2)}ms for ${sourceFiles.length} files (avg: ${averagePerFile}ms/file)`)
+	// console.log(`Total library scanning time: ${totalScanTime.toFixed(2)}ms for ${sourceFiles.length} files (avg: ${averagePerFile}ms/file)`)
 	
 	// Hide status bar when done loading
 	statusBarItem.hide()
@@ -358,7 +358,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 		}
 	}, undefined, disposables)
 
-	console.log(`files watched`);
+	// console.log(`files watched`);
 
 }
 

@@ -8,7 +8,7 @@
 			"DOM"
 		],
 		"sourceMap": true,
-		"rootDir": ".",
+		"rootDir": "src",
 		"strict": true,   /* enable all strict type-checking options */
 		"typeRoots": [
 			"./node_modules/@types",
@@ -20,8 +20,7 @@
 		// "noUnusedParameters": true,  /* Report errors on unused parameters. */
 	},
 	"include": [
-		"src/**/*",
-		"vendor/tree-sitter/tree-sitter.d.ts"
+		"src/**/*"
 	],
 	"exclude": [
 		"node_modules/tree-sitter"
