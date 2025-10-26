@@ -20,10 +20,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
 
-const LexiPath = path.normalize(__dirname + "\\..\\Lexi");
+let LexiPath: string;
 let searchOutputChannel: vscode.OutputChannel;
 let searchResultsProvider: BrSearchResultsProvider;
 let searchTreeView: vscode.TreeView<vscode.TreeItem>;
+let lastSearchTerms: string | undefined;
 
 /**
  * URI Handler for opening BR files at specific internal line numbers
@@ -299,6 +300,9 @@ export class BrSearchResultsProvider implements vscode.TreeDataProvider<vscode.T
  * Initialize the search output channel
  */
 export function initializeSearchOutputChannel(context: vscode.ExtensionContext) {
+    // Initialize LexiPath using the extension's installation directory
+    LexiPath = path.join(context.extensionPath, 'Lexi');
+
     searchOutputChannel = vscode.window.createOutputChannel('Proc Search');
     context.subscriptions.push(searchOutputChannel);
 
@@ -318,6 +322,20 @@ export function initializeSearchOutputChannel(context: vscode.ExtensionContext) 
     context.subscriptions.push(
         vscode.commands.registerCommand('br.openSearchResult', async (filePath: string, internalLineNumber: number) => {
             await openAtInternalLine(filePath, internalLineNumber);
+        })
+    );
+
+    // Register command to clear search results
+    context.subscriptions.push(
+        vscode.commands.registerCommand('br.clearSearch', () => {
+            clearSearchResults();
+        })
+    );
+
+    // Register command to modify search
+    context.subscriptions.push(
+        vscode.commands.registerCommand('br.modifySearch', async () => {
+            await modifySearch();
         })
     );
 
@@ -567,6 +585,9 @@ export async function executeSearch() {
             return;
         }
 
+        // Store the search terms for modify function
+        lastSearchTerms = input;
+
         // Clear previous results
         searchOutputChannel.clear();
         searchOutputChannel.show(true);
@@ -618,7 +639,7 @@ export async function executeSearch() {
 
         // Generate procedure file
         searchOutputChannel.appendLine('Generating search procedure...');
-        await generateProcedureFile(prcFile, files, searchTerms, tmpPath);
+        await generateSearchProcedureFile(prcFile, files, searchTerms, tmpPath);
 
         // Execute BR search
         searchOutputChannel.appendLine('Executing BR search...');
@@ -713,7 +734,7 @@ export async function executeSearch() {
  *     'C:\\Lexi\\tmp'
  * );
  */
-async function generateProcedureFile(
+async function generateSearchProcedureFile(
     prcFile: string,
     files: vscode.Uri[],
     searchTerms: string[],
@@ -732,9 +753,9 @@ async function generateProcedureFile(
 
         // Check if this is a compiled file
         const ext = path.extname(filePath).toLowerCase();
-        const isCompiled = ['.br', '.bro', '.wb', '.wbo'].includes(ext);
+        const isObject = ['.bro', '.wbo'].includes(ext);
 
-        if (isCompiled) {
+        if (isObject) {
             // For compiled files, use LOAD then LIST
             lines.push(`LOAD ":${filePath}"`);
 
@@ -854,4 +875,168 @@ async function parseAndDisplayResults(
     }
 
     return { treeItems, matchCount: totalMatchCount };
+}
+
+/**
+ * Clear all search results from the tree view and output channel
+ */
+function clearSearchResults(): void {
+    searchResultsProvider.clear();
+    searchOutputChannel.clear();
+    searchOutputChannel.appendLine('Search results cleared');
+    lastSearchTerms = undefined;
+}
+
+/**
+ * Modify the current search by opening the input box with the last search terms
+ * pre-populated, allowing the user to edit and re-run the search
+ */
+async function modifySearch(): Promise<void> {
+    // Get search terms from user, pre-populated with last search if available
+    const input = await vscode.window.showInputBox({
+        prompt: 'Enter BR LIST search parameters (up to 3 terms)',
+        placeHolder: 'e.g., \'LET\' or "OPEN" or \'LET\' "FNEND" ~\'test\'',
+        value: lastSearchTerms, // Pre-populate with last search
+        validateInput: (value) => {
+            if (!value || value.trim().length === 0) {
+                return 'Please enter at least one search parameter';
+            }
+
+            // Validate BR LIST command syntax
+            const validation = validateListParameters(value);
+            return validation.error || null;
+        }
+    });
+
+    if (!input) {
+        return; // User cancelled
+    }
+
+    // Parse and validate search terms
+    const parseResult = parseSearchInput(input);
+
+    if (parseResult.error) {
+        vscode.window.showErrorMessage(`Invalid search parameters: ${parseResult.error}`);
+        return;
+    }
+
+    const searchTerms = parseResult.terms;
+
+    if (searchTerms.length === 0) {
+        vscode.window.showWarningMessage('No valid search terms provided');
+        return;
+    }
+
+    // Store the search terms for next modify
+    lastSearchTerms = input;
+
+    // Clear previous results
+    searchOutputChannel.clear();
+    searchOutputChannel.show(true);
+    searchOutputChannel.appendLine(`Proc Search - Searching for: ${searchTerms.join(', ')}`);
+    searchOutputChannel.appendLine('');
+
+    // Clear and focus tree view
+    searchResultsProvider.clear();
+
+    // Focus the BR Search view
+    await vscode.commands.executeCommand('brSearchResults.focus');
+
+    // Find all BR files in workspace (both source and compiled)
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+        vscode.window.showErrorMessage('No workspace folder open');
+        return;
+    }
+
+    searchOutputChannel.appendLine('Scanning workspace files...');
+
+    // Search only compiled programs (.br, .bro, .wb, .wbo)
+    const brFilePattern = '**/*.{br,bro,wb,wbo}';
+    const files = await vscode.workspace.findFiles(brFilePattern, '**/node_modules/**');
+
+    if (files.length === 0) {
+        searchOutputChannel.appendLine('No compiled BR programs found in workspace');
+        return;
+    }
+
+    searchOutputChannel.appendLine(`Found ${files.length} files to search`);
+    searchOutputChannel.appendLine('');
+
+    // Prepare Lexi directories
+    const tmpPath = path.join(LexiPath, 'tmp');
+
+    // Ensure tmp directory exists
+    if (!fs.existsSync(tmpPath)) {
+        fs.mkdirSync(tmpPath, { recursive: true });
+    }
+
+    const prcFile = path.join(tmpPath, 'brSearch.prc');
+
+    // Clean up old result files
+    const oldResults = fs.readdirSync(tmpPath).filter(f => f.startsWith('searchResult_'));
+    for (const oldFile of oldResults) {
+        fs.unlinkSync(path.join(tmpPath, oldFile));
+    }
+
+    // Generate procedure file
+    searchOutputChannel.appendLine('Generating search procedure...');
+    await generateSearchProcedureFile(prcFile, files, searchTerms, tmpPath);
+
+    // Execute BR search
+    searchOutputChannel.appendLine('Executing BR search...');
+    const success = await executeBRNative(prcFile);
+
+    if (!success) {
+        searchOutputChannel.appendLine('');
+        searchOutputChannel.appendLine('Search execution failed');
+        return;
+    }
+
+    // Parse and display results
+    searchOutputChannel.appendLine('');
+    searchOutputChannel.appendLine('Parsing search results...');
+
+    const { treeItems, matchCount } = await parseAndDisplayResults(tmpPath, files, searchTerms);
+
+    // Update tree view
+    searchResultsProvider.refresh(treeItems);
+
+    // Show summary in output channel
+    searchOutputChannel.appendLine(`Total matches found: ${matchCount} in ${treeItems.length} file(s)`);
+
+    // Ensure the tree view is visible and focused
+    if (treeItems.length > 0) {
+        // Reveal the first result
+        await searchTreeView.reveal(treeItems[0], {
+            select: false,
+            focus: false,
+            expand: true
+        });
+    }
+
+    // Cleanup with retry (files may be locked by brnative)
+    setTimeout(() => {
+        try {
+            if (fs.existsSync(prcFile)) {
+                fs.unlinkSync(prcFile);
+            }
+        } catch (e) {
+            // Ignore cleanup errors
+        }
+
+        // Clean up result files
+        try {
+            const resultFiles = fs.readdirSync(tmpPath).filter(f => f.startsWith('searchResult_'));
+            for (const resultFile of resultFiles) {
+                try {
+                    fs.unlinkSync(path.join(tmpPath, resultFile));
+                } catch (e) {
+                    // Ignore individual file cleanup errors
+                }
+            }
+        } catch (e) {
+            // Ignore cleanup errors
+        }
+    }, 1000); // Wait 1 second before cleanup
 }
