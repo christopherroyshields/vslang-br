@@ -874,6 +874,9 @@ async function parseAndDisplayResults(
         searchOutputChannel.appendLine('No matches found');
     }
 
+    // Sort tree items by file path for consistent ordering
+    treeItems.sort((a, b) => a.filePath.localeCompare(b.filePath));
+
     return { treeItems, matchCount: totalMatchCount };
 }
 
