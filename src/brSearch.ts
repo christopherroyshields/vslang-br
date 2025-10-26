@@ -20,7 +20,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
 
-const LexiPath = path.normalize(__dirname + "\\..\\Lexi");
+let LexiPath: string;
 let searchOutputChannel: vscode.OutputChannel;
 let searchResultsProvider: BrSearchResultsProvider;
 let searchTreeView: vscode.TreeView<vscode.TreeItem>;
@@ -300,6 +300,9 @@ export class BrSearchResultsProvider implements vscode.TreeDataProvider<vscode.T
  * Initialize the search output channel
  */
 export function initializeSearchOutputChannel(context: vscode.ExtensionContext) {
+    // Initialize LexiPath using the extension's installation directory
+    LexiPath = path.join(context.extensionPath, 'Lexi');
+
     searchOutputChannel = vscode.window.createOutputChannel('Proc Search');
     context.subscriptions.push(searchOutputChannel);
 
@@ -636,7 +639,7 @@ export async function executeSearch() {
 
         // Generate procedure file
         searchOutputChannel.appendLine('Generating search procedure...');
-        await generateProcedureFile(prcFile, files, searchTerms, tmpPath);
+        await generateSearchProcedureFile(prcFile, files, searchTerms, tmpPath);
 
         // Execute BR search
         searchOutputChannel.appendLine('Executing BR search...');
@@ -731,7 +734,7 @@ export async function executeSearch() {
  *     'C:\\Lexi\\tmp'
  * );
  */
-async function generateProcedureFile(
+async function generateSearchProcedureFile(
     prcFile: string,
     files: vscode.Uri[],
     searchTerms: string[],
@@ -750,9 +753,9 @@ async function generateProcedureFile(
 
         // Check if this is a compiled file
         const ext = path.extname(filePath).toLowerCase();
-        const isCompiled = ['.br', '.bro', '.wb', '.wbo'].includes(ext);
+        const isObject = ['.bro', '.wbo'].includes(ext);
 
-        if (isCompiled) {
+        if (isObject) {
             // For compiled files, use LOAD then LIST
             lines.push(`LOAD ":${filePath}"`);
 
@@ -978,7 +981,7 @@ async function modifySearch(): Promise<void> {
 
     // Generate procedure file
     searchOutputChannel.appendLine('Generating search procedure...');
-    await generateProcedureFile(prcFile, files, searchTerms, tmpPath);
+    await generateSearchProcedureFile(prcFile, files, searchTerms, tmpPath);
 
     // Execute BR search
     searchOutputChannel.appendLine('Executing BR search...');
