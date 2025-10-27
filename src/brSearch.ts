@@ -213,9 +213,52 @@ class SearchMatchItem extends vscode.TreeItem {
     constructor(
         public readonly filePath: string,
         public readonly internalLineNumber: number,
-        public readonly lineContent: string
+        public readonly lineContent: string,
+        searchTerms?: string[]
     ) {
-        super(lineContent, vscode.TreeItemCollapsibleState.None);
+        super('', vscode.TreeItemCollapsibleState.None);
+
+        // Add highlights for search terms
+        const highlights: [number, number][] = [];
+        if (searchTerms && searchTerms.length > 0) {
+            for (const term of searchTerms) {
+                // Extract the actual search term from BR LIST format
+                // Handle: 'term', "term", ~'term', ~"term"
+                const termMatch = term.match(/~?['"](.+?)['"]/);
+                if (termMatch) {
+                    const searchText = termMatch[1];
+                    const isCaseSensitive = term.includes('"');
+                    const isNegated = term.startsWith('~');
+
+                    // Skip negated terms (don't highlight what we're NOT looking for)
+                    if (isNegated) {
+                        continue;
+                    }
+
+                    // Find all occurrences of the search term
+                    const searchIn = isCaseSensitive ? lineContent : lineContent.toLowerCase();
+                    const searchFor = isCaseSensitive ? searchText : searchText.toLowerCase();
+
+                    let startIndex = 0;
+                    while ((startIndex = searchIn.indexOf(searchFor, startIndex)) !== -1) {
+                        highlights.push([startIndex, startIndex + searchFor.length]);
+                        startIndex += searchFor.length;
+                    }
+                }
+            }
+        }
+
+        // Use TreeItemLabel with highlights
+        if (highlights.length > 0) {
+            highlights.sort((a, b) => a[0] - b[0]);
+            this.label = {
+                label: lineContent,
+                highlights: highlights
+            };
+        } else {
+            this.label = lineContent;
+        }
+
         this.tooltip = `Line ${internalLineNumber}: ${lineContent}`;
         this.command = {
             command: 'br.openSearchResult',
@@ -866,7 +909,7 @@ async function parseAndDisplayResults(
                 const lineNumber = parseInt(match[1]);
                 const lineContent = trimmedLine;
 
-                matches.push(new SearchMatchItem(filePath, lineNumber, lineContent));
+                matches.push(new SearchMatchItem(filePath, lineNumber, lineContent, searchTerms));
                 totalMatchCount++;
             }
         }
