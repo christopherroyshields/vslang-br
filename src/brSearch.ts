@@ -237,7 +237,13 @@ class SearchFileItem extends vscode.TreeItem {
         public readonly filePath: string,
         public readonly matches: SearchMatchItem[]
     ) {
-        super(path.basename(filePath), vscode.TreeItemCollapsibleState.Expanded);
+        // Calculate relative path from workspace folder
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(filePath));
+        const displayPath = workspaceFolder
+            ? path.relative(workspaceFolder.uri.fsPath, filePath)
+            : path.basename(filePath);
+
+        super(displayPath, vscode.TreeItemCollapsibleState.Expanded);
         this.tooltip = filePath;
         this.description = `${matches.length} match${matches.length !== 1 ? 'es' : ''}`;
 
