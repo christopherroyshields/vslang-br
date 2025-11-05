@@ -55,6 +55,10 @@
       {
         "fileMatch": "br-project.json",
         "url": "./schemas/br-project.json"
+      },
+      {
+        "fileMatch": "launch.json",
+        "url": "./schemas/br-launch.json"
       }
     ],
     "configurationDefaults": {
@@ -220,11 +224,26 @@
       },
       {
         "command": "br.searchFiles",
-        "title": "BR: Proc Search"
+        "title": "BR: Proc Search",
+        "icon": "$(search)"
       },
       {
         "command": "br.listLine",
         "title": "BR: List Line in Compiled Program"
+      },
+      {
+        "command": "br.clearSearch",
+        "title": "Clear Search Results",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "br.modifySearch",
+        "title": "Modify Search",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "vslang-br.selectLaunchConfig",
+        "title": "BR: Select Launch Configuration"
       }
     ],
     "menus": {
@@ -243,6 +262,23 @@
         {
           "command": "br.listLine",
           "when": "view == brSearchResults && viewItem == searchMatch"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "br.searchFiles",
+          "when": "view == brSearchResults",
+          "group": "navigation@0"
+        },
+        {
+          "command": "br.modifySearch",
+          "when": "view == brSearchResults",
+          "group": "navigation@1"
+        },
+        {
+          "command": "br.clearSearch",
+          "when": "view == brSearchResults",
+          "group": "navigation@2"
         }
       ]
     },

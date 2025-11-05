@@ -24,7 +24,6 @@ import LocalVariableCompletionProvider from './providers/LocalCompletionProvider
 import LocalFunctionCompletionProvider from './providers/LocalFunctionCompletionProvider';
 import InternalFunctionCompletionProvider from './providers/InternalFunctionCompletionProvider';
 import BrReferenceProvder from './providers/BrReferenceProvider';
-import BrDefinitionProvider from './providers/BrDefinitionProvider';
 import SourceDocument from './class/SourceDocument';
 import LibraryFunctionIndex from './class/LibraryFunctionIndex';
 import { initializeSearchOutputChannel, executeSearch } from './brSearch';
@@ -78,7 +77,8 @@ export async function activate(context: ExtensionContext) {
 	subscriptions.push(languages.registerCompletionItemProvider(sel, localFunctionCompletionProvider))
 
 	const configuredProjects: Map<WorkspaceFolder, Project> = new Map()
-	await activateWorkspaceFolders(context, configuredProjects, parser)
+	// Start workspace folder activation in background - don't await
+	activateWorkspaceFolders(context, configuredProjects, parser)
 
 	const diagnostics = new BrDiagnostics(parser, context)
 
@@ -88,11 +88,9 @@ export async function activate(context: ExtensionContext) {
 	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
 	subscriptions.push(languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ","))
 
-	const referenceProvider = new BrReferenceProvder(configuredProjects, parser)
+	const referenceProvider = new BrReferenceProvder(parser)
 	subscriptions.push(languages.registerReferenceProvider(sel, referenceProvider))
 
-	const definitionProvider = new BrDefinitionProvider(configuredProjects, parser)
-	subscriptions.push(languages.registerDefinitionProvider(sel, definitionProvider))
 
 	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects, parser)
 	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
@@ -262,10 +260,10 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	const sourceGlob = workspace.getConfiguration('br', workspaceFolder).get("sourceFileGlobPattern", "**/*.{brs,wbs}");
 	const sourceFileGlobPattern = new RelativePattern(Uri.joinPath(workspaceFolder.uri, searchPath), sourceGlob)
 
-	const startTime = performance.now()
+	// const startTime = performance.now()
 	const sourceFiles = await workspace.findFiles(sourceFileGlobPattern)
-	const endTime = performance.now()
-	console.log(`sourc load: ${endTime - startTime} ms`);
+	// const endTime = performance.now()
+	// console.log(`sourc load: ${endTime - startTime} ms`);
 	
 	// Create status bar when we start reading files
 	const statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
@@ -295,28 +293,42 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	}
 	
 	const scanStartTime = performance.now()
-	for (const sourceUri of sourceFiles) {
-		const sourceLib = await readSourceFile(sourceUri, workspaceFolder, parser)
-		if (sourceLib){
-			project.sourceFiles.set(sourceUri.toString(), sourceLib)
-			// Add library functions to the index
-			const libFunctions = sourceLib.getLibraryFunctionsMetadata()
-			if (libFunctions.length > 0) {
-				const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
-				const functionNames = libFunctions.map(f => f.name).join(', ')
-				console.log(`  ${fileName}: [${functionNames}]`)
+
+	// Process files in batches to avoid blocking UI
+	const BATCH_SIZE = 10
+	for (let i = 0; i < sourceFiles.length; i += BATCH_SIZE) {
+		const batch = sourceFiles.slice(i, i + BATCH_SIZE)
+
+		// Process batch in parallel
+		await Promise.all(batch.map(async (sourceUri) => {
+			const sourceLib = await readSourceFile(sourceUri, workspaceFolder, parser)
+			if (sourceLib){
+				project.sourceFiles.set(sourceUri.toString(), sourceLib)
+				// Add library functions to the index
+				const libFunctions = sourceLib.getLibraryFunctionsMetadata()
+				if (libFunctions.length > 0) {
+					const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
+					const functionNames = libFunctions.map(f => f.name).join(', ')
+					// console.log(`  ${fileName}: [${functionNames}]`)
+				}
+				for (const libFunc of libFunctions) {
+					project.libraryIndex.addFunction(libFunc);
+				}
+				incrementCounter(sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath)
 			}
-			for (const libFunc of libFunctions) {
-				project.libraryIndex.addFunction(libFunc);
-			}
-			incrementCounter(sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath)
+		}))
+
+		// Small delay between batches to keep UI responsive
+		if (i + BATCH_SIZE < sourceFiles.length) {
+			await new Promise(resolve => setTimeout(resolve, 10))
 		}
 	}
+
 	const scanEndTime = performance.now()
 	const totalScanTime = scanEndTime - scanStartTime
 	const averagePerFile = sourceFiles.length > 0 ? (totalScanTime / sourceFiles.length).toFixed(2) : 0
-	console.log(`Total library scanning time: ${totalScanTime.toFixed(2)}ms for ${sourceFiles.length} files (avg: ${averagePerFile}ms/file)`)
-	
+	// console.log(`Total library scanning time: ${totalScanTime.toFixed(2)}ms for ${sourceFiles.length} files (avg: ${averagePerFile}ms/file)`)
+
 	// Hide status bar when done loading
 	statusBarItem.hide()
 
@@ -361,7 +373,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 		}
 	}, undefined, disposables)
 
-	console.log(`files watched`);
+	// console.log(`files watched`);
 
 }
 
