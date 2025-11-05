@@ -106,7 +106,7 @@ Press **Ctrl+Space** to trigger suggestions:
 ### 🚀 Lexi Integration
 Common Lexi Features Supported:
 - **Ctrl+Alt+1**: Compile current BR program
-- **Ctrl+Alt+2**: Run current BR program  
+- **Ctrl+Alt+2**: Run current BR program
 - **Ctrl+Alt+3**: Add/Strip line numbers (context-aware)
 - **Ctrl+Alt+4**: Switch to BR 4.1
 - **Ctrl+Alt+5**: Switch to BR 4.2
@@ -115,6 +115,87 @@ Common Lexi Features Supported:
 - **Decompile**: Convert compiled BR programs (.br, .bro, .wb, .wbo) back to source
 
 Access all Lexi commands through Command Palette (Ctrl+Shift+P) → type "Lexi"
+
+#### ⚙️ Launch Configurations
+**Configure multiple BR runtime environments** - Run programs with different executables, wbconfig files, and workstation IDs.
+
+**Quick Start:**
+1. Create `.vscode/launch.json` in your workspace
+2. Add BR launch configurations with `"type": "br"`
+3. Press **Ctrl+Alt+2** to run - select your configuration
+4. Use **"BR: Select Launch Configuration"** command to switch between configs
+
+**Example Configuration:**
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch BR (Default)",
+      "executable": "${extensionPath}/Lexi/brnative.exe",
+      "wbconfig": "",
+      "wsid": "",
+      "cwd": "${fileDirname}"
+    },
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch BR 4.2 Production",
+      "executable": "C:/BR42/brnative.exe",
+      "wbconfig": "${workspaceFolder}/config/wbconfig.sys",
+      "wsid": "42+",
+      "cwd": "${fileDirname}"
+    },
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Development Environment",
+      "executable": "${extensionPath}/Lexi/brnative.exe",
+      "wbconfig": "${workspaceFolder}/dev/wbconfig.dev",
+      "wsid": "10",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
+```
+
+**Configuration Properties:**
+- **`executable`**: Path to BR executable (supports variables)
+  - Default: `${extensionPath}/Lexi/brnative.exe`
+  - Can be relative to workspace or absolute path
+- **`wbconfig`**: Path to wbconfig file (e.g., `wbconfig.sys`)
+  - Passed as `-[filename]` argument to BR executable
+  - Leave empty to use BR's default behavior
+- **`wsid`**: Workstation ID parameter
+  - `"42"` → `-42` (specific workstation ID)
+  - `"42+"` → `-42+` (auto-increment by 1 if in use)
+  - `"21+5"` → `-21+5` (increment by 5 if needed)
+  - `"WSIDCLEAR"` → `-WSIDCLEAR` (clear WSID)
+  - `"+5"` → `+5` (increment only)
+- **`cwd`**: Working directory (default: `${fileDirname}`)
+
+**Variable Substitution:**
+- `${workspaceFolder}` - Workspace root directory
+- `${extensionPath}` - Extension installation path
+- `${file}` - Current file path
+- `${fileDirname}` - Current file's directory
+- `${fileBasename}` - Current filename with extension
+- `${fileBasenameNoExtension}` - Filename without extension
+
+**Features:**
+- **Built-in Default**: Always includes a default configuration using extension's BR executable
+- **Active Configuration**: Last selected config is remembered per workspace
+- **IntelliSense**: Full autocomplete support when editing launch.json
+- **Quick Switch**: Use "BR: Select Launch Configuration" to change active config
+- **Validation**: Checks if executable exists before launching
+
+**Use Cases:**
+- **Multiple BR Versions**: Switch between BR 4.1, 4.2, 4.3 easily
+- **Environment Configs**: Dev, test, prod with different wbconfig files
+- **Multi-User Testing**: Different WSID values for concurrent sessions
+- **Custom Runtimes**: Use custom BR executables or installations
 
 #### 🔄 Automatic Decompilation
 When you click on a compiled BR file (.br, .bro, .wb, .wbo):
