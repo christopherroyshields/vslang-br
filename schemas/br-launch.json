@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BR Launch Configuration",
+  "description": "Launch configuration for Business Rules! programs",
+  "type": "object",
+  "required": ["type", "request", "name"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "Type of configuration",
+      "enum": ["br"]
+    },
+    "request": {
+      "type": "string",
+      "description": "Request type",
+      "enum": ["launch"]
+    },
+    "name": {
+      "type": "string",
+      "description": "Name of the launch configuration"
+    },
+    "executable": {
+      "type": "string",
+      "description": "Path to BR executable. Can use variables: ${workspaceFolder}, ${extensionPath}, ${file}, ${fileBasename}. Defaults to ${extensionPath}/Lexi/brnative.exe",
+      "default": "${extensionPath}/Lexi/brnative.exe"
+    },
+    "wbconfig": {
+      "type": "string",
+      "description": "Path to wbconfig file (e.g., wbconfig.sr). Will be passed as -[filename] argument. Leave empty to use BR's default behavior. Can use variables: ${workspaceFolder}, ${extensionPath}, ${file}, ${fileBasename}",
+      "default": ""
+    },
+    "wsid": {
+      "type": "string",
+      "description": "Workstation ID. Examples: '42' (-42), '42+' (-42+ auto-increment by 1), '21+5' (-21+5 increment by 5), 'WSIDCLEAR' (-WSIDCLEAR), '+5' (+5 increment only). Leave empty to use BR's default.",
+      "default": ""
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory for the BR executable. Defaults to the folder containing the current file. Can use variables: ${workspaceFolder}, ${fileDirname}",
+      "default": "${fileDirname}"
+    }
+  }
+}

@@ -6,7 +6,100 @@ import { BrFileExtensions } from './util/brFileExtensions';
 
 const LexiPath = path.normalize(__dirname+"\\..\\Lexi")
 let autoCompileStatusBarItem: vscode.StatusBarItem;
-const AutoCompileState: Map<string, boolean> = new Map(); 
+const AutoCompileState: Map<string, boolean> = new Map();
+
+// Launch configuration interface
+interface BrLaunchConfiguration {
+	type: 'br';
+	request: 'launch';
+	name: string;
+	executable?: string;
+	wbconfig?: string;
+	wsid?: string;
+	cwd?: string;
+}
+
+// Active launch configuration state key
+const ACTIVE_LAUNCH_CONFIG_KEY = 'br.activeLaunchConfig';
+
+// Get the built-in default launch configuration
+function getDefaultLaunchConfig(): BrLaunchConfiguration {
+	return {
+		type: 'br',
+		request: 'launch',
+		name: 'BR Default',
+		executable: '${extensionPath}/Lexi/brnative.exe',
+		wbconfig: '',
+		wsid: '',
+		cwd: '${fileDirname}'
+	};
+}
+
+// Load BR launch configurations from .vscode/launch.json
+function loadLaunchConfigurations(): BrLaunchConfiguration[] {
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+	if (!workspaceFolder) {
+		return [getDefaultLaunchConfig()];
+	}
+
+	const launchJsonPath = path.join(workspaceFolder.uri.fsPath, '.vscode', 'launch.json');
+	if (!fs.existsSync(launchJsonPath)) {
+		return [getDefaultLaunchConfig()];
+	}
+
+	try {
+		const content = fs.readFileSync(launchJsonPath, 'utf8');
+		// Remove comments from JSON (simple approach - handles // comments)
+		const cleanContent = content.replace(/\/\/.*$/gm, '');
+		const launchJson = JSON.parse(cleanContent);
+
+		const brConfigs = (launchJson.configurations || [])
+			.filter((config: any) => config.type === 'br') as BrLaunchConfiguration[];
+
+		// Always include the default configuration
+		return brConfigs.length > 0 ? [getDefaultLaunchConfig(), ...brConfigs] : [getDefaultLaunchConfig()];
+	} catch (error) {
+		console.error('Error loading launch.json:', error);
+		return [getDefaultLaunchConfig()];
+	}
+}
+
+// Resolve variables in a path string
+function resolveVariables(str: string, activeFile: string | undefined, context: vscode.ExtensionContext): string {
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+
+	let resolved = str;
+
+	// Replace ${workspaceFolder}
+	if (workspaceFolder) {
+		resolved = resolved.replace(/\$\{workspaceFolder\}/g, workspaceFolder.uri.fsPath);
+	}
+
+	// Replace ${extensionPath}
+	resolved = resolved.replace(/\$\{extensionPath\}/g, context.extensionPath);
+
+	// Replace ${file}
+	if (activeFile) {
+		resolved = resolved.replace(/\$\{file\}/g, activeFile);
+
+		// Replace ${fileDirname}
+		resolved = resolved.replace(/\$\{fileDirname\}/g, path.dirname(activeFile));
+
+		// Replace ${fileBasename}
+		resolved = resolved.replace(/\$\{fileBasename\}/g, path.basename(activeFile));
+
+		// Replace ${fileBasenameNoExtension}
+		const parsedPath = path.parse(activeFile);
+		resolved = resolved.replace(/\$\{fileBasenameNoExtension\}/g, parsedPath.name);
+	}
+
+	// If it's a relative path (doesn't start with drive letter or /, \), resolve to workspace
+	if (workspaceFolder && !path.isAbsolute(resolved)) {
+		resolved = path.join(workspaceFolder.uri.fsPath, resolved);
+	}
+
+	return path.normalize(resolved);
+}
 
 export function activateLexi(context: vscode.ExtensionContext) {
 	// Create a custom editor provider for compiled BR files
@@ -58,11 +151,9 @@ export function activateLexi(context: vscode.ExtensionContext) {
 		}
 	}, context.subscriptions)
 
-  context.subscriptions.push(vscode.commands.registerTextEditorCommand('vslang-br.run', (editor) => {
+  context.subscriptions.push(vscode.commands.registerTextEditorCommand('vslang-br.run', async (editor) => {
     if (editor.document.languageId === "br"){
-      exec(`${LexiPath}\\RunBR.cmd ${editor.document.fileName}`, {
-        cwd: `${LexiPath}`
-      });
+      await runBrProgram(editor.document.fileName, context);
     }
   }))
   
@@ -123,6 +214,10 @@ export function activateLexi(context: vscode.ExtensionContext) {
     }
   }))
 
+  context.subscriptions.push(vscode.commands.registerCommand('vslang-br.selectLaunchConfig', async () => {
+    await selectLaunchConfiguration(context);
+  }))
+
   context.subscriptions.push(vscode.commands.registerCommand('vslang-br.DecompileFolder', async (folderUri: vscode.Uri) => {
     let targetFolder: string | undefined;
 
@@ -155,6 +250,162 @@ export function activateLexi(context: vscode.ExtensionContext) {
       await decompileFolderBatch(targetFolder);
     }
   }))
+}
+
+// Select a launch configuration
+async function selectLaunchConfiguration(context: vscode.ExtensionContext): Promise<BrLaunchConfiguration | undefined> {
+	const configs = loadLaunchConfigurations();
+
+	if (configs.length === 0) {
+		vscode.window.showErrorMessage('No BR launch configurations found');
+		return undefined;
+	}
+
+	const items = configs.map(config => ({
+		label: config.name,
+		description: config.executable || '${extensionPath}/Lexi/brnative.exe',
+		config: config
+	}));
+
+	const selected = await vscode.window.showQuickPick(items, {
+		placeHolder: 'Select a BR launch configuration'
+	});
+
+	if (selected) {
+		// Save as active configuration
+		await context.workspaceState.update(ACTIVE_LAUNCH_CONFIG_KEY, selected.config.name);
+		vscode.window.showInformationMessage(`Active launch configuration: ${selected.config.name}`);
+		return selected.config;
+	}
+
+	return undefined;
+}
+
+// Run a BR program with the selected launch configuration
+async function runBrProgram(activeFilename: string, context: vscode.ExtensionContext): Promise<void> {
+	// Get active configuration or prompt to select
+	const activeConfigName = context.workspaceState.get<string>(ACTIVE_LAUNCH_CONFIG_KEY);
+	const configs = loadLaunchConfigurations();
+
+	let selectedConfig: BrLaunchConfiguration | undefined;
+
+	if (activeConfigName) {
+		// Find the active configuration
+		selectedConfig = configs.find(c => c.name === activeConfigName);
+	}
+
+	// If no active config or not found, prompt user to select
+	if (!selectedConfig) {
+		selectedConfig = await selectLaunchConfiguration(context);
+		if (!selectedConfig) {
+			return; // User cancelled
+		}
+	}
+
+	// Resolve variables in configuration
+	const executable = resolveVariables(selectedConfig.executable || '${extensionPath}/Lexi/brnative.exe', activeFilename, context);
+	const wbconfig = selectedConfig.wbconfig ? resolveVariables(selectedConfig.wbconfig, activeFilename, context) : '';
+	const cwd = resolveVariables(selectedConfig.cwd || '${fileDirname}', activeFilename, context);
+	const wsid = selectedConfig.wsid || '';
+
+	// Validate executable exists
+	if (!fs.existsSync(executable)) {
+		const retry = await vscode.window.showErrorMessage(
+			`BR executable not found: ${executable}`,
+			'Select Different Configuration',
+			'Cancel'
+		);
+		if (retry === 'Select Different Configuration') {
+			await selectLaunchConfiguration(context);
+		}
+		return;
+	}
+
+	// First, compile the program
+	await compileBrProgram(activeFilename);
+
+	// Parse the file info
+	const parsedPath = path.parse(activeFilename);
+	const inputExt = parsedPath.ext.toLowerCase();
+	const outputExt = BrFileExtensions.getCompiledExtension(inputExt) || inputExt.substring(0, 3);
+	const npneName = parsedPath.name;
+	const folder = parsedPath.dir;
+	const compiledProgram = path.join(folder, npneName + outputExt);
+
+	// Check if compiled program exists
+	if (!fs.existsSync(compiledProgram)) {
+		vscode.window.showErrorMessage('Compiled program not found. Compilation may have failed.');
+		return;
+	}
+
+	// Start lexitip first
+	exec(`start lexitip`, {
+		cwd: LexiPath
+	});
+
+	// Wait a moment for lexitip to start
+	await new Promise(resolve => setTimeout(resolve, 500));
+
+	// Change to the working directory
+	const drive = cwd.substring(0, 2);
+
+	// Create a procedure file to run the program
+	// Use full path with colon prefix for absolute path in BR
+	const prcContent = `proc noecho
+load ":${compiledProgram}"
+run
+`;
+
+	const prcFilePath = path.join(cwd, 'convert.$$$');
+	try {
+		fs.writeFileSync(prcFilePath, prcContent);
+	} catch (error: any) {
+		vscode.window.showErrorMessage(`Failed to create run procedure: ${error.message}`);
+		return;
+	}
+
+	// Build the command
+	let command = `${drive} && cd "${cwd}" && `;
+
+	// Build the BR executable command
+	command += `"${executable}" proc convert.$$$`;
+
+	// Add WSID parameter if specified (format: -WSID, -WSID+, -WSID+increment, -WSIDCLEAR, or +increment)
+	if (wsid) {
+		// If starts with +, use as-is (e.g., "+5")
+		// If "WSIDCLEAR", prefix with - (e.g., "-WSIDCLEAR")
+		// Otherwise, prefix with - for numeric values (e.g., "42" → "-42", "42+" → "-42+", "21+5" → "-21+5")
+		if (wsid.startsWith('+')) {
+			command += ` ${wsid}`;
+		} else if (wsid === 'WSIDCLEAR') {
+			command += ` -WSIDCLEAR`;
+		} else {
+			command += ` -${wsid}`;
+		}
+	}
+
+	// Add wbconfig as command-line argument if specified (format: -[filename])
+	if (wbconfig && fs.existsSync(wbconfig)) {
+		const wbconfigFilename = path.basename(wbconfig);
+		command += ` -${wbconfigFilename}`;
+	}
+
+	exec(command, {
+		cwd: cwd
+	}, (error, stdout, stderr) => {
+		// Clean up the procedure file
+		try {
+			if (fs.existsSync(prcFilePath)) {
+				fs.unlinkSync(prcFilePath);
+			}
+		} catch (e) {
+			// Ignore cleanup errors
+		}
+
+		if (error) {
+			vscode.window.showErrorMessage(`Error running BR program: ${error.message}`);
+		}
+	});
 }
 
 async function decompileBrProgram(activeFilename: string) {

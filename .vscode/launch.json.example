@@ -1,0 +1,41 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch BR (Default)",
+      "executable": "${extensionPath}/Lexi/brnative.exe",
+      "wbconfig": "",
+      "wsid": "",
+      "cwd": "${fileDirname}"
+    },
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch BR 4.2 (Custom)",
+      "executable": "C:/BR42/brnative.exe",
+      "wbconfig": "${workspaceFolder}/config/wbconfig.sys",
+      "wsid": "42+",
+      "cwd": "${fileDirname}"
+    },
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch with Custom Config",
+      "executable": "${extensionPath}/Lexi/brnative.exe",
+      "wbconfig": "${workspaceFolder}/wbconfig.sys",
+      "wsid": "21+5",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch with WSID 10",
+      "executable": "${extensionPath}/Lexi/brnative.exe",
+      "wbconfig": "",
+      "wsid": "10",
+      "cwd": "${fileDirname}"
+    }
+  ]
+}

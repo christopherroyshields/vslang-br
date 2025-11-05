@@ -77,7 +77,8 @@ export async function activate(context: ExtensionContext) {
 	subscriptions.push(languages.registerCompletionItemProvider(sel, localFunctionCompletionProvider))
 
 	const configuredProjects: Map<WorkspaceFolder, Project> = new Map()
-	await activateWorkspaceFolders(context, configuredProjects, parser)
+	// Start workspace folder activation in background - don't await
+	activateWorkspaceFolders(context, configuredProjects, parser)
 
 	const diagnostics = new BrDiagnostics(parser, context)
 
@@ -292,28 +293,42 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	}
 	
 	const scanStartTime = performance.now()
-	for (const sourceUri of sourceFiles) {
-		const sourceLib = await readSourceFile(sourceUri, workspaceFolder, parser)
-		if (sourceLib){
-			project.sourceFiles.set(sourceUri.toString(), sourceLib)
-			// Add library functions to the index
-			const libFunctions = sourceLib.getLibraryFunctionsMetadata()
-			if (libFunctions.length > 0) {
-				const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
-				const functionNames = libFunctions.map(f => f.name).join(', ')
-				// console.log(`  ${fileName}: [${functionNames}]`)
+
+	// Process files in batches to avoid blocking UI
+	const BATCH_SIZE = 10
+	for (let i = 0; i < sourceFiles.length; i += BATCH_SIZE) {
+		const batch = sourceFiles.slice(i, i + BATCH_SIZE)
+
+		// Process batch in parallel
+		await Promise.all(batch.map(async (sourceUri) => {
+			const sourceLib = await readSourceFile(sourceUri, workspaceFolder, parser)
+			if (sourceLib){
+				project.sourceFiles.set(sourceUri.toString(), sourceLib)
+				// Add library functions to the index
+				const libFunctions = sourceLib.getLibraryFunctionsMetadata()
+				if (libFunctions.length > 0) {
+					const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
+					const functionNames = libFunctions.map(f => f.name).join(', ')
+					// console.log(`  ${fileName}: [${functionNames}]`)
+				}
+				for (const libFunc of libFunctions) {
+					project.libraryIndex.addFunction(libFunc);
+				}
+				incrementCounter(sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath)
 			}
-			for (const libFunc of libFunctions) {
-				project.libraryIndex.addFunction(libFunc);
-			}
-			incrementCounter(sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath)
+		}))
+
+		// Small delay between batches to keep UI responsive
+		if (i + BATCH_SIZE < sourceFiles.length) {
+			await new Promise(resolve => setTimeout(resolve, 10))
 		}
 	}
+
 	const scanEndTime = performance.now()
 	const totalScanTime = scanEndTime - scanStartTime
 	const averagePerFile = sourceFiles.length > 0 ? (totalScanTime / sourceFiles.length).toFixed(2) : 0
 	// console.log(`Total library scanning time: ${totalScanTime.toFixed(2)}ms for ${sourceFiles.length} files (avg: ${averagePerFile}ms/file)`)
-	
+
 	// Hide status bar when done loading
 	statusBarItem.hide()
 
