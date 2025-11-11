@@ -2,7 +2,7 @@
   "name": "vslang-br",
   "displayName": "BR Language Extension",
   "description": "Language support for Business Rules!",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "license": "LICENSE",
   "publisher": "crs-dev",
   "icon": "logo.png",

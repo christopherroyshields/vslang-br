@@ -4,6 +4,17 @@ All notable changes to the "vslang-br" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.11] - 2025-11-11
+
+### Changed
+- **Performance Optimization**: Workspace loading now uses regex pre-scan to detect library functions
+  - Skips expensive scanning for files without library function patterns
+  - Significantly faster initialization for large workspaces
+  - Console logging shows scan statistics (files processed, library functions found, timing)
+- **Find References Performance**: Added detailed performance logging
+  - Shows total files searched, files actually scanned, and references found
+  - Demonstrates optimization effectiveness in real-time
+
 ## [0.0.10] - 2025-11-11
 
 ### Added
