@@ -24,6 +24,7 @@ import LocalVariableCompletionProvider from './providers/LocalCompletionProvider
 import LocalFunctionCompletionProvider from './providers/LocalFunctionCompletionProvider';
 import InternalFunctionCompletionProvider from './providers/InternalFunctionCompletionProvider';
 import BrReferenceProvder from './providers/BrReferenceProvider';
+import BrDefinitionProvider from './providers/BrDefinitionProvider';
 import SourceDocument from './class/SourceDocument';
 import LibraryFunctionIndex from './class/LibraryFunctionIndex';
 import { initializeSearchOutputChannel, executeSearch } from './brSearch';
@@ -90,6 +91,8 @@ export async function activate(context: ExtensionContext) {
 	const referenceProvider = new BrReferenceProvder(parser)
 	subscriptions.push(languages.registerReferenceProvider(sel, referenceProvider))
 
+	const definitionProvider = new BrDefinitionProvider(configuredProjects, parser)
+	subscriptions.push(languages.registerDefinitionProvider(sel, definitionProvider))
 
 	const funcCompletionProvider = new FuncCompletionProvider(configuredProjects, parser)
 	languages.registerCompletionItemProvider(sel, funcCompletionProvider)
