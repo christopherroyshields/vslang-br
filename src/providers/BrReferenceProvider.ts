@@ -1,6 +1,7 @@
 import { CancellationToken, Location, Position, ProviderResult, Range, ReferenceContext, ReferenceProvider, TextDocument, WorkspaceFolder, workspace } from "vscode";
 import BrParser from "../parser";
 import { Project } from "../class/Project";
+import { performance } from 'perf_hooks';
 
 export default class BrReferenceProvder implements ReferenceProvider {
   parser: BrParser
@@ -52,12 +53,19 @@ export default class BrReferenceProvder implements ReferenceProvider {
           // Create case-insensitive regex for fast pre-scan
           const searchRegex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
 
+          const searchStartTime = performance.now()
+          let totalFiles = 0
+          let filesScanned = 0
+          let filesWithMatches = 0
+
           // Search in all OTHER source files for function references
           for (const [uriString, sourceDoc] of project.sourceFiles) {
             // Skip current document (already searched)
             if (uriString === document.uri.toString()) {
               continue
             }
+
+            totalFiles++
 
             try {
               // OPTIMIZATION: Fast regex pre-scan before expensive parsing
@@ -68,11 +76,16 @@ export default class BrReferenceProvder implements ReferenceProvider {
                 continue
               }
 
+              filesScanned++
+
               // Regex found matches, now do precise tree-sitter search
               // Search by node type, not by position
               const fileUri = sourceDoc.uri
               const fileDoc = await workspace.openTextDocument(fileUri)
               const ranges = this.searchByNodeType(word, fileDoc, nodeType)
+              if (ranges.length > 0) {
+                filesWithMatches++
+              }
               ranges.forEach(r => {
                 locations.push(new Location(fileUri, r))
               })
@@ -81,6 +94,11 @@ export default class BrReferenceProvder implements ReferenceProvider {
               console.error(`Error searching file ${uriString}:`, error)
             }
           }
+
+          const searchEndTime = performance.now()
+          const searchTime = searchEndTime - searchStartTime
+          const externalRefs = locations.length - localRanges.length
+          console.log(`Find References: Searched ${totalFiles} files in ${searchTime.toFixed(2)}ms - Scanned ${filesScanned} files, found ${externalRefs} references in ${filesWithMatches} files`)
         }
       }
 

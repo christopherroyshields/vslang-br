@@ -177,17 +177,12 @@ async function readSourceFile(uri: Uri, workspaceFolder: WorkspaceFolder, parser
 	try {
 		const libText = await workspace.fs.readFile(uri)
 		if (libText){
-			// let startTime = performance.now()
-			// const newDoc = new ProjectSourceDocument(libText.toString(), uri, workspaceFolder)
-			// let endTime = performance.now()
-			// console.log(`Regex Parse: ${endTime - startTime} milliseconds`)
+			// Quick pre-scan for library function patterns (fast regex check)
+			const fileContent = libText.toString()
+			const hasLibraryPattern = /\bDEF\s+LIB/i.test(fileContent) || /\bLIBRARY\s+["\w]/i.test(fileContent)
 
-			const startTime = performance.now()
-			// Create SourceDocument with lazy parsing
-			const treeDoc = new SourceDocument(parser, uri, libText, workspaceFolder)
-			const endTime = performance.now()
-			// console.log(`Library scan: ${endTime - startTime} milliseconds`)
-
+			// Create SourceDocument - skip expensive library scanning if no pattern detected
+			const treeDoc = new SourceDocument(parser, uri, libText, workspaceFolder, hasLibraryPattern)
 			return treeDoc
 		}
 	} catch (error: any) {
@@ -296,6 +291,7 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	}
 	
 	const scanStartTime = performance.now()
+	let filesWithLibraries = 0
 
 	// Process files in batches to avoid blocking UI
 	const BATCH_SIZE = 10
@@ -304,20 +300,37 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 
 		// Process batch in parallel
 		await Promise.all(batch.map(async (sourceUri) => {
-			const sourceLib = await readSourceFile(sourceUri, workspaceFolder, parser)
-			if (sourceLib){
-				project.sourceFiles.set(sourceUri.toString(), sourceLib)
-				// Add library functions to the index
-				const libFunctions = sourceLib.getLibraryFunctionsMetadata()
-				if (libFunctions.length > 0) {
-					const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
-					const functionNames = libFunctions.map(f => f.name).join(', ')
-					// console.log(`  ${fileName}: [${functionNames}]`)
+			try {
+				// Read file buffer
+				const libText = await workspace.fs.readFile(sourceUri)
+				if (!libText) {
+					return
 				}
-				for (const libFunc of libFunctions) {
-					project.libraryIndex.addFunction(libFunc);
+
+				// Quick pre-scan for library function patterns (fast regex check)
+				const fileContent = libText.toString()
+				const hasLibraryPattern = /\bDEF\s+LIB/i.test(fileContent) || /\bLIBRARY\s+["\w]/i.test(fileContent)
+
+				// Create SourceDocument - skip expensive library scanning if no pattern detected
+				const sourceLib = new SourceDocument(parser, sourceUri, libText, workspaceFolder, hasLibraryPattern)
+				project.sourceFiles.set(sourceUri.toString(), sourceLib)
+
+				// Only index library functions if pattern was detected
+				if (hasLibraryPattern) {
+					filesWithLibraries++
+					const libFunctions = sourceLib.getLibraryFunctionsMetadata()
+					if (libFunctions.length > 0) {
+						const fileName = sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath
+						const functionNames = libFunctions.map(f => f.name).join(', ')
+						// console.log(`  ${fileName}: [${functionNames}]`)
+					}
+					for (const libFunc of libFunctions) {
+						project.libraryIndex.addFunction(libFunc);
+					}
 				}
 				incrementCounter(sourceUri.fsPath.split('\\').pop() || sourceUri.fsPath.split('/').pop() || sourceUri.fsPath)
+			} catch (error: any) {
+				console.error(`Error reading source file: ${sourceUri.fsPath}, ${error.message}`)
 			}
 		}))
 
@@ -330,7 +343,8 @@ async function watchSourceFiles(workspaceFolder: WorkspaceFolder, searchPath: st
 	const scanEndTime = performance.now()
 	const totalScanTime = scanEndTime - scanStartTime
 	const averagePerFile = sourceFiles.length > 0 ? (totalScanTime / sourceFiles.length).toFixed(2) : 0
-	// console.log(`Total library scanning time: ${totalScanTime.toFixed(2)}ms for ${sourceFiles.length} files (avg: ${averagePerFile}ms/file)`)
+	const totalLibraryFunctions = project.libraryIndex.getAllFunctions().length
+	console.log(`Scanned ${sourceFiles.length} files in ${totalScanTime.toFixed(2)}ms (avg: ${averagePerFile}ms/file) - Found ${totalLibraryFunctions} library functions in ${filesWithLibraries} files`)
 
 	// Hide status bar when done loading
 	statusBarItem.hide()
