@@ -88,7 +88,7 @@ export async function activate(context: ExtensionContext) {
 	const signatureHelpProvider = new BrSignatureHelpProvider(configuredProjects, parser)
 	subscriptions.push(languages.registerSignatureHelpProvider(sel, signatureHelpProvider, "(", ","))
 
-	const referenceProvider = new BrReferenceProvder(parser)
+	const referenceProvider = new BrReferenceProvder(configuredProjects, parser)
 	subscriptions.push(languages.registerReferenceProvider(sel, referenceProvider))
 
 	const definitionProvider = new BrDefinitionProvider(configuredProjects, parser)
