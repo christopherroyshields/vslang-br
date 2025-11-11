@@ -97,12 +97,23 @@ npm run vsce:ls        # Inspect package contents with tree view
 
 ### Provider Architecture
 All language features are implemented as separate providers in `src/providers/`:
+- **BrDefinitionProvider**: Go to definition for symbols (functions, variables, labels)
+  - Cross-file navigation for library functions via library index
+  - Local function definitions within current file
+  - Variable definitions (DIM statements)
+  - Label definitions
+  - System functions return undefined (no definition available)
+- **BrReferenceProvider**: Find all references with cross-file search
+  - **Performance optimized**: Two-stage search with regex pre-scan before parsing
+  - Cross-file search for function references across workspace
+  - Local results shown first for immediate feedback
+  - Type-based search via `searchByNodeType()` method
+  - Supports functions, labels, and variables
 - **BrHoverProvider**: Function hover information with JSDoc support
 - **BrSignatureHelpProvider**: Parameter hints during function calls with improved handling of unclosed parentheses and detailed JSDoc documentation
 - **FuncCompletionProvider**: User-defined function completions
 - **StatementCompletionProvider**: BR language statements
 - **BrSymbolProvider**: Document symbol navigation
-- **BrReferenceProvider**: Find references functionality
 - **BrRenameProvider**: Symbol renaming
 - **LocalCompletionProvider**: Local variable completions
 - **LocalFunctionCompletionProvider**: Local function completions within current document

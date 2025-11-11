@@ -90,8 +90,48 @@ Press **Ctrl+Space** to trigger suggestions:
   00170 FNEND
   ```
 
-### Code Navigation
-- **Symbol Search** (Ctrl+Shift+O): Quick navigation to any function or label
+### 🧭 Code Navigation & Symbol Resolution
+
+#### Go to Definition (F12)
+Jump directly to where symbols are defined:
+- **Functions**: Navigate to function definitions
+  - **Local Functions**: Jump to `DEF` statement in current file
+  - **Library Functions**: Cross-file navigation to library function definitions
+  - **System Functions**: No definition navigation (built-in functions)
+- **Variables**: Jump to `DIM` statement where variable is declared
+- **Labels**: Navigate to label definition (e.g., `100:`)
+- **Case-Insensitive**: Works regardless of letter casing
+
+**Usage:**
+- Right-click symbol → "Go to Definition"
+- Press **F12** on any symbol
+- Ctrl+Click on a symbol
+
+#### Find All References (Shift+F12)
+Find every usage of a symbol across your entire workspace:
+- **Cross-File Search**: Finds references in all BR files, not just current file
+- **Smart Performance**: Fast regex pre-scan before parsing
+  - Only parses files that contain the symbol
+  - ~100x faster on large workspaces (100+ files)
+- **Local Results First**: Current file references appear immediately
+- **Functions, Labels, Variables**: Works for all symbol types
+
+**Usage:**
+- Right-click symbol → "Find All References"
+- Press **Shift+F12** on any symbol
+- Results appear in "References" panel
+
+**Example:** Finding all calls to a library function:
+1. Click on `fnCalculateTax` in any file
+2. Press Shift+F12
+3. See all references across:
+   - Current file (shown first)
+   - Library definition file
+   - All files calling the function
+
+#### Other Navigation Features
+- **Symbol Search** (Ctrl+Shift+O): Quick navigation to any function or label in current file
+- **Workspace Symbol Search** (Ctrl+T): Search functions across all files
 - **Outline View**: See document structure in the Explorer sidebar
 - **Breadcrumbs**: Navigation trail at top of editor
 
@@ -295,10 +335,12 @@ Results are parsed and displayed in a native VS Code tree view with full navigat
 | **Toggle Comment** | Ctrl+/ | Comment/uncomment selected lines |
 | **Next Match** | Ctrl+Shift+Down | Jump to next occurrence of symbol |
 | **Previous Match** | Ctrl+Shift+Up | Jump to previous occurrence |
-| **Go to Definition** | F12 | Jump to definition |
+| **Go to Definition** | F12 | Jump to symbol definition (functions, variables, labels) |
+| **Find All References** | Shift+F12 | Find all uses of symbol across workspace |
 | **Rename Symbol** | F2 | Rename across files |
 | **IntelliSense** | Ctrl+Space | Trigger suggestions |
 | **Parameter Hints** | Ctrl+Shift+Space | Show function signatures |
+| **Workspace Symbols** | Ctrl+T | Search functions across all files |
 
 ## Configuration Options
 
