@@ -30,8 +30,16 @@ export default class BrDefinitionProvider implements DefinitionProvider {
     const wordRange = document.getWordRangeAtPosition(position, /\w+\$?/)
     if (!wordRange) return undefined
 
-    const node = this.parser.getNodeAtPosition(document, position)
+    let node = this.parser.getNodeAtPosition(document, position)
     if (!node) return undefined
+
+    // If we're on a goto_statement or gosub_statement, try to get the line_reference child
+    if (node.type === 'goto_statement' || node.type === 'gosub_statement') {
+      const lineRefChild = node.children.find(child => child.type === 'line_reference')
+      if (lineRefChild) {
+        node = lineRefChild
+      }
+    }
 
     switch (node.type) {
       case 'function_name':
@@ -43,6 +51,9 @@ export default class BrDefinitionProvider implements DefinitionProvider {
 
       case 'label_reference':
         return this.findLabelDefinition(node.text, document)
+
+      case 'line_reference':
+        return this.findLineNumberDefinition(node.text, document)
 
       case 'stringidentifier':
       case 'numberidentifier':
@@ -124,6 +135,32 @@ export default class BrDefinitionProvider implements DefinitionProvider {
         document.uri,
         this.parser.getNodeRange(labelNode)
       )
+    }
+
+    return undefined
+  }
+
+  private findLineNumberDefinition(
+    lineNumber: string,
+    document: TextDocument
+  ): Location | undefined {
+    // Use parser to find line_number definition in current document
+    const tree = this.parser.getDocumentTree(document)
+    if (!tree) return undefined
+
+    // Get all line_number nodes and manually check text
+    const query = `((line_number) @line)`
+    const results = this.parser.match(query, tree.rootNode)
+
+    for (const result of results) {
+      const lineNumNode = result.captures[0].node
+      // Line numbers may have trailing spaces in the parse tree, so trim
+      if (lineNumNode.text.trim() === lineNumber) {
+        return new Location(
+          document.uri,
+          this.parser.getNodeRange(lineNumNode)
+        )
+      }
     }
 
     return undefined

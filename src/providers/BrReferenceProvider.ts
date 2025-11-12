@@ -105,6 +105,15 @@ export default class BrReferenceProvder implements ReferenceProvider {
       return locations
     }
 
+    // For line numbers and line references, search in current document only
+    if (nodeType === "line_number" || nodeType === "line_reference") {
+      const ranges = this.searchByNodeType(word, document, nodeType)
+      ranges.forEach(r => {
+        locations.push(new Location(document.uri, r))
+      })
+      return locations
+    }
+
     // For variables, labels, and other symbols, search only in current document
     const ranges = this.parser.getOccurences(word, document, wordRange)
     ranges.forEach(r => {
@@ -153,6 +162,13 @@ export default class BrReferenceProvder implements ReferenceProvider {
                  ((numberidentifier) @occurrence (#match? @occurrence "^${name_match}$"))`
         break
       }
+      case "line_number":
+      case "line_reference": {
+        // For line numbers, search for both definitions and references
+        // Get all line numbers and line references, filter manually
+        query = `((line_number) @line) ((line_reference) @line_ref)`
+        break
+      }
       default:
         return occurrences
     }
@@ -160,6 +176,15 @@ export default class BrReferenceProvder implements ReferenceProvider {
     const results = this.parser.match(query, tree.rootNode)
     results.forEach(r => {
       const node = r.captures[0].node
+
+      // For line numbers, manually filter by text match
+      // Line numbers may have trailing spaces in the parse tree, so trim
+      if (nodeType === "line_number" || nodeType === "line_reference") {
+        if (node.text.trim() !== word.trim()) {
+          return // Skip this node if text doesn't match
+        }
+      }
+
       if (nodeType === "label" && node.type === "label") {
         // Special handling for labels to exclude the colon
         occurrences.push(new Range(
