@@ -4,6 +4,14 @@ All notable changes to the "vslang-br" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.12] - 2025-11-11
+
+### Fixed
+- **Function Resolution Priority**: Local functions now properly shadow library functions
+  - BrHoverProvider and BrDefinitionProvider now check local functions before library functions
+  - Follows standard scoping rules where local definitions take precedence over global ones
+  - Ensures correct function is displayed when same name exists in both local and library scope
+
 ## [0.0.11] - 2025-11-11
 
 ### Changed
