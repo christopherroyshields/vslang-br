@@ -66,28 +66,24 @@ Press **Ctrl+Space** to trigger suggestions:
 - **Signature Help**: Press **Ctrl+Shift+Space** while typing function parameters
 - **JSDoc Support**: Document your own functions with JSDoc-style comments:
   ```br
-  00090 /**
-  00091  * Calculate sales tax for a given amount
-  00092  * @param amount - The base purchase amount before tax
-  00093  * @param taxrate - Tax rate as a decimal (e.g., 0.08 for 8%)
-  00094  * @returns The calculated tax amount
-  00095  * @example
-  00096  *   LET TAX = FNCALCTAX(100, 0.08)  ! Returns 8.00
-  00097  * @see FNCALCTOTAL for total with tax included
-  00098  */
-  00100 DEF FNCALCTAX(AMOUNT, TAXRATE)
-  00110   LET FNCALCTAX = AMOUNT * TAXRATE
-  00120 FNEND
-  00130 
-  00140 /**
-  00141  * Calculate total amount including tax
-  00142  * @param amount - Base amount
-  00143  * @param taxrate - Tax rate (decimal)
-  00144  * @returns Total amount with tax
-  00145  */
-  00150 DEF FNCALCTOTAL(AMOUNT, TAXRATE)
-  00160   LET FNCALCTOTAL = AMOUNT + FNCALCTAX(AMOUNT, TAXRATE)
-  00170 FNEND
+  ! Calculate sales tax for a given amount
+  ! @param amount - The base purchase amount before tax
+  ! @param taxrate - Tax rate as a decimal (e.g., 0.08 for 8%)
+  ! @returns The calculated tax amount
+  ! @example
+  !   LET TAX = FNCALCTAX(100, 0.08)  ! Returns 8.00
+  ! @see FNCALCTOTAL for total with tax included
+  DEF FNCALCTAX(AMOUNT, TAXRATE)
+    LET FNCALCTAX = AMOUNT * TAXRATE
+  FNEND
+
+  ! Calculate total amount including tax
+  ! @param amount - Base amount
+  ! @param taxrate - Tax rate (decimal)
+  ! @returns Total amount with tax
+  DEF FNCALCTOTAL(AMOUNT, TAXRATE)
+    LET FNCALCTOTAL = AMOUNT + FNCALCTAX(AMOUNT, TAXRATE)
+  FNEND
   ```
 
 ### 🧭 Code Navigation & Symbol Resolution
