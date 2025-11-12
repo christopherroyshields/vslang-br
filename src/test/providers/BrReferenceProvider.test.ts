@@ -355,4 +355,81 @@ print "hello world"`
 		await vscode.window.showTextDocument(document)
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
+
+	test('Local functions only search current file (not cross-file)', async () => {
+		console.log('Running local function references test...')
+
+		const codepath = path.join(__dirname, '../../../testcode/hovertest.brs')
+		const uri = vscode.Uri.file(codepath)
+		const document = await vscode.workspace.openTextDocument(uri)
+
+		const testWorkspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+
+		// Mock projects map for testing
+		const projects = new Map<vscode.WorkspaceFolder, Project>()
+		const project = {
+			sourceFiles: new Map<string, SourceDocument>(),
+			layouts: new Map<string, Layout>(),
+			libraryIndex: new LibraryFunctionIndex()
+		} as Project
+
+		if (!testWorkspaceFolder) {
+			throw new Error('No workspace folder found')
+		}
+
+		projects.set(testWorkspaceFolder, project)
+
+		// Add the current document to project source files
+		const documentContent = document.getText()
+		const documentBuffer = Buffer.from(documentContent)
+		const documentSource = new SourceDocument(parser, uri, documentBuffer, testWorkspaceFolder)
+		project.sourceFiles.set(uri.toString(), documentSource)
+
+		// Add another file to project (testlib.brs)
+		const testcodeDir = path.join(__dirname, '../../../testcode')
+		const testlibPath = path.join(testcodeDir, 'testlib.brs')
+		const testlibContent = readFileSync(testlibPath, 'utf8')
+		const testlibUri = Uri.file(testlibPath)
+		const testlibBuffer = Buffer.from(testlibContent)
+		const testlibDoc = new SourceDocument(parser, testlibUri, testlibBuffer, testWorkspaceFolder)
+		project.sourceFiles.set(testlibUri.toString(), testlibDoc)
+
+		// Add library functions to index (so we know what's a library vs local function)
+		const libFuncs = testlibDoc.getLibraryFunctionsMetadata()
+		for (const libFunc of libFuncs) {
+			project.libraryIndex.addFunction(libFunc)
+		}
+
+		// Position on a local function call "fnfoo" (line 0)
+		const position = new vscode.Position(0, 7)
+
+		const referenceProvider = new BrReferenceProvider(projects, parser)
+		const references = await referenceProvider.provideReferences(
+			document,
+			position,
+			{ includeDeclaration: true } as vscode.ReferenceContext,
+			new vscode.CancellationTokenSource().token
+		)
+
+		assert.ok(references, 'Should provide references for local function')
+
+		// Should ONLY find references in the current file (hovertest.brs), NOT in testlib.brs
+		const hovertestRefs = references.filter(ref => ref.uri.toString().includes('hovertest.brs'))
+		const testlibRefs = references.filter(ref => ref.uri.toString().includes('testlib.brs'))
+
+		console.log(`Found ${references.length} total references for local function fnfoo:`)
+		references.forEach(ref => {
+			console.log(`  - ${ref.uri.fsPath}:${ref.range.start.line}:${ref.range.start.character}`)
+		})
+
+		assert.ok(hovertestRefs.length >= 1, 'Should find references in current file (hovertest.brs)')
+		assert.strictEqual(testlibRefs.length, 0, 'Should NOT find references in other files (testlib.brs) for local functions')
+
+		console.log('Local function references test passed (only searched current file)')
+
+		// Clean up
+		project.sourceFiles.delete(uri.toString())
+		await vscode.window.showTextDocument(document)
+		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+	})
 })

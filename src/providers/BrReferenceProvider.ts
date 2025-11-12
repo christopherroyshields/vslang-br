@@ -29,7 +29,7 @@ export default class BrReferenceProvder implements ReferenceProvider {
 
     const nodeType = node.type
 
-    // For functions, search across all files in workspace
+    // For functions, check if it's a library function before cross-file search
     if (nodeType === "function_name") {
       // PRIORITY 1: Search current document first for immediate results
       const localRanges = this.parser.getOccurences(word, document, wordRange)
@@ -37,7 +37,7 @@ export default class BrReferenceProvder implements ReferenceProvider {
         locations.push(new Location(document.uri, r))
       })
 
-      // PRIORITY 2: Search other files in workspace
+      // PRIORITY 2: Only search other files if this is a library function
       // Find workspace folder
       let workspaceFolder: WorkspaceFolder | undefined
       for (const [folder] of this.configuredProjects) {
@@ -50,6 +50,18 @@ export default class BrReferenceProvder implements ReferenceProvider {
       if (workspaceFolder) {
         const project = this.configuredProjects.get(workspaceFolder)
         if (project) {
+          // Check if this is a library function
+          let isLibraryFunction = false
+          let libFuncMetadata = project.libraryIndex.getFunction(word)
+          if (!libFuncMetadata && word.toLowerCase().startsWith('fn')) {
+            libFuncMetadata = project.libraryIndex.getFunction(word.substring(2))
+          }
+          isLibraryFunction = !!libFuncMetadata
+
+          // Only search across files for library functions
+          if (!isLibraryFunction) {
+            return locations // Return only local results for non-library functions
+          }
           // Create case-insensitive regex for fast pre-scan
           const searchRegex = new RegExp(word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
 
