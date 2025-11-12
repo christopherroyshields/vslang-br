@@ -56,7 +56,8 @@ suite('Line Number Definition and Reference Provider Test Suite', () => {
 
 		const definitionProvider = new BrDefinitionProvider(projects, parser)
 
-		// Position on line reference "00300" in "GOTO 00300" (line 1, after GOTO)
+		// Position on line reference "300" in "GOTO 300" (line 1, after GOTO)
+		// This tests that "300" matches line number "00300" (different leading zeros)
 		const position = new vscode.Position(1, 10)
 		const definition = await definitionProvider.provideDefinition(document, position, {} as any)
 
@@ -74,7 +75,7 @@ suite('Line Number Definition and Reference Provider Test Suite', () => {
 			assert.strictEqual(loc.range.start.line, 6, 'Definition should be on line 6')
 		}
 
-		console.log('Line reference definition test passed')
+		console.log('Line reference definition test passed (with different leading zeros)')
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 
@@ -109,15 +110,16 @@ suite('Line Number Definition and Reference Provider Test Suite', () => {
 		)
 
 		assert.ok(references, 'References should be found')
-		// Should find: line definition (00300) and the GOTO reference (line 1)
+		// Should find: line definition (00300) and the GOTO reference (line 1 with "300")
+		// This tests that references with different leading zeros are matched
 		assert.ok(references.length >= 2, `Should find at least 2 references, found ${references.length}`)
 
 		// Verify we found both the definition and the reference
 		const lines = references.map(r => r.range.start.line).sort((a, b) => a - b)
-		assert.ok(lines.includes(1), 'Should include reference on line 1 (GOTO 00300)')
+		assert.ok(lines.includes(1), 'Should include reference on line 1 (GOTO 300)')
 		assert.ok(lines.includes(6), 'Should include definition on line 6 (00300)')
 
-		console.log('Line number references test passed')
+		console.log('Line number references test passed (with different leading zeros)')
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
 })

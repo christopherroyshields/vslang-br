@@ -177,11 +177,12 @@ export default class BrReferenceProvder implements ReferenceProvider {
     results.forEach(r => {
       const node = r.captures[0].node
 
-      // For line numbers, manually filter by text match
-      // Line numbers may have trailing spaces in the parse tree, so trim
+      // For line numbers, manually filter by numeric value (handles different leading zeros)
       if (nodeType === "line_number" || nodeType === "line_reference") {
-        if (node.text.trim() !== word.trim()) {
-          return // Skip this node if text doesn't match
+        const targetLineNum = parseInt(word.trim(), 10)
+        const nodeLineNum = parseInt(node.text.trim(), 10)
+        if (nodeLineNum !== targetLineNum) {
+          return // Skip this node if numeric value doesn't match
         }
       }
 

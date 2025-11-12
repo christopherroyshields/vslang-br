@@ -148,14 +148,18 @@ export default class BrDefinitionProvider implements DefinitionProvider {
     const tree = this.parser.getDocumentTree(document)
     if (!tree) return undefined
 
+    // Normalize line number by converting to integer (handles different leading zeros)
+    const targetLineNum = parseInt(lineNumber.trim(), 10)
+    if (isNaN(targetLineNum)) return undefined
+
     // Get all line_number nodes and manually check text
     const query = `((line_number) @line)`
     const results = this.parser.match(query, tree.rootNode)
 
     for (const result of results) {
       const lineNumNode = result.captures[0].node
-      // Line numbers may have trailing spaces in the parse tree, so trim
-      if (lineNumNode.text.trim() === lineNumber) {
+      const nodeLineNum = parseInt(lineNumNode.text.trim(), 10)
+      if (nodeLineNum === targetLineNum) {
         return new Location(
           document.uri,
           this.parser.getNodeRange(lineNumNode)
