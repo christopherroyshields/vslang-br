@@ -9,8 +9,7 @@ Welcome BR programmers! This extension brings modern IDE features to Business Ru
 2. **Install this Extension**: Search for "BR Language Extension" in VS Code's Extensions marketplace (Ctrl+Shift+X)
 3. **Open your BR project**: File → Open Folder → Select your BR project directory
 4. **Start coding**: Create or open `.brs` or `.wbs` files - the extension activates automatically!
-
-
+5. 
 ## Essential VS Code Concepts for BR Developers
 
 ### The VS Code Interface
@@ -22,8 +21,28 @@ Welcome BR programmers! This extension brings modern IDE features to Business Ru
 
 ### Working with BR Files
 - **File Extensions**: `.brs` (BR source) and `.wbs` (workfile source) are automatically recognized
-- **Encoding**: BR files use CP437 encoding by default (DOS/OEM character set)
-- **Line Numbers**: BR requires line numbers - this extension helps manage them
+
+## Keyboard Shortcuts Reference
+
+| Action | Shortcut | Description |
+|--------|----------|-------------|
+| **Compile** | Ctrl+Alt+1 | Compile current BR file with Lexi |
+| **Run** | Ctrl+Alt+2 | Execute current BR program |
+| **Line Numbers** | Ctrl+Alt+3 | Add/Strip line numbers (smart toggle) |
+| **BR 4.1** | Ctrl+Alt+4 | Switch to BR version 4.1 |
+| **BR 4.2** | Ctrl+Alt+5 | Switch to BR version 4.2 |
+| **BR 4.3** | Ctrl+Alt+6 | Switch to BR version 4.3 |
+| **Scan Project** | Ctrl+Alt+7 | Re-scan all BR source files |
+| **Proc Search** | Ctrl+Alt+F | Search compiled BR programs |
+| **Toggle Comment** | Ctrl+/ | Comment/uncomment selected lines |
+| **Next Match** | Ctrl+Shift+Down | Jump to next occurrence of symbol |
+| **Previous Match** | Ctrl+Shift+Up | Jump to previous occurrence |
+| **Go to Definition** | F12 | Jump to symbol definition (functions, variables, labels) |
+| **Find All References** | Shift+F12 | Find all uses of symbol across workspace |
+| **Rename Symbol** | F2 | Rename across files |
+| **IntelliSense** | Ctrl+Space | Trigger suggestions |
+| **Parameter Hints** | Ctrl+Shift+Space | Show function signatures |
+| **Workspace Symbols** | Ctrl+T | Search functions across all files |
 
 ## Core Features for BR Development
 
@@ -319,28 +338,6 @@ Results are parsed and displayed in a native VS Code tree view with full navigat
 ### ⚡ Real-Time Diagnostics
 - **Syntax Checking**: Errors appear as you type with red squiggles
 - **Problems Panel** (Ctrl+Shift+M): Lists all errors in your project
-
-## Keyboard Shortcuts Reference
-
-| Action | Shortcut | Description |
-|--------|----------|-------------|
-| **Compile** | Ctrl+Alt+1 | Compile current BR file with Lexi |
-| **Run** | Ctrl+Alt+2 | Execute current BR program |
-| **Line Numbers** | Ctrl+Alt+3 | Add/Strip line numbers (smart toggle) |
-| **BR 4.1** | Ctrl+Alt+4 | Switch to BR version 4.1 |
-| **BR 4.2** | Ctrl+Alt+5 | Switch to BR version 4.2 |
-| **BR 4.3** | Ctrl+Alt+6 | Switch to BR version 4.3 |
-| **Scan Project** | Ctrl+Alt+7 | Re-scan all BR source files |
-| **Proc Search** | Ctrl+Alt+F | Search compiled BR programs |
-| **Toggle Comment** | Ctrl+/ | Comment/uncomment selected lines |
-| **Next Match** | Ctrl+Shift+Down | Jump to next occurrence of symbol |
-| **Previous Match** | Ctrl+Shift+Up | Jump to previous occurrence |
-| **Go to Definition** | F12 | Jump to symbol definition (functions, variables, labels) |
-| **Find All References** | Shift+F12 | Find all uses of symbol across workspace |
-| **Rename Symbol** | F2 | Rename across files |
-| **IntelliSense** | Ctrl+Space | Trigger suggestions |
-| **Parameter Hints** | Ctrl+Shift+Space | Show function signatures |
-| **Workspace Symbols** | Ctrl+T | Search functions across all files |
 
 ## Configuration Options
 
