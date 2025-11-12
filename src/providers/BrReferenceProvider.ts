@@ -50,13 +50,25 @@ export default class BrReferenceProvder implements ReferenceProvider {
       if (workspaceFolder) {
         const project = this.configuredProjects.get(workspaceFolder)
         if (project) {
-          // Check if this is a library function
+          // Check if this is a library function by checking syntax tree
           let isLibraryFunction = false
-          let libFuncMetadata = project.libraryIndex.getFunction(word)
-          if (!libFuncMetadata && word.toLowerCase().startsWith('fn')) {
-            libFuncMetadata = project.libraryIndex.getFunction(word.substring(2))
+
+          // Walk up the syntax tree to find if this is a library function definition
+          let currentNode: typeof node | null = node
+          while (currentNode && !isLibraryFunction) {
+            // Check if current node is a def_statement
+            if (currentNode.type === 'def_statement') {
+              // Check if def_statement has a library_keyword child
+              for (const child of currentNode.children) {
+                if (child.type === 'library_keyword') {
+                  isLibraryFunction = true
+                  break
+                }
+              }
+              break // Found def_statement, stop searching
+            }
+            currentNode = currentNode.parent
           }
-          isLibraryFunction = !!libFuncMetadata
 
           // Only search across files for library functions
           if (!isLibraryFunction) {
