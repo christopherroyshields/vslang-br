@@ -74,7 +74,16 @@ export default class BrDefinitionProvider implements DefinitionProvider {
     const project = this.configuredProjects.get(workspaceFolder)
     if (!project) return undefined
 
-    // 3. Check library index first (fast lookup)
+    // 3. Check current document for local functions first (highest priority)
+    const currentDocSource = project.sourceFiles.get(document.uri.toString())
+    if (currentDocSource) {
+      const fn = await currentDocSource.getFunctionByName(functionName)
+      if (fn && !fn.isLibrary) {
+        return new Location(document.uri, fn.nameRange)
+      }
+    }
+
+    // 4. Then check library index (lower priority)
     let libFuncMetadata = project.libraryIndex.getFunction(functionName)
     if (!libFuncMetadata && functionName.toLowerCase().startsWith('fn')) {
       libFuncMetadata = project.libraryIndex.getFunction(functionName.substring(2))
@@ -87,15 +96,6 @@ export default class BrDefinitionProvider implements DefinitionProvider {
         if (fn) {
           return new Location(libFuncMetadata.uri, fn.nameRange)
         }
-      }
-    }
-
-    // 4. Check current document for local functions
-    const currentDocSource = project.sourceFiles.get(document.uri.toString())
-    if (currentDocSource) {
-      const fn = await currentDocSource.getFunctionByName(functionName)
-      if (fn && !fn.isLibrary) {
-        return new Location(document.uri, fn.nameRange)
       }
     }
 
