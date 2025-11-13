@@ -1,0 +1,10 @@
+00100 REM Test line number references
+00110 GOTO 300
+00120 PRINT "This won't execute"
+00200 GOSUB 400
+00210 PRINT "After gosub"
+00220 STOP
+00300 PRINT "Jumped to 300"
+00310 GOTO 200
+00400 PRINT "In subroutine"
+00410 RETURN

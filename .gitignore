@@ -6,3 +6,4 @@ out
 .vscode-test/
 nul
 Lexi/tmp/brSearch.prc
+vendor/tree-sitter/build

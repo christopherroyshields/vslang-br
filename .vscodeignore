@@ -15,32 +15,17 @@ tsconfig.json
 
 # Exclude all node_modules except what we need
 node_modules/**
-!node_modules/tree-sitter/**
 !node_modules/tree-sitter-br/**
 !node_modules/node-gyp-build/**
 
-# Exclude tree-sitter build artifacts
-node_modules/tree-sitter/build/**/*.obj
-node_modules/tree-sitter/build/**/*.pdb
-node_modules/tree-sitter/build/**/*.iobj
-node_modules/tree-sitter/build/**/*.ipdb
-node_modules/tree-sitter/build/**/*.lib
-node_modules/tree-sitter/build/**/*.exp
-node_modules/tree-sitter/build/**/*.tlog
-node_modules/tree-sitter/build/**/*.recipe
-node_modules/tree-sitter/build/**/*.xml
-node_modules/tree-sitter/build/**/*.sln
-node_modules/tree-sitter/build/**/*.vcxproj
-node_modules/tree-sitter/build/**/*.vcxproj.filters
-node_modules/tree-sitter/build/**/*.lastbuildstate
-node_modules/tree-sitter/build/**/*.gypi
-node_modules/tree-sitter/build/**/obj/**
-
-# Exclude tree-sitter source files  
-node_modules/tree-sitter/src/**
-node_modules/tree-sitter/vendor/**
-node_modules/tree-sitter/binding.gyp
-node_modules/tree-sitter/node_modules/**
+# Exclude tree-sitter source and build files from vendor (only need prebuilds at runtime)
+vendor/tree-sitter/build/**
+vendor/tree-sitter/src/**
+vendor/tree-sitter/vendor/**
+vendor/tree-sitter/binding.gyp
+vendor/tree-sitter/node_modules/**
+vendor/tree-sitter/LICENSE
+vendor/tree-sitter/README.md
 
 # Test files
 **/*.test.js

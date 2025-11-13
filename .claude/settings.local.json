@@ -5,7 +5,11 @@
       "Bash(git mv:*)",
       "Bash(npm test:*)",
       "Bash(curl:*)",
-      "Bash(npm run compile:*)"
+      "Bash(npm run compile:*)",
+      "Bash(cat:*)",
+      "Bash(npx @vscode/vsce ls --tree)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

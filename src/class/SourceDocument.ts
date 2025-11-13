@@ -1,6 +1,6 @@
 import { Uri, WorkspaceFolder, workspace } from "vscode";
 import BrParser from '../parser';
-import Parser = require("tree-sitter");
+import Parser = require("../../vendor/tree-sitter");
 import UserFunction from './UserFunction';
 import { LibraryFunctionMetadata } from './LibraryFunctionIndex';
 import { scanLibraryFunctions } from '../util/libraryScanner';
@@ -24,14 +24,16 @@ export default class SourceDocument {
   workspaceFolder: WorkspaceFolder | undefined;
   linkPath: string;
 
-  constructor(parser: BrParser, uri: Uri, buffer: Uint8Array | Buffer, workspaceFolder?: WorkspaceFolder) {
+  constructor(parser: BrParser, uri: Uri, buffer: Uint8Array | Buffer, workspaceFolder?: WorkspaceFolder, scanLibraries = true) {
     this.parser = parser;
     this.uri = uri;
     this.buffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer); // Convert Uint8Array to Buffer if needed
     this.workspaceFolder = workspaceFolder;
     this.linkPath = workspace.asRelativePath(uri, false).replace("/","\\").replace(/\.[^\\/.]+$/,"")
-    // Don't parse immediately - just scan for library functions
-    this.scanLibraryFunctions();
+    // Don't parse immediately - just scan for library functions if requested
+    if (scanLibraries) {
+      this.scanLibraryFunctions();
+    }
   }
 
   /**

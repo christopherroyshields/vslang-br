@@ -37,7 +37,18 @@ export default class BrHoverProvider implements HoverProvider {
             if (workspaceFolder){
               const project = this.configuredProjects.get(workspaceFolder)
               if (project){
-                // First check library index for library functions (fast, no parsing)
+                // 1. First check current document for local functions (highest priority)
+                const currentDocSource = project.sourceFiles.get(doc.uri.toString())
+                if (currentDocSource) {
+                  const fn = await currentDocSource.getFunctionByName(posNode.text)
+                  if (fn && !fn.isLibrary) {
+                    const hover = this.createHoverFromFunction(fn)
+                    hover.range = wordRange
+                    return hover
+                  }
+                }
+
+                // 2. Then check library index for library functions (lower priority)
                 // Try both with and without 'fn' prefix since library functions are stored without it
                 let libFuncMetadata = project.libraryIndex.getFunction(posNode.text)
                 if (!libFuncMetadata && posNode.text.toLowerCase().startsWith('fn')) {
@@ -54,17 +65,6 @@ export default class BrHoverProvider implements HoverProvider {
                       hover.range = wordRange
                       return hover
                     }
-                  }
-                }
-                
-                // If not a library function, check current document for local functions
-                const currentDocSource = project.sourceFiles.get(doc.uri.toString())
-                if (currentDocSource) {
-                  const fn = await currentDocSource.getFunctionByName(posNode.text)
-                  if (fn && !fn.isLibrary) {
-                    const hover = this.createHoverFromFunction(fn)
-                    hover.range = wordRange
-                    return hover
                   }
                 }
               }

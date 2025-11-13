@@ -9,8 +9,7 @@ Welcome BR programmers! This extension brings modern IDE features to Business Ru
 2. **Install this Extension**: Search for "BR Language Extension" in VS Code's Extensions marketplace (Ctrl+Shift+X)
 3. **Open your BR project**: File → Open Folder → Select your BR project directory
 4. **Start coding**: Create or open `.brs` or `.wbs` files - the extension activates automatically!
-
-
+5. 
 ## Essential VS Code Concepts for BR Developers
 
 ### The VS Code Interface
@@ -22,8 +21,28 @@ Welcome BR programmers! This extension brings modern IDE features to Business Ru
 
 ### Working with BR Files
 - **File Extensions**: `.brs` (BR source) and `.wbs` (workfile source) are automatically recognized
-- **Encoding**: BR files use CP437 encoding by default (DOS/OEM character set)
-- **Line Numbers**: BR requires line numbers - this extension helps manage them
+
+## Keyboard Shortcuts Reference
+
+| Action | Shortcut | Description |
+|--------|----------|-------------|
+| **Compile** | Ctrl+Alt+1 | Compile current BR file with Lexi |
+| **Run** | Ctrl+Alt+2 | Execute current BR program |
+| **Line Numbers** | Ctrl+Alt+3 | Add/Strip line numbers (smart toggle) |
+| **BR 4.1** | Ctrl+Alt+4 | Switch to BR version 4.1 |
+| **BR 4.2** | Ctrl+Alt+5 | Switch to BR version 4.2 |
+| **BR 4.3** | Ctrl+Alt+6 | Switch to BR version 4.3 |
+| **Scan Project** | Ctrl+Alt+7 | Re-scan all BR source files |
+| **Proc Search** | Ctrl+Alt+F | Search compiled BR programs |
+| **Toggle Comment** | Ctrl+/ | Comment/uncomment selected lines |
+| **Next Match** | Ctrl+Shift+Down | Jump to next occurrence of symbol |
+| **Previous Match** | Ctrl+Shift+Up | Jump to previous occurrence |
+| **Go to Definition** | F12 | Jump to symbol definition (functions, variables, labels) |
+| **Find All References** | Shift+F12 | Find all uses of symbol across workspace |
+| **Rename Symbol** | F2 | Rename across files |
+| **IntelliSense** | Ctrl+Space | Trigger suggestions |
+| **Parameter Hints** | Ctrl+Shift+Space | Show function signatures |
+| **Workspace Symbols** | Ctrl+T | Search functions across all files |
 
 ## Core Features for BR Development
 
@@ -66,47 +85,93 @@ Press **Ctrl+Space** to trigger suggestions:
 - **Signature Help**: Press **Ctrl+Shift+Space** while typing function parameters
 - **JSDoc Support**: Document your own functions with JSDoc-style comments:
   ```br
-  00090 /**
-  00091  * Calculate sales tax for a given amount
-  00092  * @param amount - The base purchase amount before tax
-  00093  * @param taxrate - Tax rate as a decimal (e.g., 0.08 for 8%)
-  00094  * @returns The calculated tax amount
-  00095  * @example
-  00096  *   LET TAX = FNCALCTAX(100, 0.08)  ! Returns 8.00
-  00097  * @see FNCALCTOTAL for total with tax included
-  00098  */
+  /**
+   * Calculate sales tax for a given amount
+   * @param amount - The base purchase amount before tax
+   * @param taxrate - Tax rate as a decimal (e.g., 0.08 for 8%)
+   * @returns The calculated tax amount
+   * @example
+   *   LET TAX = FNCALCTAX(100, 0.08)  ! Returns 8.00
+   * @see FNCALCTOTAL for total with tax included
+   */
   00100 DEF FNCALCTAX(AMOUNT, TAXRATE)
   00110   LET FNCALCTAX = AMOUNT * TAXRATE
   00120 FNEND
-  00130 
-  00140 /**
-  00141  * Calculate total amount including tax
-  00142  * @param amount - Base amount
-  00143  * @param taxrate - Tax rate (decimal)
-  00144  * @returns Total amount with tax
-  00145  */
+
+  /**
+   * Calculate total amount including tax
+   * @param amount - Base amount
+   * @param taxrate - Tax rate (decimal)
+   * @returns Total amount with tax
+   */
   00150 DEF FNCALCTOTAL(AMOUNT, TAXRATE)
   00160   LET FNCALCTOTAL = AMOUNT + FNCALCTAX(AMOUNT, TAXRATE)
   00170 FNEND
   ```
 
-### Code Navigation
-- **Symbol Search** (Ctrl+Shift+O): Quick navigation to any function or label
+### 🧭 Code Navigation & Symbol Resolution
+
+#### Go to Definition (F12)
+Jump directly to where symbols are defined:
+- **Functions**: Navigate to function definitions
+  - **Local Functions**: Jump to `DEF` statement in current file
+  - **Library Functions**: Cross-file navigation to library function definitions
+  - **System Functions**: No definition navigation (built-in functions)
+- **Variables**: Jump to `DIM` statement where variable is declared
+- **Labels**: Navigate to label definition (e.g., `100:`)
+- **Case-Insensitive**: Works regardless of letter casing
+
+**Usage:**
+- Right-click symbol → "Go to Definition"
+- Press **F12** on any symbol
+- Ctrl+Click on a symbol
+
+#### Find All References (Shift+F12)
+Find every usage of a symbol across your entire workspace:
+- **Cross-File Search**: Finds references in all BR files, not just current file
+- **Smart Performance**: Fast regex pre-scan before parsing
+  - Only parses files that contain the symbol
+  - ~100x faster on large workspaces (100+ files)
+- **Local Results First**: Current file references appear immediately
+- **Functions, Labels, Variables**: Works for all symbol types
+
+**Usage:**
+- Right-click symbol → "Find All References"
+- Press **Shift+F12** on any symbol
+- Results appear in "References" panel
+
+**Example:** Finding all calls to a library function:
+1. Click on `fnCalculateTax` in any file
+2. Press Shift+F12
+3. See all references across:
+   - Current file (shown first)
+   - Library definition file
+   - All files calling the function
+
+#### Other Navigation Features
+- **Symbol Search** (Ctrl+Shift+O): Quick navigation to any function or label in current file
+- **Workspace Symbol Search** (Ctrl+T): Search functions across all files
 - **Outline View**: See document structure in the Explorer sidebar
 - **Breadcrumbs**: Navigation trail at top of editor
 
 ### ✏️ Smart Editing
+- **Auto Line Numbers**: Automatically inserts line numbers when you press Enter
+  - Detects increment pattern from surrounding lines (10, 5, 1, etc.)
+  - Preserves zero-padding format (00100 vs 100)
+  - Skips line numbers after continuation lines (!:)
+  - Adds appropriate indentation for continuations
+  - Configure or disable in settings: `br.autoLineNumbers.*`
 - **Multi-line Comments**: Select lines and press **Ctrl+/** to toggle comments
 - **Auto-Rename** (F2): Rename variables/functions in program or function scope
 - **Symbol Highlighting**: Click on a variable to highlight all occurrences
-- **Next/Previous Occurrence**: 
+- **Next/Previous Occurrence**:
   - **Ctrl+Shift+Down**: Jump to next occurrence
   - **Ctrl+Shift+Up**: Jump to previous occurrence
 
 ### 🚀 Lexi Integration
 Common Lexi Features Supported:
 - **Ctrl+Alt+1**: Compile current BR program
-- **Ctrl+Alt+2**: Run current BR program  
+- **Ctrl+Alt+2**: Run current BR program
 - **Ctrl+Alt+3**: Add/Strip line numbers (context-aware)
 - **Ctrl+Alt+4**: Switch to BR 4.1
 - **Ctrl+Alt+5**: Switch to BR 4.2
@@ -115,6 +180,87 @@ Common Lexi Features Supported:
 - **Decompile**: Convert compiled BR programs (.br, .bro, .wb, .wbo) back to source
 
 Access all Lexi commands through Command Palette (Ctrl+Shift+P) → type "Lexi"
+
+#### ⚙️ Launch Configurations
+**Configure multiple BR runtime environments** - Run programs with different executables, wbconfig files, and workstation IDs.
+
+**Quick Start:**
+1. Create `.vscode/launch.json` in your workspace
+2. Add BR launch configurations with `"type": "br"`
+3. Press **Ctrl+Alt+2** to run - select your configuration
+4. Use **"BR: Select Launch Configuration"** command to switch between configs
+
+**Example Configuration:**
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch BR (Default)",
+      "executable": "${extensionPath}/Lexi/brnative.exe",
+      "wbconfig": "",
+      "wsid": "",
+      "cwd": "${fileDirname}"
+    },
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Launch BR 4.2 Production",
+      "executable": "C:/BR42/brnative.exe",
+      "wbconfig": "${workspaceFolder}/config/wbconfig.sys",
+      "wsid": "42+",
+      "cwd": "${fileDirname}"
+    },
+    {
+      "type": "br",
+      "request": "launch",
+      "name": "Development Environment",
+      "executable": "${extensionPath}/Lexi/brnative.exe",
+      "wbconfig": "${workspaceFolder}/dev/wbconfig.dev",
+      "wsid": "10",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
+```
+
+**Configuration Properties:**
+- **`executable`**: Path to BR executable (supports variables)
+  - Default: `${extensionPath}/Lexi/brnative.exe`
+  - Can be relative to workspace or absolute path
+- **`wbconfig`**: Path to wbconfig file (e.g., `wbconfig.sys`)
+  - Passed as `-[filename]` argument to BR executable
+  - Leave empty to use BR's default behavior
+- **`wsid`**: Workstation ID parameter
+  - `"42"` → `-42` (specific workstation ID)
+  - `"42+"` → `-42+` (auto-increment by 1 if in use)
+  - `"21+5"` → `-21+5` (increment by 5 if needed)
+  - `"WSIDCLEAR"` → `-WSIDCLEAR` (clear WSID)
+  - `"+5"` → `+5` (increment only)
+- **`cwd`**: Working directory (default: `${fileDirname}`)
+
+**Variable Substitution:**
+- `${workspaceFolder}` - Workspace root directory
+- `${extensionPath}` - Extension installation path
+- `${file}` - Current file path
+- `${fileDirname}` - Current file's directory
+- `${fileBasename}` - Current filename with extension
+- `${fileBasenameNoExtension}` - Filename without extension
+
+**Features:**
+- **Built-in Default**: Always includes a default configuration using extension's BR executable
+- **Active Configuration**: Last selected config is remembered per workspace
+- **IntelliSense**: Full autocomplete support when editing launch.json
+- **Quick Switch**: Use "BR: Select Launch Configuration" to change active config
+- **Validation**: Checks if executable exists before launching
+
+**Use Cases:**
+- **Multiple BR Versions**: Switch between BR 4.1, 4.2, 4.3 easily
+- **Environment Configs**: Dev, test, prod with different wbconfig files
+- **Multi-User Testing**: Different WSID values for concurrent sessions
+- **Custom Runtimes**: Use custom BR executables or installations
 
 #### 🔄 Automatic Decompilation
 When you click on a compiled BR file (.br, .bro, .wb, .wbo):
@@ -198,26 +344,6 @@ Results are parsed and displayed in a native VS Code tree view with full navigat
 ### ⚡ Real-Time Diagnostics
 - **Syntax Checking**: Errors appear as you type with red squiggles
 - **Problems Panel** (Ctrl+Shift+M): Lists all errors in your project
-
-## Keyboard Shortcuts Reference
-
-| Action | Shortcut | Description |
-|--------|----------|-------------|
-| **Compile** | Ctrl+Alt+1 | Compile current BR file with Lexi |
-| **Run** | Ctrl+Alt+2 | Execute current BR program |
-| **Line Numbers** | Ctrl+Alt+3 | Add/Strip line numbers (smart toggle) |
-| **BR 4.1** | Ctrl+Alt+4 | Switch to BR version 4.1 |
-| **BR 4.2** | Ctrl+Alt+5 | Switch to BR version 4.2 |
-| **BR 4.3** | Ctrl+Alt+6 | Switch to BR version 4.3 |
-| **Scan Project** | Ctrl+Alt+7 | Re-scan all BR source files |
-| **Proc Search** | Ctrl+Alt+F | Search compiled BR programs |
-| **Toggle Comment** | Ctrl+/ | Comment/uncomment selected lines |
-| **Next Match** | Ctrl+Shift+Down | Jump to next occurrence of symbol |
-| **Previous Match** | Ctrl+Shift+Up | Jump to previous occurrence |
-| **Go to Definition** | F12 | Jump to definition |
-| **Rename Symbol** | F2 | Rename across files |
-| **IntelliSense** | Ctrl+Space | Trigger suggestions |
-| **Parameter Hints** | Ctrl+Shift+Space | Show function signatures |
 
 ## Configuration Options
 

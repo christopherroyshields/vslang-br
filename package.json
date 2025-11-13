@@ -2,7 +2,7 @@
   "name": "vslang-br",
   "displayName": "BR Language Extension",
   "description": "Language support for Business Rules!",
-  "version": "0.0.9",
+  "version": "0.0.13",
   "license": "LICENSE",
   "publisher": "crs-dev",
   "icon": "logo.png",
@@ -55,6 +55,10 @@
       {
         "fileMatch": "br-project.json",
         "url": "./schemas/br-project.json"
+      },
+      {
+        "fileMatch": "launch.json",
+        "url": "./schemas/br-launch.json"
       }
     ],
     "configurationDefaults": {
@@ -120,6 +124,27 @@
           "type": "string",
           "default": "indent 2 45 keywords lower labels mixed comments mixed",
           "description": "STYLE command parameters to apply when decompiling BR programs. Controls formatting of the decompiled source code."
+        },
+        "br.autoLineNumbers.enabled": {
+          "order": 7,
+          "scope": "resource",
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically add line numbers when pressing Enter if the previous line has a line number."
+        },
+        "br.autoLineNumbers.increment": {
+          "order": 8,
+          "scope": "resource",
+          "type": "number",
+          "default": 10,
+          "description": "Default increment for auto-generated line numbers. Will be overridden by detected pattern from surrounding lines."
+        },
+        "br.autoLineNumbers.zeroPadding": {
+          "order": 9,
+          "scope": "resource",
+          "type": "number",
+          "default": 5,
+          "description": "Number of digits for line numbers (e.g., 5 for '00100'). Will be overridden by detected padding from surrounding lines."
         }
       }
     },
@@ -167,6 +192,11 @@
       {
         "command": "br.searchFiles",
         "key": "ctrl-alt-f"
+      },
+      {
+        "command": "vslang-br.autoInsertLineNumber",
+        "key": "enter",
+        "when": "editorTextFocus && editorLangId == br"
       }
     ],
     "commands": [
@@ -195,6 +225,10 @@
         "title": "Lexi: Strip Line Numbers from BR Source"
       },
       {
+        "command": "vslang-br.autoInsertLineNumber",
+        "title": "BR: Auto Insert Line Number"
+      },
+      {
         "command": "vslang-br.setBr41",
         "title": "Lexi: Set BR Version 4.1"
       },
@@ -220,11 +254,26 @@
       },
       {
         "command": "br.searchFiles",
-        "title": "BR: Proc Search"
+        "title": "BR: Proc Search",
+        "icon": "$(search)"
       },
       {
         "command": "br.listLine",
         "title": "BR: List Line in Compiled Program"
+      },
+      {
+        "command": "br.clearSearch",
+        "title": "Clear Search Results",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "br.modifySearch",
+        "title": "Modify Search",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "vslang-br.selectLaunchConfig",
+        "title": "BR: Select Launch Configuration"
       }
     ],
     "menus": {
@@ -243,6 +292,23 @@
         {
           "command": "br.listLine",
           "when": "view == brSearchResults && viewItem == searchMatch"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "br.searchFiles",
+          "when": "view == brSearchResults",
+          "group": "navigation@0"
+        },
+        {
+          "command": "br.modifySearch",
+          "when": "view == brSearchResults",
+          "group": "navigation@1"
+        },
+        {
+          "command": "br.clearSearch",
+          "when": "view == brSearchResults",
+          "group": "navigation@2"
         }
       ]
     },
@@ -336,17 +402,6 @@
       }
     ]
   },
-  "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "vscode-test",
-    "build:prebuilds": "node scripts/build-prebuilds.js",
-    "package": "npx @vscode/vsce package",
-    "package:clean": "package-clean.bat",
-    "vsce:ls": "npx @vscode/vsce ls --tree"
-  },
   "devDependencies": {
     "@types/chai": "^5.2.2",
     "@types/emscripten": "^1.40.0",
@@ -368,5 +423,18 @@
   },
   "dependencies": {
     "tree-sitter-br": "0.25.6"
+  },
+  "scripts": {
+    "postinstall": "node -e \"try { require('fs').unlinkSync('node_modules/tree-sitter/tree-sitter.d.ts'); } catch(e) {}\"",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test",
+    "build:prebuilds": "node scripts/build-prebuilds.js",
+    "package": "npx @vscode/vsce package",
+    "publish": "npx @vscode/vsce publish",
+    "package:clean": "package-clean.bat",
+    "vsce:ls": "npx @vscode/vsce ls --tree"
   }
 }
