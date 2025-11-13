@@ -155,10 +155,16 @@ Find every usage of a symbol across your entire workspace:
 - **Breadcrumbs**: Navigation trail at top of editor
 
 ### ✏️ Smart Editing
+- **Auto Line Numbers**: Automatically inserts line numbers when you press Enter
+  - Detects increment pattern from surrounding lines (10, 5, 1, etc.)
+  - Preserves zero-padding format (00100 vs 100)
+  - Skips line numbers after continuation lines (!:)
+  - Adds appropriate indentation for continuations
+  - Configure or disable in settings: `br.autoLineNumbers.*`
 - **Multi-line Comments**: Select lines and press **Ctrl+/** to toggle comments
 - **Auto-Rename** (F2): Rename variables/functions in program or function scope
 - **Symbol Highlighting**: Click on a variable to highlight all occurrences
-- **Next/Previous Occurrence**: 
+- **Next/Previous Occurrence**:
   - **Ctrl+Shift+Down**: Jump to next occurrence
   - **Ctrl+Shift+Up**: Jump to previous occurrence
 

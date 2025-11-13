@@ -50,6 +50,7 @@ Business Rules! (BR) is a line-numbered procedural language designed for applica
 - **Layout File Support**: Specialized features for BR layout files
 - **Lexi Integration**: Built-in compiler/runtime support with version switching
 - **Line Number Management**: Add/strip line numbers for legacy systems
+- **Auto Line Numbers**: Automatically insert line numbers when pressing Enter, with smart increment detection and continuation handling
 - **Library Management**: Library path configuration and function discovery
 - **Code Snippets**: Pre-defined code templates
 - **Symbol Highlighting**: Occurrence highlighting for selected symbols
@@ -121,6 +122,12 @@ All language features are implemented as separate providers in `src/providers/`:
 - **KeywordCompletionProvider**: BR keyword completions
 - **OccurenceHighlightProvider**: Highlight all occurrences of selected symbol
 - **LayoutSemanticTokenProvider**: Syntax highlighting for layout files
+- **BrLineNumberProvider**: Auto-insert line numbers on Enter key
+  - Implements OnTypeFormattingEditProvider for '\n' trigger
+  - Uses tree-sitter to detect line numbers and continuation lines
+  - Auto-detects increment pattern from surrounding lines
+  - Preserves zero-padding format
+  - Handles continuation lines (!:) with indentation only
 
 ### Source Document Types
 - **TreeSitterSourceDocument**: Primary document parser using Tree-sitter. Functions stored in a Map for improved lookups with case-insensitive retrieval
@@ -143,6 +150,9 @@ Extension settings in `package.json` under `contributes.configuration`:
 - `br.sourceFileGlobPattern`: Pattern for finding BR files
 - `br.layoutPath`: Directory for layout files
 - `br.diagnosticsDelay`: Debounce for syntax checking
+- `br.autoLineNumbers.enabled`: Enable/disable auto line number insertion (default: true)
+- `br.autoLineNumbers.increment`: Default increment value (default: 10, overridden by detected pattern)
+- `br.autoLineNumbers.zeroPadding`: Number of digits for padding (default: 5, overridden by detected format)
 
 ## Lexi Integration
 - `src/lexi.ts`: Integration with BR compiler/runtime
