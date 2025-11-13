@@ -110,6 +110,26 @@ function getLineNodeAtIndex(tree: Parser.Tree, lineIndex: number): Parser.Syntax
 }
 
 /**
+ * Find the previous line with a line number by walking backwards through the syntax tree
+ * @param tree The tree-sitter tree
+ * @param startLineIndex The line index to start searching from (0-based)
+ * @returns The LineNumberInfo and line index of the previous numbered line, or null if not found
+ */
+function findPreviousLineNumber(tree: Parser.Tree, startLineIndex: number): { lineInfo: LineNumberInfo; lineIndex: number } | null {
+    // Walk backwards from startLineIndex to find a line with a line number
+    for (let lineIndex = startLineIndex; lineIndex >= 0; lineIndex--) {
+        const lineNode = getLineNodeAtIndex(tree, lineIndex);
+        if (lineNode) {
+            const lineInfo = extractLineNumber(lineNode);
+            if (lineInfo) {
+                return { lineInfo, lineIndex };
+            }
+        }
+    }
+    return null;
+}
+
+/**
  * Check if a line ends with continuation (!:)
  * @param parser The BrParser instance
  * @param document The text document
@@ -162,28 +182,32 @@ export function calculateNextLineNumber(
     configIncrement = 10,
     configPadding = 5
 ): string | null {
-    // Get the previous line (the line before the cursor)
-    const prevLineIndex = currentLineIndex - 1;
+    const tree = parser.getDocumentTree(document);
 
-    if (prevLineIndex < 0) {
+    // Walk backwards through the syntax tree to find the previous line with a line number
+    const startSearchIndex = currentLineIndex - 1;
+
+    if (startSearchIndex < 0) {
         // No previous line, don't add line number
         return null;
     }
 
-    // Check if previous line ends with continuation
-    if (isContinuationLine(parser, document, prevLineIndex)) {
+    // Check if the immediate previous line ends with continuation
+    if (isContinuationLine(parser, document, startSearchIndex)) {
         // Don't add line number after continuation, just indent
         return null;
     }
 
-    const tree = parser.getDocumentTree(document);
-    const prevLineNode = getLineNodeAtIndex(tree, prevLineIndex);
-    const prevLineInfo = extractLineNumber(prevLineNode);
+    // Find the previous line with a line number by walking backwards
+    const prevResult = findPreviousLineNumber(tree, startSearchIndex);
 
-    if (!prevLineInfo) {
-        // Previous line has no line number, don't add one
+    if (!prevResult) {
+        // No previous line with a line number found, don't add one
         return null;
     }
+
+    const prevLineInfo = prevResult.lineInfo;
+    const prevLineIndex = prevResult.lineIndex;
 
     // Check if there's a next line with a line number
     const nextLineIndex = currentLineIndex;

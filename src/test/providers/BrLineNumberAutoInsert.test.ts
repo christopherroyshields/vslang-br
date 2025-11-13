@@ -285,4 +285,40 @@ suite('Auto Line Number Insertion Test Suite', () => {
 		console.log('Non-preferred increment test passed')
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
+
+	test('Walk backwards through blank lines to find previous line number', async () => {
+		console.log('Running walk backwards test...')
+		const document = await vscode.workspace.openTextDocument({
+			language: 'br',
+			content: '00100 print "first"\n\n\nprint "no line number"'
+		})
+
+		// Line 0: 00100 print "first"
+		// Line 1: (blank)
+		// Line 2: (blank)
+		// Line 3: print "no line number"
+		// Inserting at line 4 (after line 3), should find line 0's number (00100)
+		const nextLineNum = calculateNextLineNumber(parser, document, 4, 10, 5)
+
+		assert.strictEqual(nextLineNum, '00110', 'Should find 00100 and calculate 00110')
+
+		console.log('Walk backwards test passed')
+		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+	})
+
+	test('Walk backwards with comments and blank lines', async () => {
+		console.log('Running walk backwards with comments test...')
+		const document = await vscode.workspace.openTextDocument({
+			language: 'br',
+			content: '00100 print "first"\n! comment\n\n! another comment'
+		})
+
+		// Should walk back past comments and blanks to find 00100
+		const nextLineNum = calculateNextLineNumber(parser, document, 4, 10, 5)
+
+		assert.strictEqual(nextLineNum, '00110', 'Should find 00100 and calculate 00110')
+
+		console.log('Walk backwards with comments test passed')
+		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+	})
 })
