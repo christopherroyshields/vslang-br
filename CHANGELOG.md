@@ -4,6 +4,22 @@ All notable changes to the "vslang-br" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.0.13] - 2025-11-13
+
+### Added
+- **Auto Line Number Insertion**: Automatically inserts line numbers when pressing Enter
+  - Detects increment pattern from surrounding lines (1, 2, 10, 20, 100)
+  - Intelligently fits numbers between existing lines
+  - Handles continuation lines (!:) with proper indentation
+  - Single undo operation for easy correction
+  - Configurable via settings: `br.autoLineNumbers.enabled`, `br.autoLineNumbers.increment`, `br.autoLineNumbers.zeroPadding`
+  - Bound to Enter key in BR files only
+
+### Fixed
+- **Line Number Detection**: Auto line number insertion now walks backwards through syntax tree
+  - Properly finds previous line number even with blank lines, comments, or unnumbered lines in between
+  - Ensures consistent behavior regardless of file structure
+
 ## [0.0.12] - 2025-11-11
 
 ### Fixed
