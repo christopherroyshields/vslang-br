@@ -110,43 +110,18 @@ function getLineNodeAtIndex(tree: Parser.Tree, lineIndex: number): Parser.Syntax
 }
 
 /**
- * Check if a line node has content beyond just the line number
- * @param lineNode The line node from tree-sitter
- * @returns True if the line has actual content (statements, comments, etc.)
- */
-function lineHasContent(lineNode: Parser.SyntaxNode | null): boolean {
-    if (!lineNode) {
-        return false;
-    }
-
-    // A line has content if it has children other than just line_number
-    // We're looking for statements, comments, labels, etc.
-    for (const child of lineNode.children) {
-        // Skip line_number and whitespace-like nodes
-        if (child.type !== 'line_number' &&
-            child.type !== 'ERROR' &&
-            child.type !== 'MISSING') {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Find the previous line with a line number AND content by walking backwards through the syntax tree
+ * Find the previous line with a line number by walking backwards through the syntax tree
  * @param tree The tree-sitter tree
  * @param startLineIndex The line index to start searching from (0-based)
- * @returns The LineNumberInfo and line index of the previous numbered line with content, or null if not found
+ * @returns The LineNumberInfo and line index of the previous numbered line, or null if not found
  */
 function findPreviousLineNumber(tree: Parser.Tree, startLineIndex: number): { lineInfo: LineNumberInfo; lineIndex: number } | null {
-    // Walk backwards from startLineIndex to find a line with a line number AND content
+    // Walk backwards from startLineIndex to find a line with a line number
     for (let lineIndex = startLineIndex; lineIndex >= 0; lineIndex--) {
         const lineNode = getLineNodeAtIndex(tree, lineIndex);
         if (lineNode) {
             const lineInfo = extractLineNumber(lineNode);
-            // Only return if line has both a line number AND content
-            if (lineInfo && lineHasContent(lineNode)) {
+            if (lineInfo) {
                 return { lineInfo, lineIndex };
             }
         }
