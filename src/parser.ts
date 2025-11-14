@@ -122,8 +122,9 @@ export default class BrParser implements Disposable {
 				for (const param of paramsNode.namedChildren) {
 					if (param!==null){
 						const p = new UserFunctionParameter
-						const nameNode = param.firstNamedChild?.firstNamedChild?.firstNamedChild
-						if (nameNode){
+						const typeNode = param.firstNamedChild?.firstNamedChild
+						const nameNode = typeNode?.firstNamedChild
+						if (nameNode && typeNode){
 							p.name = nameNode.text
 							if (param.type === "required_parameter"){
 								p.isOptional = false
@@ -137,7 +138,7 @@ export default class BrParser implements Disposable {
 							}
 							p.documentation = docs?.params.get(nameNode.text)
 							p.length = this.getStringParamLengthFromNode(param)
-							p.type = this.getParamTypeFromNode(nameNode)
+							p.type = this.getParamTypeFromNode(typeNode)
 							fn.params.push(p)
 						}
 					}
@@ -150,17 +151,17 @@ export default class BrParser implements Disposable {
 
 	getParamTypeFromNode(param: Parser.SyntaxNode): VariableType {
     switch (param.type) {
-      case 'stringreference':
+      case 'string_parameter':
         return VariableType.string
-      case 'numberreference':
+      case 'numeric_parameter':
         return VariableType.number
-      case 'stringarray':
+      case 'string_array_parameter':
         return VariableType.stringarray
-      case 'numberarray':
+      case 'number_array_parameter':
         return VariableType.numberarray
       default:
-        throw new Error("Uknown type")
-    }    
+        throw new Error(`Unknown parameter type: ${param.type}`)
+    }
   }
 
 	getStringParamLengthFromNode(param: Parser.SyntaxNode): number | undefined {

@@ -79,4 +79,30 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
+### Added
+- **Function Diagnostics**: Advanced function validation with real-time error detection
+  - **Undefined Function Calls**: Warns when calling functions that aren't defined
+    - Checks system/internal functions
+    - Checks local function definitions (DEF FNNAME)
+    - Checks library function definitions (DEF LIBRARY FNNAME)
+    - Checks library function declarations (LIBRARY "dll": FNNAME1, FNNAME2)
+    - Checks project-wide library index
+  - **Duplicate Function Definitions**: Detects when the same function is defined multiple times
+    - Checks both within the same file and across files for library functions
+  - **Parameter Count Mismatches**: Validates function calls against expected parameter counts
+    - Supports required and optional parameters
+    - Works with system functions and user-defined functions
+  - **Parameter Type Mismatches**: Validates argument types match expected parameter types
+    - Detects string/number mismatches
+    - Detects array type mismatches (number array vs string array)
+    - Uses tree-sitter to determine types without string parsing
+    - Only validates user-defined functions with known parameter types
+  - **Missing FNEND**: Detects multi-line functions without proper FNEND statement
+    - Correctly handles inline functions (no FNEND required)
+  - All diagnostics use tree-sitter for accurate code analysis
+  - Integrated with VS Code's Problems panel
+  - Real-time validation as you type (debounced)
+
+## [0.0.13] - 2025-11-13
+
 - Initial release

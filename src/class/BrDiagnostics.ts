@@ -1,12 +1,19 @@
-import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, ExtensionContext, Position, Range, TextDocument, Uri, commands, languages, window, workspace } from "vscode";
+import { Diagnostic, DiagnosticCollection, DiagnosticSeverity, Disposable, ExtensionContext, Position, Range, TextDocument, Uri, WorkspaceFolder, commands, languages, window, workspace } from "vscode";
 import BrParser from "../parser";
 import { debounce } from "../util/common";
+import { Project } from "./Project";
+import BrFunctionDiagnostics from "./BrFunctionDiagnostics";
 
 export default class BrDiagnostics implements Disposable {
   parser: BrParser
   diagnosticCollection = languages.createDiagnosticCollection('BR Scanner')
-  constructor(parser: BrParser, context: ExtensionContext) {
+  functionDiagnostics: BrFunctionDiagnostics
+  configuredProjects: Map<WorkspaceFolder, Project>
+
+  constructor(parser: BrParser, context: ExtensionContext, configuredProjects: Map<WorkspaceFolder, Project>) {
     this.parser = parser
+    this.configuredProjects = configuredProjects
+    this.functionDiagnostics = new BrFunctionDiagnostics(parser)
     context.subscriptions.push(this.diagnosticCollection)
     if (window.activeTextEditor && window.activeTextEditor.document.languageId == "br"){
       const editor = window.activeTextEditor
@@ -61,6 +68,13 @@ export default class BrDiagnostics implements Disposable {
 
   updateDiagnostics(document: TextDocument){
     const diagnostics: Diagnostic[] = this.parser.getDiagnostics(document)
+
+    // Add function diagnostics
+    const workspaceFolder = workspace.getWorkspaceFolder(document.uri)
+    const project = workspaceFolder ? this.configuredProjects.get(workspaceFolder) : undefined
+    const functionDiags = this.functionDiagnostics.getDiagnostics(document, project)
+    diagnostics.push(...functionDiags)
+
     this.diagnosticCollection.set(document.uri, diagnostics)
   }
 }

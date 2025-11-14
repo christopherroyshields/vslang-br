@@ -82,7 +82,7 @@ export async function activate(context: ExtensionContext) {
 	// Start workspace folder activation in background - don't await
 	activateWorkspaceFolders(context, configuredProjects, parser)
 
-	const diagnostics = new BrDiagnostics(parser, context)
+	const diagnostics = new BrDiagnostics(parser, context, configuredProjects)
 
 	const hoverProvider = new BrHoverProvider(configuredProjects, parser)
 	subscriptions.push(languages.registerHoverProvider(sel, hoverProvider))
