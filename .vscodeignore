@@ -31,3 +31,12 @@ vendor/tree-sitter/README.md
 **/*.test.js
 **/*.test.js.map
 testcode/
+
+# Demo and presentation files
+DEMO-SCRIPT.md
+PRESENTATION-NOTES.md
+video-demo-guide.md
+
+# Local settings
+.claude/settings.local.json
+nul

@@ -29,6 +29,7 @@ import SourceDocument from './class/SourceDocument';
 import LibraryFunctionIndex from './class/LibraryFunctionIndex';
 import { initializeSearchOutputChannel, executeSearch } from './brSearch';
 import { BrLineNumberProvider } from './providers/BrLineNumberProvider';
+import BrQuickFixProvider from './providers/BrQuickFixProvider';
 
 export async function activate(context: ExtensionContext) {
 	const subscriptions = context.subscriptions
@@ -95,6 +96,9 @@ export async function activate(context: ExtensionContext) {
 
 	const definitionProvider = new BrDefinitionProvider(configuredProjects, parser)
 	subscriptions.push(languages.registerDefinitionProvider(sel, definitionProvider))
+
+	const quickFixProvider = new BrQuickFixProvider(configuredProjects, parser)
+	subscriptions.push(languages.registerCodeActionsProvider(sel, quickFixProvider))
 
 	const lineNumberProvider = new BrLineNumberProvider(parser)
 	subscriptions.push(commands.registerTextEditorCommand('vslang-br.autoInsertLineNumber', (editor, edit) => {

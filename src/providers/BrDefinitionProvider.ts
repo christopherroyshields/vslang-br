@@ -86,11 +86,21 @@ export default class BrDefinitionProvider implements DefinitionProvider {
     if (!project) return undefined
 
     // 3. Check current document for local functions first (highest priority)
-    const currentDocSource = project.sourceFiles.get(document.uri.toString())
-    if (currentDocSource) {
-      const fn = await currentDocSource.getFunctionByName(functionName)
-      if (fn && !fn.isLibrary) {
-        return new Location(document.uri, fn.nameRange)
+    // Use parser's cached tree if available (includes unsaved changes)
+    const cachedTree = this.parser.trees.get(document.uri.toString())
+    if (cachedTree) {
+      const localFunc = this.findFunctionInTree(functionName, cachedTree, document.uri)
+      if (localFunc) {
+        return localFunc
+      }
+    } else {
+      // Fall back to project source files cache (saved content only)
+      const currentDocSource = project.sourceFiles.get(document.uri.toString())
+      if (currentDocSource) {
+        const fn = await currentDocSource.getFunctionByName(functionName)
+        if (fn && !fn.isLibrary) {
+          return new Location(document.uri, fn.nameRange)
+        }
       }
     }
 
@@ -107,6 +117,44 @@ export default class BrDefinitionProvider implements DefinitionProvider {
         if (fn) {
           return new Location(libFuncMetadata.uri, fn.nameRange)
         }
+      }
+    }
+
+    return undefined
+  }
+
+  /**
+   * Find function definition in a syntax tree without re-parsing
+   * Used to check parser's cached tree for unsaved changes
+   */
+  private findFunctionInTree(
+    functionName: string,
+    tree: any,
+    uri: any
+  ): Location | undefined {
+    // Create case-insensitive regex pattern
+    const name_match = functionName.replace(/[a-zA-Z]/g, c => {
+      return `[${c.toUpperCase()}${c.toLowerCase()}]`
+    }).replace("$","\\\\$")
+
+    const query = `(
+      (line
+      (def_statement
+        [
+        (numeric_function_definition (function_name) @name)
+        (string_function_definition (function_name) @name)
+        ]))
+        (#match? @name "^${name_match}$")
+      )`
+
+    const results = this.parser.match(query, tree.rootNode)
+    if (results.length > 0) {
+      const nameNode = results[0].captures[0].node
+      // Check if it's not a library function (local function)
+      const defNode = nameNode.parent?.parent
+      const isLibrary = defNode?.firstChild?.type === "library_keyword"
+      if (!isLibrary) {
+        return new Location(uri, this.parser.getNodeRange(nameNode))
       }
     }
 
