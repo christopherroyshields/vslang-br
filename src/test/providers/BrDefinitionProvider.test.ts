@@ -216,7 +216,7 @@ end:`
 
 		await vscode.workspace.fs.writeFile(
 			testFileUri,
-			Buffer.from(content)
+			new Uint8Array(Buffer.from(content))
 		)
 
 		const document = await vscode.workspace.openTextDocument(testFileUri)
@@ -283,7 +283,7 @@ let myVar = myVar + 5`
 
 		await vscode.workspace.fs.writeFile(
 			testFileUri,
-			Buffer.from(content)
+			new Uint8Array(Buffer.from(content))
 		)
 
 		const document = await vscode.workspace.openTextDocument(testFileUri)
@@ -472,7 +472,7 @@ let myVar = myVar + 5`
 
 		await vscode.workspace.fs.writeFile(
 			testFileUri,
-			Buffer.from(content)
+			new Uint8Array(Buffer.from(content))
 		)
 
 		const document = await vscode.workspace.openTextDocument(testFileUri)
@@ -515,7 +515,7 @@ let myVar = myVar + 5`
 		await new Promise(resolve => setTimeout(resolve, 100))
 
 		// Position on the unsaved function call (should be around line 3 now)
-		const position = new vscode.Position(3, 15)
+		const position = new vscode.Position(2, 15)
 
 		const definitionProvider = new BrDefinitionProvider(projects, parser)
 		const definition = await definitionProvider.provideDefinition(

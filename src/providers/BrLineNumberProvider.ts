@@ -31,6 +31,33 @@ export class BrLineNumberProvider {
 
         const currentLineIndex = position.line;
 
+        // Check if the CURRENT line (where cursor is) has a line number
+        // Only auto-insert if we're on a line that already has a line number
+        const tree = this.parser.getDocumentTree(document);
+        const point = { row: currentLineIndex, column: 1 };
+        const currentLineNode = tree.rootNode.descendantForPosition(point, point);
+
+        // Walk up to find line node
+        let lineNode: any = currentLineNode;
+        while (lineNode && lineNode.type !== 'line') {
+            lineNode = lineNode.parent;
+        }
+
+        if (!lineNode) {
+            // No line node found, just insert newline
+            edit.insert(position, '\n');
+            return;
+        }
+
+        // Check if current line has a line number
+        const lineNumberNode = lineNode.children.find((child: any) => child.type === 'line_number');
+        if (!lineNumberNode) {
+            // Current line has no line number, don't auto-insert
+            edit.insert(position, '\n');
+            return;
+        }
+        
+
         // Check if current line (before pressing Enter) ends with continuation
         if (isContinuationLine(this.parser, document, currentLineIndex)) {
             // Current line is a continuation, add appropriate indentation
@@ -49,32 +76,15 @@ export class BrLineNumberProvider {
         );
 
         if (nextLineNumber === null) {
-            // Check if we hit overflow
-            if (currentLineIndex >= 0) {
-                const tree = this.parser.getDocumentTree(document);
-                const point = { row: currentLineIndex, column: 1 };
-                const currentLineNode = tree.rootNode.descendantForPosition(point, point);
+            // Check if we hit overflow (we already have lineNumberNode from earlier)
+            const value = parseInt(lineNumberNode.text.trim(), 10);
+            const maxValue = Math.pow(10, configPadding) - 1;
 
-                // Walk up to find line node
-                let lineNode: any = currentLineNode;
-                while (lineNode && lineNode.type !== 'line') {
-                    lineNode = lineNode.parent;
-                }
-
-                if (lineNode) {
-                    const lineNumberNode = lineNode.children.find((child: any) => child.type === 'line_number');
-                    if (lineNumberNode) {
-                        const value = parseInt(lineNumberNode.text.trim(), 10);
-                        const maxValue = Math.pow(10, configPadding) - 1;
-
-                        if (value + configIncrement > maxValue && !this.hasShownOverflowWarning) {
-                            vscode.window.showWarningMessage(
-                                `BR: Line number overflow detected (exceeds ${maxValue}). Auto line numbering disabled.`
-                            );
-                            this.hasShownOverflowWarning = true;
-                        }
-                    }
-                }
+            if (value + configIncrement > maxValue && !this.hasShownOverflowWarning) {
+                vscode.window.showWarningMessage(
+                    `BR: Line number overflow detected (exceeds ${maxValue}). Auto line numbering disabled.`
+                );
+                this.hasShownOverflowWarning = true;
             }
 
             // Just insert newline

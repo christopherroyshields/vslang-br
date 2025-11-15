@@ -321,4 +321,12 @@ suite('Auto Line Number Insertion Test Suite', () => {
 		console.log('Walk backwards with comments test passed')
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
 	})
+
+	// Note: The BrLineNumberProvider now only auto-inserts line numbers when
+	// pressing Enter on a line that already has a line number. This prevents
+	// unwanted line number insertion when pressing Enter on blank lines.
+	// Manual testing required:
+	// 1. Line with number -> Enter -> Should auto-insert next number
+	// 2. Blank line -> Enter -> Should NOT auto-insert, just newline
+	// 3. Line without number -> Enter -> Should NOT auto-insert, just newline
 })

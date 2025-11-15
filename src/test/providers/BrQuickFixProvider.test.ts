@@ -20,19 +20,15 @@ suite('BrQuickFixProvider Test Suite', () => {
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors')
 
 		parser.activate({
-			subscriptions: [{
-				dispose: () => {return}
-			}]
-		} as vscode.ExtensionContext)
+			subscriptions: []
+		} as any)
 
 		configuredProjects = new Map<vscode.WorkspaceFolder, Project>()
 
 		// Create diagnostics instance
 		diagnostics = new BrDiagnostics(parser, {
-			subscriptions: [{
-				dispose: () => {return}
-			}]
-		} as vscode.ExtensionContext, configuredProjects)
+			subscriptions: []
+		} as any, configuredProjects)
 
 		console.log('Test suite setup complete')
 	})
@@ -44,13 +40,10 @@ suite('BrQuickFixProvider Test Suite', () => {
 		const testFileUri = vscode.Uri.file(testFilePath)
 
 		const content = `00010 DIM OrderID, TotalAmount
-00020
 00030 LET Result = FnCalculateTotal(OrderID, TotalAmount)
-00040 PRINT Result
-00050
 00060 END`
 
-		await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(content))
+		await vscode.workspace.fs.writeFile(testFileUri, new TextEncoder().encode(content))
 		const document = await vscode.workspace.openTextDocument(testFileUri)
 		await vscode.window.showTextDocument(document)
 
@@ -132,7 +125,7 @@ suite('BrQuickFixProvider Test Suite', () => {
 00050
 00060 END`
 
-		await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(content))
+		await vscode.workspace.fs.writeFile(testFileUri, new TextEncoder().encode(content))
 		const document = await vscode.workspace.openTextDocument(testFileUri)
 		await vscode.window.showTextDocument(document)
 
@@ -205,7 +198,7 @@ suite('BrQuickFixProvider Test Suite', () => {
 00050
 00060 END`
 
-		await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(content))
+		await vscode.workspace.fs.writeFile(testFileUri, new TextEncoder().encode(content))
 		const document = await vscode.workspace.openTextDocument(testFileUri)
 		await vscode.window.showTextDocument(document)
 
@@ -277,7 +270,7 @@ suite('BrQuickFixProvider Test Suite', () => {
 00050
 00060 END`
 
-		await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(content))
+		await vscode.workspace.fs.writeFile(testFileUri, new TextEncoder().encode(content))
 		const document = await vscode.workspace.openTextDocument(testFileUri)
 		await vscode.window.showTextDocument(document)
 
@@ -350,7 +343,7 @@ suite('BrQuickFixProvider Test Suite', () => {
 00050
 00060 END`
 
-		await vscode.workspace.fs.writeFile(testFileUri, Buffer.from(content))
+		await vscode.workspace.fs.writeFile(testFileUri, new TextEncoder().encode(content))
 		const document = await vscode.workspace.openTextDocument(testFileUri)
 		await vscode.window.showTextDocument(document)
 
