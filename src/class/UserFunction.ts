@@ -15,6 +15,7 @@ import { VariableType } from "../types/VariableType"
   isLibrary: boolean
   description?: string
   documentation?: string
+  returnDocumentation?: string
   params: UserFunctionParameter[] = []
   nameRange: Range
   offset: EntityOffset = {
@@ -74,6 +75,12 @@ import { VariableType } from "../types/VariableType"
           docs += `*@param* \`${param.name}\` ${param.documentation}`
         }
       }
+    }
+    if (this.returnDocumentation){
+      if (docs){
+        docs += "\\"+EOL
+      }
+      docs += `*@returns* ${this.returnDocumentation}`
     }
     return docs
   }

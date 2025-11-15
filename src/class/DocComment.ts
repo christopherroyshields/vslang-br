@@ -1,8 +1,10 @@
 export default class DocComment {
 	text?: string
 	params: Map<string, string> = new Map<string,string>()
+	returns?: string
 	static textSearch = /^[\s\S]*?(?=@|$)/
 	static paramSearch = /@(?<tag>param)[ \t]+(?<name>(?:mat\s+)?\w+\$?)?(?:[ \t]+(?<desc>.*))?/gmi
+	static returnSearch = /@(?<tag>returns?)[ \t]+(?<desc>.*)/gmi
 
 	/**
 	 * Function removes leading asterisk from comment lines
@@ -29,6 +31,13 @@ export default class DocComment {
 				docComment.params.set(tagMatch.groups.name, tagMatch.groups.desc)
 			}
 		}
+
+		// return/returns
+		const returnMatch = DocComment.returnSearch.exec(commentText)
+		if (returnMatch?.groups){
+			docComment.returns = DocComment.cleanComments(returnMatch.groups.desc)
+		}
+
 		return docComment
 	}
 }

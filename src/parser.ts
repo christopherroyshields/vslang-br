@@ -118,6 +118,7 @@ export default class BrParser implements Disposable {
 			const fn = new UserFunction(nameNode.text,isLibrary, nodeRange(nameNode))
 			const docs = docNode ? DocComment.parse(docNode.text) : undefined
 			fn.documentation = docs?.text
+			fn.returnDocumentation = docs?.returns
 			if (paramsNode){
 				for (const param of paramsNode.namedChildren) {
 					if (param!==null){

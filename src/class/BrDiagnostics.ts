@@ -43,9 +43,15 @@ export default class BrDiagnostics implements Disposable {
       this.diagnosticCollection.delete(document.uri)
     }))
 
-    context.subscriptions.push(commands.registerCommand('vslang-br.scanAll', async () => {
-      await this.scanAll()
-    }))
+    // Register scanAll command if not already registered (for test compatibility)
+    try {
+      context.subscriptions.push(commands.registerCommand('vslang-br.scanAll', async () => {
+        await this.scanAll()
+      }))
+    } catch (e) {
+      // Command already registered, skip (happens in test scenarios)
+      console.log('vslang-br.scanAll command already registered')
+    }
 
   }
 

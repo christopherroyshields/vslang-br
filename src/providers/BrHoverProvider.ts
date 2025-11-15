@@ -77,19 +77,24 @@ export default class BrHoverProvider implements HoverProvider {
   
   createHoverFromFunction<T extends InternalFunction>(fn: T): Hover {
     let markDownString = '```br\n' + fn.generateSignature() + '\n```\n---'
-    
+
     if (markDownString && fn.documentation){
       markDownString += '\n' + fn.documentation
     }
-    
+
     fn.params?.forEach((param)=>{
       if (param.documentation){
         markDownString += `\r\n * @param \`${param.name}\` ${param.documentation}`
       }
     })
-    
+
+    // Check for returnDocumentation (only available on UserFunction, not InternalFunction)
+    if ('returnDocumentation' in fn && fn.returnDocumentation){
+      markDownString += `\r\n * @returns ${fn.returnDocumentation}`
+    }
+
     const markup = new MarkdownString(markDownString)
-    
+
     return new Hover(markup)
   }
 }

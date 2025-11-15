@@ -9,7 +9,7 @@ export default class InternalFunction implements BrFunction {
   documentation?: string
   params?: FunctionParameter[]
   constructor(
-    name: string, 
+    name: string,
     description?: string,
     documentation?: string,
     params?: FunctionParameter[]

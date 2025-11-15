@@ -174,19 +174,46 @@ export default class BrQuickFixProvider implements CodeActionProvider {
 
 	/**
 	 * Check if argument is a simple reference (not a complex expression)
+	 * A simple reference is ONLY a single variable reference with no other operations
 	 */
 	private isSimpleReference(argNode: Parser.SyntaxNode): boolean {
-		// A simple reference should not contain operators, function calls, or literals
-		const operators = argNode.descendantsOfType('operator');
+		// Check for function calls - these are definitely not simple references
 		const functionCalls = argNode.descendantsOfType('numeric_user_function')
 			.concat(argNode.descendantsOfType('string_user_function'))
 			.concat(argNode.descendantsOfType('numeric_system_function'))
 			.concat(argNode.descendantsOfType('string_system_function'));
-		const literals = argNode.descendantsOfType('numeric_literal')
-			.concat(argNode.descendantsOfType('string_literal'));
 
-		// If we find any of these, it's not a simple reference
-		return operators.length === 0 && functionCalls.length === 0 && literals.length === 0;
+		if (functionCalls.length > 0) {
+			return false;
+		}
+
+		// Check if there are multiple expressions at the same level, which indicates a complex expression
+		// For example, "OrderID + 100" has multiple children in the expression tree
+		// while "OrderID" alone has just one reference
+		const expressions = argNode.descendantsOfType('numeric_expression')
+			.concat(argNode.descendantsOfType('string_expression'));
+
+		// If there are multiple expression nodes or if an expression has multiple meaningful children, it's complex
+		if (expressions.length > 1) {
+			return false;
+		}
+
+		// Check if the expression contains multiple child nodes (indicating operators, literals, etc.)
+		if (expressions.length === 1) {
+			const expr = expressions[0];
+			// Count non-trivial children (ignore whitespace and simple wrappers)
+			const meaningfulChildren = expr.namedChildren.filter(child =>
+				child.type !== 'expression' &&
+				child.type !== 'numeric_expression' &&
+				child.type !== 'string_expression'
+			);
+			// If there are multiple meaningful children, it's a complex expression
+			if (meaningfulChildren.length > 1) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
