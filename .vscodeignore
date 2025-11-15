@@ -40,3 +40,7 @@ video-demo-guide.md
 # Local settings
 .claude/settings.local.json
 nul
+assets
+CLAUDE.md
+.vscode-test.mjs
+BR_Language_Grammar_Complete.md
