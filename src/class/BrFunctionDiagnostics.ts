@@ -29,9 +29,9 @@ export default class BrFunctionDiagnostics {
 		// Run all diagnostic checks
 		diagnostics.push(...this.checkMissingFnend(tree, document));
 		diagnostics.push(...this.checkDuplicateFunctions(tree, document, project));
-		diagnostics.push(...this.checkUndefinedFunctions(tree, document, project));
-		diagnostics.push(...this.checkParameterMismatches(tree, document, project));
-		diagnostics.push(...this.checkParameterTypeMismatches(tree, document, project));
+		// diagnostics.push(...this.checkUndefinedFunctions(tree, document, project));
+		// diagnostics.push(...this.checkParameterMismatches(tree, document, project));
+		// diagnostics.push(...this.checkParameterTypeMismatches(tree, document, project));
 
 		return diagnostics;
 	}
@@ -121,7 +121,6 @@ export default class BrFunctionDiagnostics {
 		for (const result of results) {
 			const defNode = result.captures[0].node;
 			const functionName = this.getFunctionNameFromDef(defNode);
-			const isLibrary = defNode.firstChild?.type === "library_keyword";
 
 			if (!functionName) continue;
 
@@ -130,35 +129,10 @@ export default class BrFunctionDiagnostics {
 				functionMap.set(key, []);
 			}
 			functionMap.get(key)!.push(defNode);
-
-			// For library functions, check across the entire project
-			if (isLibrary && project) {
-				const existingLibraryFuncs = project.libraryIndex.getFunctionsByName(functionName);
-				// Check if there are existing library functions from other files
-				const duplicatesInOtherFiles = existingLibraryFuncs.filter(
-					f => f.uri.toString() !== document.uri.toString()
-				);
-
-				if (duplicatesInOtherFiles.length > 0) {
-					// Found duplicate in another file
-					const nameNode = this.getFunctionNameNode(defNode);
-					if (nameNode) {
-						diagnostics.push({
-							code: 'duplicate-library-function',
-							message: `Library function '${functionName}' is already defined in another file`,
-							range: new Range(
-								new Position(nameNode.startPosition.row, nameNode.startPosition.column),
-								new Position(nameNode.endPosition.row, nameNode.endPosition.column)
-							),
-							severity: DiagnosticSeverity.Error,
-							source: 'BR Function Diagnostics',
-						});
-					}
-				}
-			}
 		}
 
-		// Check for duplicates within the same file
+		// Check for duplicates within the same file only
+		// Library functions can have duplicates across different files
 		for (const [name, nodes] of functionMap) {
 			if (nodes.length > 1) {
 				// Mark all but the first as duplicates
