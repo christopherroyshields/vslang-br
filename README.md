@@ -1,5 +1,8 @@
 # Business Rules! Language Support Extension for VS Code
 
+> [!WARNING]
+> **This repository is deprecated.** Development has moved to [br-lsp](https://github.com/christopherroyshields/br-lsp), a rewrite built on a Rust language server using tree-sitter. The [BR Language Extension on the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=crs-dev.vslang-br) now ships from br-lsp (v0.1.15+), so existing installs update automatically — no action needed. Please file issues and contribute at br-lsp.
+
 Welcome BR programmers! This extension brings modern IDE features to Business Rules! development in Visual Studio Code.
 
 ## Quick Start for BR Programmers New to VS Code
